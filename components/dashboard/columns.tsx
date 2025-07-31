@@ -26,6 +26,7 @@ function formatDate(dateString: string): string {
 }
 
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,22 +35,42 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { IconMail, IconPhone, IconBuilding, IconCalendarEvent, IconKeyOff, IconEdit, IconUserPlus } from '@tabler/icons-react';
 
-// Define the types for the data structure
-export type BorrowedKey = {
+// Enhanced type that combines borrowing data with contact management
+export type EnhancedLoanRecord = {
+  // Borrower information
+  borrowerId: string; // Borrower ID for CRUD operations
   borrowerName: string; // Name of the person
+  email?: string; // Contact email of the borrower
+  phone?: string; // Optional phone number
   company?: string; // Company name if applicable
-  email: string; // Contact email of the borrower
-  phone: string; // Optional phone number
+  
+  // Key information
   keyId: string; // Key ID
   keyLabel: string; // Key label (e.g., "A", "B", etc.)
+  keyFunction: string; // Key function/purpose
   copyNumber: number; // Copy number
-  borrowedAt: string; // Date when the key was borrowed
+  
+  // Lending information
+  lendingId?: string; // Lending record ID (null for borrower-only rows)
+  borrowedAt?: string; // Date when the key was borrowed
+  expectedReturnAt?: string; // Expected return date
   returnedAt?: string; // Date when the key was returned (optional)
+  notes?: string; // Lending notes
+  idChecked?: boolean; // Whether ID was checked
+  
+  // Status and metadata
+  isActiveLoan: boolean; // Whether this is an active loan or just borrower info
+  activeLoanCount: number; // Total active loans for this borrower
+  isOverdue?: boolean; // Whether the loan is overdue
 };
 
-// Define the columns for the table
-export const columns: ColumnDef<BorrowedKey>[] = [
+// Legacy type for backward compatibility during transition
+export type BorrowedKey = EnhancedLoanRecord;
+
+// Enhanced columns that combine loan and contact management
+export const columns: ColumnDef<EnhancedLoanRecord>[] = [
   {
     accessorKey: 'borrowerName',
     header: ({ column }) => {
@@ -59,40 +80,115 @@ export const columns: ColumnDef<BorrowedKey>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           className="p-0 text-left"
         >
-          Name
+          Borrower
           <IconArrowsUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
-  },
-  {
-    accessorKey: 'keyLabel',
-    header: 'Key',
     cell: ({ row }) => {
-      const keyLabel = row.original.keyLabel;
-      const copyNumber = row.original.copyNumber;
+      const record = row.original;
       return (
-        <div>
-          {keyLabel}
-          {copyNumber}
+        <div className="space-y-1">
+          <div className="font-medium">{record.borrowerName}</div>
+          <div className="text-sm text-muted-foreground space-y-1">
+            {record.email && (
+              <div className="flex items-center gap-1">
+                <IconMail className="h-3 w-3" />
+                <span className="truncate max-w-[150px]">{record.email}</span>
+              </div>
+            )}
+            {record.phone && (
+              <div className="flex items-center gap-1">
+                <IconPhone className="h-3 w-3" />
+                <span>{record.phone}</span>
+              </div>
+            )}
+            {record.company && (
+              <div className="flex items-center gap-1">
+                <IconBuilding className="h-3 w-3" />
+                <span className="truncate max-w-[150px]">{record.company}</span>
+              </div>
+            )}
+          </div>
         </div>
       );
     },
   },
   {
-    accessorKey: 'date',
-    header: 'Last change',
+    accessorKey: 'keyInfo',
+    header: 'Key Details',
     cell: ({ row }) => {
-      // Show returned date if available, otherwise show borrowed date
-      const date = row.original.returnedAt || row.original.borrowedAt;
+      const record = row.original;
+      if (!record.isActiveLoan) {
+        return (
+          <div className="text-sm text-muted-foreground">
+            <Badge variant="secondary" className="text-xs">
+              {record.activeLoanCount} active loan{record.activeLoanCount !== 1 ? 's' : ''}
+            </Badge>
+          </div>
+        );
+      }
+      
+      return (
+        <div className="space-y-1">
+          <div className="font-medium">
+            {record.keyLabel}{record.copyNumber}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {record.keyFunction}
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: 'lendingStatus',
+    header: 'Status & Dates',
+    cell: ({ row }) => {
+      const record = row.original;
+      
+      if (!record.isActiveLoan) {
+        return (
+          <div className="text-sm text-muted-foreground">
+            No active loans
+          </div>
+        );
+      }
 
-      return <div>{formatDate(date || '')}</div>;
+      const isOverdue = record.isOverdue;
+      const borrowedDate = record.borrowedAt ? formatDate(record.borrowedAt) : '';
+      const expectedReturn = record.expectedReturnAt ? formatDate(record.expectedReturnAt) : '';
+
+      return (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Badge variant={isOverdue ? 'destructive' : 'secondary'} className="text-xs">
+              {isOverdue ? 'Overdue' : 'Active'}
+            </Badge>
+            {record.idChecked && (
+              <Badge variant="outline" className="text-xs">
+                ID ✓
+              </Badge>
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground space-y-0.5">
+            <div>Lent: {borrowedDate}</div>
+            {expectedReturn && (
+              <div className="flex items-center gap-1">
+                <IconCalendarEvent className="h-3 w-3" />
+                Due: {expectedReturn}
+              </div>
+            )}
+          </div>
+        </div>
+      );
     },
   },
   {
     id: 'actions',
+    header: 'Actions',
     cell: ({ row }) => {
-      const BorrowedKey = row.original;
+      const record = row.original;
 
       return (
         <DropdownMenu>
@@ -103,16 +199,47 @@ export const columns: ColumnDef<BorrowedKey>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(BorrowedKey.phone)}>
-              Call {BorrowedKey.phone}
-            </DropdownMenuItem>
+            <DropdownMenuLabel>Contact Actions</DropdownMenuLabel>
+            {record.email && (
+              <DropdownMenuItem onClick={() => window.location.href = `mailto:${record.email}`}>
+                <IconMail className="h-3.5 w-3.5 mr-2" />
+                Email
+              </DropdownMenuItem>
+            )}
+            {record.phone && (
+              <DropdownMenuItem onClick={() => window.location.href = `tel:${record.phone}`}>
+                <IconPhone className="h-3.5 w-3.5 mr-2" />
+                Call
+              </DropdownMenuItem>
+            )}
+            
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Return key</DropdownMenuItem>
-            <DropdownMenuItem>View key access</DropdownMenuItem>
+            <DropdownMenuLabel>Borrower Management</DropdownMenuLabel>
+            <DropdownMenuItem>
+              <IconEdit className="h-3.5 w-3.5 mr-2" />
+              Edit Contact
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <IconUserPlus className="h-3.5 w-3.5 mr-2" />
+              Lend Key
+            </DropdownMenuItem>
+            
+            {record.isActiveLoan && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Loan Actions</DropdownMenuLabel>
+                <DropdownMenuItem>
+                  <IconKeyOff className="h-3.5 w-3.5 mr-2" />
+                  Return Key
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       );
     },
   },
 ];
+
+// Legacy columns export for backward compatibility
+export const legacyColumns = columns;
