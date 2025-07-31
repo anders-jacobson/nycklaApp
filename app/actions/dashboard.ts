@@ -103,14 +103,7 @@ export async function getBorrowersWithKeysGrouped() {
     },
   });
 
-  // Debug logging
-  console.log('=== getBorrowersWithKeysGrouped Debug ===');
-  console.log('Total lending records found:', lendingRecords.length);
-  console.log('Sample lending records:', lendingRecords.slice(0, 2).map(r => ({
-    borrowerName: r.borrower.name,
-    keyLabel: r.keyCopy.keyType.label,
-    copyNumber: r.keyCopy.copyNumber
-  })));
+
 
   // Group by borrower
   const borrowerMap = new Map();
@@ -148,9 +141,5 @@ export async function getBorrowersWithKeysGrouped() {
     }
   });
 
-  const result = Array.from(borrowerMap.values());
-  console.log('Final grouped result:', result.length, 'borrowers');
-  console.log('Sample grouped borrower:', result[0]);
-
-  return result;
+  return Array.from(borrowerMap.values());
 }
