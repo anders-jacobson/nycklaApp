@@ -83,3 +83,61 @@ export async function getBorrowedKeysTableData() {
     };
   });
 }
+
+export async function getBorrowersWithKeysGrouped() {
+  const userId = await getCurrentUserId();
+  
+  // Get all active lending records (not returned) grouped by borrower
+  const lendingRecords = await prisma.lendingRecord.findMany({
+    where: { 
+      userId,
+      returnedDate: null // Only active loans
+    },
+    include: {
+      borrower: true,
+      keyCopy: {
+        include: {
+          keyType: true,
+        },
+      },
+    },
+  });
+
+  // Group by borrower
+  const borrowerMap = new Map();
+  
+  lendingRecords.forEach((record) => {
+    const borrowerId = record.borrower.id;
+    
+    if (!borrowerMap.has(borrowerId)) {
+      borrowerMap.set(borrowerId, {
+        borrowerId: record.borrower.id,
+        borrowerName: record.borrower.name,
+        email: record.borrower.email ?? '',
+        phone: record.borrower.phone ?? '',
+        company: record.borrower.company ?? '',
+        borrowedKeys: [],
+        activeLoanCount: 0,
+        hasOverdue: false,
+      });
+    }
+
+    const borrower = borrowerMap.get(borrowerId);
+    borrower.borrowedKeys.push({
+      keyLabel: record.keyCopy.keyType.label,
+      copyNumber: record.keyCopy.copyNumber,
+      keyFunction: record.keyCopy.keyType.function,
+      borrowedAt: record.lentDate?.toISOString() ?? '',
+      endDate: record.endDate?.toISOString() ?? '',
+      lendingId: record.id,
+    });
+    borrower.activeLoanCount++;
+    
+    // Check if overdue (simple check - if endDate is past)
+    if (record.endDate && record.endDate < new Date()) {
+      borrower.hasOverdue = true;
+    }
+  });
+
+  return Array.from(borrowerMap.values());
+}

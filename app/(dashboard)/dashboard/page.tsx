@@ -1,12 +1,17 @@
 import KeyChart from '@/components/dashboard/chart-bar';
 import TotalStatusPieChart from '@/components/dashboard/chart-pie';
 import { DataTable } from '@/components/dashboard/data-table';
-import { getKeyStatusSummary, getBorrowedKeysTableData } from '@/app/actions/dashboard';
+import { getKeyStatusSummary, getBorrowedKeysTableData, getBorrowersWithKeysGrouped } from '@/app/actions/dashboard';
 import { columns } from '@/components/dashboard/columns';
 
 export default async function Page() {
-  const keyChartData = await getKeyStatusSummary();
-  const borrowedKeysData = await getBorrowedKeysTableData();
+  // Fetch both individual loan data and grouped borrower data
+  const [keyChartData, borrowedKeysData, groupedBorrowersData] = await Promise.all([
+    getKeyStatusSummary(),
+    getBorrowedKeysTableData(),
+    getBorrowersWithKeysGrouped(),
+  ]);
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -18,7 +23,11 @@ export default async function Page() {
             </div>
           </div>
           <div className="px-4 lg:px-6">
-            <DataTable columns={columns} data={borrowedKeysData} />
+            <DataTable 
+              columns={columns} 
+              data={borrowedKeysData} 
+              allBorrowersData={groupedBorrowersData}
+            />
           </div>
         </div>
       </div>
