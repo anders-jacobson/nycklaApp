@@ -35,7 +35,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { IconMail, IconPhone, IconBuilding, IconCalendarEvent, IconKeyOff, IconEdit, IconUserPlus } from '@tabler/icons-react';
+import {
+  IconMail,
+  IconPhone,
+  IconBuilding,
+  IconKeyOff,
+  IconEdit,
+  IconUserPlus,
+} from '@tabler/icons-react';
 
 // Enhanced type that combines borrowing data with contact management
 export type EnhancedLoanRecord = {
@@ -45,13 +52,13 @@ export type EnhancedLoanRecord = {
   email?: string; // Contact email of the borrower
   phone?: string; // Optional phone number
   company?: string; // Company name if applicable
-  
+
   // Key information
   keyId: string; // Key ID
   keyLabel: string; // Key label (e.g., "A", "B", etc.)
   keyFunction: string; // Key function/purpose
   copyNumber: number; // Copy number
-  
+
   // Lending information
   lendingId?: string; // Lending record ID (null for borrower-only rows)
   borrowedAt?: string; // Date when the key was borrowed
@@ -59,7 +66,7 @@ export type EnhancedLoanRecord = {
   returnedAt?: string; // Date when the key was returned (optional)
   notes?: string; // Lending notes
   idChecked?: boolean; // Whether ID was checked
-  
+
   // Status and metadata
   isActiveLoan: boolean; // Whether this is an active loan or just borrower info
   activeLoanCount: number; // Total active loans for this borrower
@@ -115,30 +122,24 @@ export const columns: ColumnDef<EnhancedLoanRecord>[] = [
     },
   },
   {
-    accessorKey: 'keyInfo',
-    header: 'Key Details',
+    accessorKey: 'borrowedKeys',
+    header: 'Currently Borrowed Keys',
     cell: ({ row }) => {
       const record = row.original;
-      if (!record.isActiveLoan) {
+
+      // Work with the actual current data structure from getBorrowedKeysTableData
+      if (record.keyLabel && record.copyNumber !== undefined) {
         return (
-          <div className="text-sm text-muted-foreground">
-            <Badge variant="secondary" className="text-xs">
-              {record.activeLoanCount} active loan{record.activeLoanCount !== 1 ? 's' : ''}
+          <div className="space-y-1">
+            <Badge variant="outline" className="text-xs font-mono">
+              {record.keyLabel}{record.copyNumber}
             </Badge>
+            {/* Note: keyFunction not available in current data - will add later */}
           </div>
         );
       }
-      
-      return (
-        <div className="space-y-1">
-          <div className="font-medium">
-            {record.keyLabel}{record.copyNumber}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {record.keyFunction}
-          </div>
-        </div>
-      );
+
+      return <div className="text-sm text-muted-foreground">No active loans</div>;
     },
   },
   {
@@ -146,38 +147,26 @@ export const columns: ColumnDef<EnhancedLoanRecord>[] = [
     header: 'Status & Dates',
     cell: ({ row }) => {
       const record = row.original;
-      
-      if (!record.isActiveLoan) {
-        return (
-          <div className="text-sm text-muted-foreground">
-            No active loans
-          </div>
-        );
-      }
 
-      const isOverdue = record.isOverdue;
+      // Work with current data structure
       const borrowedDate = record.borrowedAt ? formatDate(record.borrowedAt) : '';
-      const expectedReturn = record.expectedReturnAt ? formatDate(record.expectedReturnAt) : '';
+      const isReturned = record.returnedAt && record.returnedAt !== '';
+      
+      if (!borrowedDate) {
+        return <div className="text-sm text-muted-foreground">No active loans</div>;
+      }
 
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Badge variant={isOverdue ? 'destructive' : 'secondary'} className="text-xs">
-              {isOverdue ? 'Overdue' : 'Active'}
+            <Badge variant={isReturned ? 'outline' : 'secondary'} className="text-xs">
+              {isReturned ? 'Returned' : 'Active'}
             </Badge>
-            {record.idChecked && (
-              <Badge variant="outline" className="text-xs">
-                ID ✓
-              </Badge>
-            )}
           </div>
           <div className="text-sm text-muted-foreground space-y-0.5">
             <div>Lent: {borrowedDate}</div>
-            {expectedReturn && (
-              <div className="flex items-center gap-1">
-                <IconCalendarEvent className="h-3 w-3" />
-                Due: {expectedReturn}
-              </div>
+            {isReturned && record.returnedAt && (
+              <div>Returned: {formatDate(record.returnedAt)}</div>
             )}
           </div>
         </div>
@@ -201,18 +190,18 @@ export const columns: ColumnDef<EnhancedLoanRecord>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Contact Actions</DropdownMenuLabel>
             {record.email && (
-              <DropdownMenuItem onClick={() => window.location.href = `mailto:${record.email}`}>
+              <DropdownMenuItem onClick={() => (window.location.href = `mailto:${record.email}`)}>
                 <IconMail className="h-3.5 w-3.5 mr-2" />
                 Email
               </DropdownMenuItem>
             )}
             {record.phone && (
-              <DropdownMenuItem onClick={() => window.location.href = `tel:${record.phone}`}>
+              <DropdownMenuItem onClick={() => (window.location.href = `tel:${record.phone}`)}>
                 <IconPhone className="h-3.5 w-3.5 mr-2" />
                 Call
               </DropdownMenuItem>
             )}
-            
+
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Borrower Management</DropdownMenuLabel>
             <DropdownMenuItem>
@@ -223,8 +212,9 @@ export const columns: ColumnDef<EnhancedLoanRecord>[] = [
               <IconUserPlus className="h-3.5 w-3.5 mr-2" />
               Lend Key
             </DropdownMenuItem>
-            
-            {record.isActiveLoan && (
+
+            {/* Show return option if loan is active (not returned) */}
+            {record.borrowedAt && (!record.returnedAt || record.returnedAt === '') && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel>Loan Actions</DropdownMenuLabel>
