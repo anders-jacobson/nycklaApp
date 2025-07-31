@@ -47,7 +47,7 @@ import {
 // Individual borrowed key information
 export type BorrowedKeyInfo = {
   keyLabel: string; // Key label (e.g., "A", "B", etc.)
-  copyNumber: number; // Copy number  
+  copyNumber: number; // Copy number
   keyFunction: string; // Key function/purpose
   borrowedAt: string; // Date when the key was borrowed
   endDate?: string; // Expected return date
@@ -155,7 +155,8 @@ export const columns: ColumnDef<TableRecord>[] = [
           <div className="flex flex-wrap gap-1.5">
             {record.borrowedKeys.map((key, index) => (
               <Badge key={index} variant="outline" className="text-xs font-mono">
-                {key.keyLabel}{key.copyNumber}
+                {key.keyLabel}
+                {key.copyNumber}
               </Badge>
             ))}
           </div>
@@ -167,7 +168,8 @@ export const columns: ColumnDef<TableRecord>[] = [
         if (record.keyLabel && record.copyNumber !== undefined) {
           return (
             <Badge variant="outline" className="text-xs font-mono">
-              {record.keyLabel}{record.copyNumber}
+              {record.keyLabel}
+              {record.copyNumber}
             </Badge>
           );
         }
@@ -211,7 +213,7 @@ export const columns: ColumnDef<TableRecord>[] = [
         // Individual loan record - show specific loan status
         const borrowedDate = record.borrowedAt ? formatDate(record.borrowedAt) : '';
         const isReturned = record.returnedAt && record.returnedAt !== '';
-        
+
         if (!borrowedDate) {
           return <div className="text-sm text-muted-foreground">No active loans</div>;
         }
@@ -288,16 +290,18 @@ export const columns: ColumnDef<TableRecord>[] = [
               </>
             )}
 
-            {isIndividualLoanRecord(record) && record.borrowedAt && (!record.returnedAt || record.returnedAt === '') && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Loan Actions</DropdownMenuLabel>
-                <DropdownMenuItem>
-                  <IconKeyOff className="h-3.5 w-3.5 mr-2" />
-                  Return Key
-                </DropdownMenuItem>
-              </>
-            )}
+            {isIndividualLoanRecord(record) &&
+              record.borrowedAt &&
+              (!record.returnedAt || record.returnedAt === '') && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Loan Actions</DropdownMenuLabel>
+                  <DropdownMenuItem>
+                    <IconKeyOff className="h-3.5 w-3.5 mr-2" />
+                    Return Key
+                  </DropdownMenuItem>
+                </>
+              )}
           </DropdownMenuContent>
         </DropdownMenu>
       );

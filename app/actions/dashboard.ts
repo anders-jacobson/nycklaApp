@@ -86,12 +86,12 @@ export async function getBorrowedKeysTableData() {
 
 export async function getBorrowersWithKeysGrouped() {
   const userId = await getCurrentUserId();
-  
+
   // Get all active lending records (not returned) grouped by borrower
   const lendingRecords = await prisma.lendingRecord.findMany({
-    where: { 
+    where: {
       userId,
-      returnedDate: null // Only active loans
+      returnedDate: null, // Only active loans
     },
     include: {
       borrower: true,
@@ -103,12 +103,21 @@ export async function getBorrowersWithKeysGrouped() {
     },
   });
 
+  // Debug logging
+  console.log('=== getBorrowersWithKeysGrouped Debug ===');
+  console.log('Total lending records found:', lendingRecords.length);
+  console.log('Sample lending records:', lendingRecords.slice(0, 2).map(r => ({
+    borrowerName: r.borrower.name,
+    keyLabel: r.keyCopy.keyType.label,
+    copyNumber: r.keyCopy.copyNumber
+  })));
+
   // Group by borrower
   const borrowerMap = new Map();
-  
+
   lendingRecords.forEach((record) => {
     const borrowerId = record.borrower.id;
-    
+
     if (!borrowerMap.has(borrowerId)) {
       borrowerMap.set(borrowerId, {
         borrowerId: record.borrower.id,
@@ -132,12 +141,16 @@ export async function getBorrowersWithKeysGrouped() {
       lendingId: record.id,
     });
     borrower.activeLoanCount++;
-    
+
     // Check if overdue (simple check - if endDate is past)
     if (record.endDate && record.endDate < new Date()) {
       borrower.hasOverdue = true;
     }
   });
 
-  return Array.from(borrowerMap.values());
+  const result = Array.from(borrowerMap.values());
+  console.log('Final grouped result:', result.length, 'borrowers');
+  console.log('Sample grouped borrower:', result[0]);
+
+  return result;
 }

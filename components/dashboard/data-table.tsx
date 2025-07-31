@@ -37,12 +37,20 @@ export function DataTable<TData>({
   data, 
   allBorrowersData
 }: DataTableProps<TData>) {
-  const [viewMode, setViewMode] = React.useState<'loans' | 'borrowers'>('loans');
+  const [viewMode, setViewMode] = React.useState<'loans' | 'borrowers'>('borrowers');
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
   // Determine current data based on view mode
   const currentData = viewMode === 'loans' ? data : (allBorrowersData || data);
+  
+  // Debug logging to see what data we're working with
+  console.log('=== DataTable Debug ===');
+  console.log('viewMode:', viewMode);
+  console.log('individual loan data count:', data.length);
+  console.log('grouped borrower data count:', allBorrowersData?.length || 0);
+  console.log('currentData being used:', currentData);
+  console.log('currentData sample:', currentData.slice(0, 2));
   
   const table = useReactTable({
     data: currentData,
