@@ -50,7 +50,7 @@ export const columns: ColumnDef<BorrowerWithKeys>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="p-0 text-left"
+          className="h-auto p-0 font-medium justify-start text-left"
         >
           Name
           <IconArrowsUpDown className="ml-2 h-4 w-4" />
