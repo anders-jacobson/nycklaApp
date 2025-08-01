@@ -4,8 +4,6 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import { IconArrowsUpDown, IconDots } from '@tabler/icons-react';
 
-
-
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -107,18 +105,27 @@ export const columns: ColumnDef<BorrowerWithKeys>[] = [
 
       return (
         <div className="flex flex-wrap gap-1.5">
-          {borrower.borrowedKeys.map((key, index) => (
-            <Badge key={index} variant="outline" className="text-xs font-mono">
-              {key.keyLabel}{key.copyNumber}
-            </Badge>
-          ))}
+          {borrower.borrowedKeys.map((key, index) => {
+            // Check if this specific key is overdue
+            const isOverdue = key.endDate && new Date(key.endDate) < new Date();
+            
+            return (
+              <Badge 
+                key={index} 
+                variant={isOverdue ? "destructive" : "outline"} 
+                className="text-xs font-mono"
+              >
+                {key.keyLabel}{key.copyNumber}
+              </Badge>
+            );
+          })}
         </div>
       );
     },
   },
-    {
+  {
     accessorKey: 'lendingStatus',
-    header: 'Status & Dates',
+    header: 'Status',
     cell: ({ row }) => {
       const borrower = row.original;
 
@@ -126,22 +133,18 @@ export const columns: ColumnDef<BorrowerWithKeys>[] = [
         return <div className="text-sm text-muted-foreground">No active loans</div>;
       }
 
+      if (borrower.hasOverdue) {
+        return (
+          <Badge variant="destructive" className="text-xs">
+            Overdue
+          </Badge>
+        );
+      }
+
       return (
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Badge variant={borrower.hasOverdue ? 'destructive' : 'secondary'} className="text-xs">
-              {borrower.activeLoanCount} active
-            </Badge>
-            {borrower.hasOverdue && (
-              <Badge variant="destructive" className="text-xs">
-                Overdue
-              </Badge>
-            )}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {borrower.activeLoanCount} key{borrower.activeLoanCount !== 1 ? 's' : ''} borrowed
-          </div>
-        </div>
+        <Badge variant="secondary" className="text-xs">
+          Active
+        </Badge>
       );
     },
   },
