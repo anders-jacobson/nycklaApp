@@ -108,43 +108,19 @@ export const columns: ColumnDef<BorrowerWithKeys>[] = [
           {borrower.borrowedKeys.map((key, index) => {
             // Check if this specific key is overdue
             const isOverdue = key.endDate && new Date(key.endDate) < new Date();
-            
+
             return (
-              <Badge 
-                key={index} 
-                variant={isOverdue ? "destructive" : "outline"} 
+              <Badge
+                key={index}
+                variant={isOverdue ? 'destructive' : 'outline'}
                 className="text-xs font-mono"
               >
-                {key.keyLabel}{key.copyNumber}
+                {key.keyLabel}
+                {key.copyNumber}
               </Badge>
             );
           })}
         </div>
-      );
-    },
-  },
-  {
-    accessorKey: 'lendingStatus',
-    header: 'Status',
-    cell: ({ row }) => {
-      const borrower = row.original;
-
-      if (borrower.activeLoanCount === 0) {
-        return <div className="text-sm text-muted-foreground">No active loans</div>;
-      }
-
-      if (borrower.hasOverdue) {
-        return (
-          <Badge variant="destructive" className="text-xs">
-            Overdue
-          </Badge>
-        );
-      }
-
-      return (
-        <Badge variant="secondary" className="text-xs">
-          Active
-        </Badge>
       );
     },
   },
