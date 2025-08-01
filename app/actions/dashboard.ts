@@ -103,8 +103,6 @@ export async function getBorrowersWithKeysGrouped() {
     },
   });
 
-
-
   // Group by borrower
   const borrowerMap = new Map();
 

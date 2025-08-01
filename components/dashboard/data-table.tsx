@@ -15,7 +15,6 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -24,28 +23,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { IconPlus, IconUsers, IconClockRecord, IconUserPlus } from '@tabler/icons-react';
+import { IconPlus, IconUserPlus } from '@tabler/icons-react';
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData>[];
-  data: TData[];
-  allBorrowersData?: TData[]; // Additional data for "All Borrowers" view
+  data: TData[]; // Borrowers data only
 }
 
 export function DataTable<TData>({ 
   columns, 
-  data, 
-  allBorrowersData
+  data
 }: DataTableProps<TData>) {
-  const [viewMode, setViewMode] = React.useState<'loans' | 'borrowers'>('borrowers');
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
-  // Determine current data based on view mode
-  const currentData = viewMode === 'loans' ? data : (allBorrowersData || data);
-  
   const table = useReactTable({
-    data: currentData,
+    data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -64,43 +57,15 @@ export function DataTable<TData>({
     table.getColumn('borrowerName')?.setFilterValue(value);
   };
 
-  // Count active loans in current data
-  const activeLoanCount = data.length;
-  const totalBorrowerCount = allBorrowersData?.length || 0;
-
   return (
     <div className="space-y-4">
-      {/* View Toggle Header */}
+      {/* Header with Actions */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === 'loans' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('loans')}
-            className="gap-1"
-          >
-            <IconClockRecord className="h-4 w-4" />
-            Active Loans
-            {activeLoanCount > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs">
-                {activeLoanCount}
-              </Badge>
-            )}
-          </Button>
-          <Button
-            variant={viewMode === 'borrowers' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('borrowers')}
-            className="gap-1"
-          >
-            <IconUsers className="h-4 w-4" />
-            All Borrowers
-            {totalBorrowerCount > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs">
-                {totalBorrowerCount}
-              </Badge>
-            )}
-          </Button>
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">All Borrowers</h2>
+          <p className="text-muted-foreground">
+            Manage borrower contacts and track borrowed keys
+          </p>
         </div>
         
         <div className="flex items-center gap-2">
@@ -116,7 +81,7 @@ export function DataTable<TData>({
       </div>
 
       {/* Search and Filter */}
-      <div className="flex items-center justify-between py-4 space-x-2 w-full">
+      <div className="flex items-center py-4">
         <Input
           placeholder="Filter by name..."
           value={(table.getColumn('borrowerName')?.getFilterValue() as string) ?? ''}
@@ -156,7 +121,7 @@ export function DataTable<TData>({
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
                   <div className="text-muted-foreground">
-                    {viewMode === 'loans' ? 'No active loans' : 'No borrowers found'}
+                    No borrowers found
                   </div>
                 </TableCell>
               </TableRow>
