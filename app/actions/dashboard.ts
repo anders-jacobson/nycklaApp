@@ -110,12 +110,16 @@ export async function getBorrowersWithKeysGrouped() {
     const borrowerId = record.borrower.id;
 
     if (!borrowerMap.has(borrowerId)) {
+      // Temporary mapping: existing company field to new affiliation structure
+      const hasCompany = record.borrower.company && record.borrower.company.length > 0;
       borrowerMap.set(borrowerId, {
         borrowerId: record.borrower.id,
         borrowerName: record.borrower.name,
         email: record.borrower.email ?? '',
         phone: record.borrower.phone ?? '',
-        company: record.borrower.company ?? '',
+        isResident: !hasCompany, // If no company, assume resident
+        companyName: record.borrower.company ?? undefined,
+        purposeNotes: undefined, // Will be added when DB is updated
         borrowedKeys: [],
         activeLoanCount: 0,
         hasOverdue: false,

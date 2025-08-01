@@ -32,7 +32,9 @@ export type BorrowerWithKeys = {
   borrowerName: string; // Name of the person
   email?: string; // Contact email of the borrower
   phone?: string; // Optional phone number
-  company?: string; // Company name if applicable
+  isResident: boolean; // True if resident, false if external
+  companyName?: string; // Company name (for external only)
+  purposeNotes?: string; // Purpose/notes (for external only)
   borrowedKeys: BorrowedKeyInfo[]; // Array of borrowed keys
   activeLoanCount: number; // Total active loans for this borrower
   hasOverdue: boolean; // Whether any loan is overdue
@@ -60,6 +62,37 @@ export const columns: ColumnDef<BorrowerWithKeys>[] = [
     cell: ({ row }) => {
       const record = row.original;
       return <div className="font-medium">{record.borrowerName}</div>;
+    },
+  },
+  {
+    accessorKey: 'affiliation',
+    header: 'Affiliation',
+    cell: ({ row }) => {
+      const borrower = row.original;
+      
+      if (borrower.isResident) {
+        return (
+          <div className="flex items-center gap-1">
+            <span>🏠</span>
+            <span className="text-sm font-medium">Resident</span>
+          </div>
+        );
+      }
+      
+      // External borrower
+      const displayText = borrower.companyName || 'External';
+      const hasNotes = borrower.purposeNotes && borrower.purposeNotes.length > 0;
+      
+      return (
+        <div className="space-y-1">
+          <div className="text-sm font-medium">{displayText}</div>
+          {hasNotes && (
+            <div className="text-xs text-muted-foreground truncate max-w-[120px]" title={borrower.purposeNotes}>
+              {borrower.purposeNotes}
+            </div>
+          )}
+        </div>
+      );
     },
   },
   {
