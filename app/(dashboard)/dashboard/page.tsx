@@ -2,7 +2,6 @@ import KeyChart from '@/components/dashboard/chart-bar';
 import TotalStatusPieChart from '@/components/dashboard/chart-pie';
 import { DataTable } from '@/components/dashboard/data-table';
 import { getKeyStatusSummary, getBorrowersWithKeysGrouped } from '@/app/actions/dashboard';
-import { columns } from '@/components/dashboard/columns';
 
 export default async function Page() {
   // Fetch key status for charts and grouped borrower data for table
@@ -22,10 +21,7 @@ export default async function Page() {
             </div>
           </div>
           <div className="px-4 lg:px-6">
-            <DataTable 
-              columns={columns} 
-              data={borrowersData}
-            />
+            <DataTable data={borrowersData} />
           </div>
         </div>
       </div>

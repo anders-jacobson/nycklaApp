@@ -9,15 +9,15 @@ datasource db {
 }
 
 model User {
-  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email          String          @unique
-  name           String?
-  cooperative    String
-  createdAt      DateTime        @default(now())
-  auth_id        String?         @db.Uuid
-  borrowers      Borrower[]
-  keyTypes       KeyType[]
-  lendingRecords LendingRecord[]
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String        @unique
+  name         String?
+  cooperative  String
+  createdAt    DateTime      @default(now())
+  auth_id      String?       @db.Uuid
+  borrowers    Borrower[]
+  keyTypes     KeyType[]
+  issueRecords IssueRecord[]
 }
 
 model KeyType {
@@ -32,35 +32,35 @@ model KeyType {
 }
 
 model KeyCopy {
-  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  keyTypeId      String          @db.Uuid
-  copyNumber     Int
-  status         KeyStatus       @default(AVAILABLE)
-  createdAt      DateTime        @default(now())
-  keyType        KeyType         @relation(fields: [keyTypeId], references: [id], onDelete: Cascade)
-  lendingRecords LendingRecord[]
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  keyTypeId    String        @db.Uuid
+  copyNumber   Int
+  status       KeyStatus     @default(AVAILABLE)
+  createdAt    DateTime      @default(now())
+  keyType      KeyType       @relation(fields: [keyTypeId], references: [id], onDelete: Cascade)
+  issueRecords IssueRecord[]
 
   @@unique([keyTypeId, copyNumber])
 }
 
 model Borrower {
-  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String          @db.VarChar(100)
-  email          String?         @db.VarChar(255)
-  phone          String?         @db.VarChar(20)
-  company        String?         @db.VarChar(100)
-  createdAt      DateTime        @default(now())
-  userId         String          @db.Uuid
-  user           User            @relation(fields: [userId], references: [id])
-  lendingRecords LendingRecord[]
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String        @db.VarChar(100)
+  email        String?       @db.VarChar(255)
+  phone        String?       @db.VarChar(20)
+  company      String?       @db.VarChar(100)
+  createdAt    DateTime      @default(now())
+  userId       String        @db.Uuid
+  user         User          @relation(fields: [userId], references: [id])
+  issueRecords IssueRecord[]
 }
 
-model LendingRecord {
+model IssueRecord {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   keyCopyId    String    @db.Uuid
   borrowerId   String    @db.Uuid
-  lentDate     DateTime  @default(now())
-  endDate      DateTime?
+  issuedDate   DateTime  @default(now())
+  dueDate      DateTime?
   notes        String?
   idChecked    Boolean   @default(false)
   returnedDate DateTime?

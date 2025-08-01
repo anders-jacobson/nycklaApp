@@ -23,19 +23,26 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { IconPlus, IconUserPlus } from '@tabler/icons-react';
+import { IconPlus } from '@tabler/icons-react';
+import { ColumnCustomizer } from './column-customizer';
+import { getVisibleColumns } from './columns';
+import { useColumnPreferences } from '@/hooks/useColumnPreferences';
 
 interface DataTableProps<TData> {
-  columns: ColumnDef<TData>[];
   data: TData[]; // Borrowers data only
 }
 
-export function DataTable<TData>({ 
-  columns, 
-  data
-}: DataTableProps<TData>) {
+export function DataTable<TData>({ data }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+
+  // Use column preferences hook
+  const { columnVisibility, setColumnVisibility } = useColumnPreferences();
+
+  // Generate columns based on visibility settings
+  const columns = React.useMemo(() => {
+    return getVisibleColumns(columnVisibility) as ColumnDef<TData>[];
+  }, [columnVisibility]);
 
   const table = useReactTable({
     data,
@@ -54,7 +61,7 @@ export function DataTable<TData>({
 
   // Handle filtering by name
   const handleNameFilter = (value: string) => {
-    table.getColumn('borrowerName')?.setFilterValue(value);
+    table.getColumn('name')?.setFilterValue(value);
   };
 
   return (
@@ -63,19 +70,17 @@ export function DataTable<TData>({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">All Borrowers</h2>
-          <p className="text-muted-foreground">
-            Manage borrower contacts and track borrowed keys
-          </p>
+          <p className="text-muted-foreground">Manage borrower contacts and track borrowed keys</p>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-1">
-            <IconUserPlus className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Add Borrower</span>
-          </Button>
+          <ColumnCustomizer
+            columnVisibility={columnVisibility}
+            onColumnVisibilityChange={setColumnVisibility}
+          />
           <Button className="gap-1">
             <IconPlus className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Lend Key</span>
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Issue Key</span>
           </Button>
         </div>
       </div>
@@ -84,12 +89,12 @@ export function DataTable<TData>({
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter by name..."
-          value={(table.getColumn('borrowerName')?.getFilterValue() as string) ?? ''}
+          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={(event) => handleNameFilter(event.target.value)}
           className="max-w-xs"
         />
       </div>
-      
+
       {/* Table */}
       <div className="rounded-md border">
         <Table>
@@ -120,16 +125,14 @@ export function DataTable<TData>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  <div className="text-muted-foreground">
-                    No borrowers found
-                  </div>
+                  <div className="text-muted-foreground">No borrowers found</div>
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      
+
       {/* Pagination */}
       <div className="flex items-center justify-between space-x-2 py-4 w-full">
         <span className="text-sm text-muted-foreground">

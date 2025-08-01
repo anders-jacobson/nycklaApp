@@ -115,7 +115,7 @@ model LendingRecord {
   keyCopyId    String    @db.Uuid
   borrowerId   String    @db.Uuid
   lentDate     DateTime  @default(now())
-  endDate      DateTime?
+  dueDate      DateTime?
   notes        String?
   idChecked    Boolean   @default(false)
   returnedDate DateTime?

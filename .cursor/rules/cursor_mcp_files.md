@@ -280,7 +280,7 @@ model LendingRecord {
   keyCopyId     String
   borrowerId    String
   lentDate      DateTime  @default(now())
-  endDate       DateTime?
+  dueDate       DateTime?
   notes         String?
   idChecked     Boolean   @default(false)
   returnedDate  DateTime?

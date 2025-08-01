@@ -92,21 +92,29 @@ function shuffleArray<T>(array: T[]): T[] {
 async function main() {
   console.log('🧹 Cleaning existing key data...');
   // Clean up existing key data in correct order (but keep users!)
-  await prisma.lendingRecord.deleteMany({});
+  await prisma.issueRecord.deleteMany({});
   await prisma.keyCopy.deleteMany({});
   await prisma.borrower.deleteMany({});
   await prisma.keyType.deleteMany({});
 
-  console.log('👤 Finding specific user...');
-  // Use the specific user ID
-  const userId = '14e65e43-1e29-4ac4-adcf-41e9ddf4db99';
-  const existingUser = await prisma.user.findUnique({
-    where: { id: userId },
+  console.log('👤 Finding or creating user...');
+  // Find existing user or create one
+  let existingUser = await prisma.user.findFirst({
+    where: { cooperative: 'Testgården Bostadsrättsförening' },
   });
 
   if (!existingUser) {
-    throw new Error(`User with ID ${userId} not found! Please make sure this user exists.`);
+    console.log('👤 Creating test user...');
+    existingUser = await prisma.user.create({
+      data: {
+        email: 'anders.ebrev@gmail.com',
+        name: 'Anders Jacobson',
+        cooperative: 'Testgården Bostadsrättsförening',
+      },
+    });
   }
+
+  const userId = existingUser.id;
 
   console.log(`Using specific user: ${existingUser.name || existingUser.email} (${userId})`);
 
@@ -227,11 +235,11 @@ async function main() {
     gKeyHolders.push(borrower);
 
     // Create lending record for G key
-    await prisma.lendingRecord.create({
+    await prisma.issueRecord.create({
       data: {
         keyCopyId: gKey.id,
         borrowerId: borrower.id,
-        lentDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000), // Random date within last year
+        issuedDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000), // Random date within last year
         endDate:
           Math.random() > 0.7
             ? new Date(Date.now() + Math.random() * 180 * 24 * 60 * 60 * 1000)
@@ -252,12 +260,12 @@ async function main() {
     if (Math.random() < 0.8 && storageKeyIndex < storageKeys.length) {
       const storageKey = storageKeys[storageKeyIndex++];
 
-      await prisma.lendingRecord.create({
+      await prisma.issueRecord.create({
         data: {
           keyCopyId: storageKey.id,
           borrowerId: holder.id,
-          lentDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
-          endDate:
+          issuedDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
+          dueDate:
             Math.random() > 0.8
               ? new Date(Date.now() + Math.random() * 180 * 24 * 60 * 60 * 1000)
               : null,
@@ -292,11 +300,11 @@ async function main() {
       },
     });
 
-    await prisma.lendingRecord.create({
+    await prisma.issueRecord.create({
       data: {
         keyCopyId: key.id,
         borrowerId: borrower.id,
-        lentDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
+        issuedDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
         endDate:
           key.keyTypeLabel === 'E'
             ? new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000)
@@ -323,7 +331,7 @@ async function main() {
     include: {
       keyCopies: {
         include: {
-          lendingRecords: {
+          issueRecords: {
             where: { returnedDate: null },
           },
         },
@@ -345,11 +353,9 @@ async function main() {
   }
 
   const totalBorrowers = await prisma.borrower.count();
-  const totalLendingRecords = await prisma.lendingRecord.count();
+  const totalIssueRecords = await prisma.issueRecord.count();
 
-  console.log(
-    `\n✅ Created ${totalBorrowers} borrowers and ${totalLendingRecords} lending records`,
-  );
+  console.log(`\n✅ Created ${totalBorrowers} borrowers and ${totalIssueRecords} issue records`);
   console.log('🎉 Comprehensive seed data created successfully!');
 }
 

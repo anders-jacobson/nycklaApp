@@ -56,8 +56,8 @@ export async function getKeyStatusSummary() {
 
 export async function getBorrowedKeysTableData() {
   const userId = await getCurrentUserId();
-  // Get all lending records for this user (cooperative)
-  const lendingRecords = await prisma.lendingRecord.findMany({
+  // Get all issue records for this user (cooperative)
+  const issueRecords = await prisma.issueRecord.findMany({
     where: { userId },
     include: {
       borrower: true,
@@ -69,7 +69,7 @@ export async function getBorrowedKeysTableData() {
     },
   });
 
-  return lendingRecords.map((record) => {
+  return issueRecords.map((record) => {
     return {
       borrowerName: record.borrower.name,
       company: record.borrower.company ?? '',
@@ -78,7 +78,7 @@ export async function getBorrowedKeysTableData() {
       keyId: record.keyCopyId,
       keyLabel: record.keyCopy.keyType.label,
       copyNumber: record.keyCopy.copyNumber,
-      borrowedAt: record.lentDate?.toISOString() ?? '',
+      borrowedAt: record.issuedDate?.toISOString() ?? '',
       returnedAt: record.returnedDate?.toISOString() ?? '',
     };
   });
@@ -87,8 +87,8 @@ export async function getBorrowedKeysTableData() {
 export async function getBorrowersWithKeysGrouped() {
   const userId = await getCurrentUserId();
 
-  // Get all active lending records (not returned) grouped by borrower
-  const lendingRecords = await prisma.lendingRecord.findMany({
+  // Get all active issue records (not returned) grouped by borrower
+  const issueRecords = await prisma.issueRecord.findMany({
     where: {
       userId,
       returnedDate: null, // Only active loans
@@ -106,7 +106,7 @@ export async function getBorrowersWithKeysGrouped() {
   // Group by borrower
   const borrowerMap = new Map();
 
-  lendingRecords.forEach((record) => {
+  issueRecords.forEach((record) => {
     const borrowerId = record.borrower.id;
 
     if (!borrowerMap.has(borrowerId)) {
@@ -131,14 +131,14 @@ export async function getBorrowersWithKeysGrouped() {
       keyLabel: record.keyCopy.keyType.label,
       copyNumber: record.keyCopy.copyNumber,
       keyFunction: record.keyCopy.keyType.function,
-      borrowedAt: record.lentDate?.toISOString() ?? '',
-      endDate: record.endDate?.toISOString() ?? '',
-      lendingId: record.id,
+      borrowedAt: record.issuedDate?.toISOString() ?? '',
+      dueDate: record.dueDate?.toISOString() ?? '',
+      issueId: record.id,
     });
     borrower.activeLoanCount++;
 
-    // Check if overdue (simple check - if endDate is past)
-    if (record.endDate && record.endDate < new Date()) {
+    // Check if overdue (simple check - if dueDate is past)
+    if (record.dueDate && record.dueDate < new Date()) {
       borrower.hasOverdue = true;
     }
   });

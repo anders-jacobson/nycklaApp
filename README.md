@@ -45,7 +45,7 @@ All project documentation is organized in [`docs/`](./docs/):
 ### **⏳ Next Up**
 
 - **Borrower System**: Contact management
-- **Lending Workflow**: Key lending and return process
+- **Issuing Workflow**: Key issuing and return process
 
 ## 🛡️ **Security**
 
@@ -73,7 +73,7 @@ Designed for key managers in housing cooperatives:
 - **Mobile-first**: Touch-friendly interface for daily use
 - **Senior-friendly**: Large fonts, high contrast, simple navigation
 - **Secure**: Complete data isolation between cooperatives
-- **Efficient**: Quick key status lookup and lending workflows
+- **Efficient**: Quick key status lookup and issuing workflows
 
 ## 🔧 **Development**
 
