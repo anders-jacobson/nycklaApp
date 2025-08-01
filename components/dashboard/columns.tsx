@@ -69,7 +69,7 @@ export const columns: ColumnDef<BorrowerWithKeys>[] = [
     header: 'Affiliation',
     cell: ({ row }) => {
       const borrower = row.original;
-      
+
       if (borrower.isResident) {
         return (
           <div className="flex items-center gap-1">
@@ -78,16 +78,19 @@ export const columns: ColumnDef<BorrowerWithKeys>[] = [
           </div>
         );
       }
-      
+
       // External borrower
       const displayText = borrower.companyName || 'External';
       const hasNotes = borrower.purposeNotes && borrower.purposeNotes.length > 0;
-      
+
       return (
         <div className="space-y-1">
           <div className="text-sm font-medium">{displayText}</div>
           {hasNotes && (
-            <div className="text-xs text-muted-foreground truncate max-w-[120px]" title={borrower.purposeNotes}>
+            <div
+              className="text-xs text-muted-foreground truncate max-w-[120px]"
+              title={borrower.purposeNotes}
+            >
               {borrower.purposeNotes}
             </div>
           )}
