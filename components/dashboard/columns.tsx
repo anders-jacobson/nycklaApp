@@ -14,13 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  IconMail,
-  IconPhone,
-  IconKeyOff,
-  IconEdit,
-  IconUserPlus,
-} from '@tabler/icons-react';
+import { IconMail, IconPhone, IconKeyOff, IconEdit, IconUserPlus } from '@tabler/icons-react';
 
 // Individual borrowed key information
 export type BorrowedKeyInfo = {
@@ -58,16 +52,14 @@ export const columns: ColumnDef<BorrowerWithKeys>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           className="p-0 text-left"
         >
-          Borrower
+          Name
           <IconArrowsUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
     cell: ({ row }) => {
       const record = row.original;
-      return (
-        <div className="font-medium">{record.borrowerName}</div>
-      );
+      return <div className="font-medium">{record.borrowerName}</div>;
     },
   },
   {
