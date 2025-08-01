@@ -17,7 +17,6 @@ import {
 import {
   IconMail,
   IconPhone,
-  IconBuilding,
   IconKeyOff,
   IconEdit,
   IconUserPlus,
@@ -67,29 +66,7 @@ export const columns: ColumnDef<BorrowerWithKeys>[] = [
     cell: ({ row }) => {
       const record = row.original;
       return (
-        <div className="space-y-1">
-          <div className="font-medium">{record.borrowerName}</div>
-          <div className="text-sm text-muted-foreground space-y-1">
-            {record.email && (
-              <div className="flex items-center gap-1">
-                <IconMail className="h-3 w-3" />
-                <span className="truncate max-w-[150px]">{record.email}</span>
-              </div>
-            )}
-            {record.phone && (
-              <div className="flex items-center gap-1">
-                <IconPhone className="h-3 w-3" />
-                <span>{record.phone}</span>
-              </div>
-            )}
-            {record.company && (
-              <div className="flex items-center gap-1">
-                <IconBuilding className="h-3 w-3" />
-                <span className="truncate max-w-[150px]">{record.company}</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <div className="font-medium">{record.borrowerName}</div>
       );
     },
   },
