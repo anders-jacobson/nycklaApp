@@ -40,7 +40,7 @@ function AffiliationInfoDialog({ borrower }: { borrower: BorrowerWithKeys }) {
         <DialogHeader>
           <DialogTitle>Affiliation Information</DialogTitle>
           <DialogDescription>
-            Add information about what the affiliation does to help the bostadsrättsförening
+            Add information that helps you understand the affiliation and its purpose.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
