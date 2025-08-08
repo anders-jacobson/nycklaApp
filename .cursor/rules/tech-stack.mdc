@@ -59,6 +59,7 @@ alwaysApply: false
 
 ## Architecture Patterns
 
+- **Context7 MCP Server** for up-to-date library documentation (MANDATORY)
 - **Next.js 15 App Router** with server components by default
 - **Client components** for interactive features only
 - **Custom hooks** for Supabase + Prisma operations
@@ -66,6 +67,20 @@ alwaysApply: false
 - **Middleware** for authentication
 - **Mobile-first responsive design**
 - **TypeScript** for all files
+
+## Documentation & Development Standards
+
+### ALWAYS Use Context7 MCP Server First:
+
+Before implementing any library integration, use Context7 to get the latest documentation:
+
+```bash
+# Always check Context7 before implementation
+"use context7 to get Next.js 15 App Router patterns"
+"use context7 to implement Supabase authentication with @supabase/ssr"
+"use context7 to configure Tailwind CSS v4 with @theme directive"
+"use context7 to implement shadcn/ui components with proper patterns"
+```
 
 ## Mandatory UI Component Usage
 

@@ -1,0 +1,204 @@
+---
+description: Mandatory usage of Context7 MCP server for up-to-date library documentation
+globs:
+alwaysApply: true
+---
+
+# Context7 MCP Server - MANDATORY USAGE
+
+## 🚨 CRITICAL RULE: ALWAYS USE CONTEXT7 FOR LIBRARY DOCUMENTATION
+
+### What is Context7?
+
+Context7 MCP server provides up-to-date code documentation for LLMs and AI code editors. It ensures you get the latest, accurate information about libraries and frameworks instead of outdated or generic examples.
+
+**Repository**: https://github.com/upstash/context7
+
+### ✅ MANDATORY: Use Context7 for ANY Library/Framework Questions
+
+```typescript
+// When you need help with ANY library, ALWAYS use Context7 first
+// Examples of when to use Context7:
+
+// ✅ Next.js documentation
+'use context7 to get the latest Next.js 15 App Router documentation';
+
+// ✅ Supabase integration patterns
+'use context7 to get current Supabase authentication patterns with @supabase/ssr';
+
+// ✅ Prisma ORM usage
+'use context7 to get latest Prisma client patterns and best practices';
+
+// ✅ Tailwind CSS v4 configuration
+'use context7 to get Tailwind CSS v4 @theme directive usage examples';
+
+// ✅ shadcn/ui component implementation
+'use context7 to get current shadcn/ui component patterns and API';
+
+// ✅ TanStack Table integration
+'use context7 to get latest @tanstack/react-table examples with shadcn/ui';
+
+// ✅ Recharts configuration
+'use context7 to get current recharts patterns for Next.js 15';
+```
+
+### Auto-Invoke Rule for Cursor/Windsurf
+
+Add this rule to your `.windsurfrules` file or Cursor Settings > Rules:
+
+```
+[[calls]]
+match = "when the user requests code examples, setup or configuration steps, or library/API documentation"
+tool  = "context7"
+```
+
+This will automatically invoke Context7 on any code-related conversation without needing to type anything extra.
+
+### Library ID Quick Reference
+
+For faster access, use specific Context7 library IDs in your prompts:
+
+```typescript
+// Core Dependencies
+'use library /vercel/next.js for Next.js 15 documentation';
+'use library /supabase/supabase for Supabase client patterns';
+'use library /prisma/prisma for Prisma ORM examples';
+'use library /tailwindlabs/tailwindcss for Tailwind CSS v4';
+'use library /shadcn-ui/ui for shadcn/ui components';
+'use library /tanstack/table for TanStack Table patterns';
+'use library /recharts/recharts for chart components';
+```
+
+### Integration with Our Tech Stack
+
+Context7 is especially critical for our current setup:
+
+#### Next.js 15 + App Router
+
+```bash
+# Always get latest App Router patterns
+"use context7 to implement server components with Next.js 15 App Router"
+"use context7 for Next.js 15 server actions best practices"
+```
+
+#### Supabase + Prisma Integration
+
+```bash
+# Get current authentication patterns
+"use context7 to implement Supabase auth with @supabase/ssr and Prisma ORM"
+"use context7 for Supabase middleware patterns in Next.js 15"
+```
+
+#### Tailwind CSS v4 Configuration
+
+```bash
+# Get latest v4 syntax
+"use context7 to configure Tailwind CSS v4 with @theme directive"
+"use context7 for Tailwind CSS v4 plugin configuration"
+```
+
+#### shadcn/ui + Tabler Icons
+
+```bash
+# Get current component patterns
+"use context7 to implement shadcn/ui data tables with TanStack Table"
+"use context7 for shadcn/ui form patterns with server actions"
+```
+
+### Why Context7 is Mandatory
+
+#### ❌ Without Context7:
+
+- Outdated examples that don't work with current versions
+- Generic patterns that don't match our specific stack
+- Missing critical configuration details
+- Deprecated APIs and methods
+
+#### ✅ With Context7:
+
+- Latest documentation directly from source
+- Current API examples and patterns
+- Specific configuration for our tech stack
+- Up-to-date best practices and recommendations
+
+### Development Workflow Integration
+
+#### Before Writing Any Code:
+
+1. **ALWAYS check Context7 first** for library documentation
+2. **Use specific library IDs** when you know exactly which library you need
+3. **Ask for implementation examples** that match our tech stack
+4. **Verify configuration patterns** with latest documentation
+
+#### Example Development Flow:
+
+```bash
+# 1. Get latest documentation
+"use context7 to get Next.js 15 server component patterns with Prisma"
+
+# 2. Implement with current patterns
+"use context7 to implement shadcn/ui data table with server actions"
+
+# 3. Verify integration
+"use context7 to check Supabase middleware integration with Next.js 15"
+```
+
+### Common Context7 Usage Patterns
+
+#### Authentication Implementation:
+
+```bash
+"use context7 to implement Supabase authentication with Next.js 15 middleware"
+"use library /supabase/supabase for OAuth configuration examples"
+```
+
+#### Database Operations:
+
+```bash
+"use context7 to implement Prisma with Next.js 15 server actions"
+"use library /prisma/prisma for transaction patterns and type safety"
+```
+
+#### UI Component Implementation:
+
+```bash
+"use context7 to implement shadcn/ui forms with server-side validation"
+"use library /shadcn-ui/ui for data table patterns with filtering"
+```
+
+#### Styling and Layout:
+
+```bash
+"use context7 to configure Tailwind CSS v4 with custom theme variables"
+"use library /tailwindlabs/tailwindcss for responsive design patterns"
+```
+
+### Error Resolution with Context7
+
+When encountering errors or deprecated patterns:
+
+```bash
+# Get current solutions
+"use context7 to resolve Tailwind CSS v4 unknown at-rule plugin errors"
+"use context7 to fix Supabase SSR authentication issues in Next.js 15"
+"use context7 to update deprecated Prisma client patterns"
+```
+
+### Performance Optimization
+
+Use Context7 to get the latest performance patterns:
+
+```bash
+"use context7 to implement Next.js 15 streaming with Suspense boundaries"
+"use context7 to optimize Prisma queries for better performance"
+"use context7 to implement efficient data fetching patterns"
+```
+
+## 🎯 Remember: Context7 First, Code Second
+
+- **NEVER implement without checking Context7 first**
+- **ALWAYS use latest documentation through Context7**
+- **VERIFY patterns match our current tech stack versions**
+- **UPDATE implementation based on Context7 recommendations**
+
+Context7 ensures our code stays current, follows best practices, and works reliably with our chosen technology stack.

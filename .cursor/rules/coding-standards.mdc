@@ -1,13 +1,28 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: false
 ---
+
 # Coding Standards (Next.js 15 + App Router)
+
+## CRITICAL: Always Use Context7 MCP Server First
+
+Before implementing any code patterns, ALWAYS consult Context7 for up-to-date documentation:
+
+```bash
+# Get latest patterns before coding
+"use context7 to get Next.js 15 server component patterns"
+"use context7 to implement shadcn/ui with latest API"
+"use context7 to get current Prisma best practices"
+```
+
+See `context7-mcp-usage.mdc` for complete Context7 requirements.
 
 ## MANDATORY Component Usage Rules
 
 ### 1. ALWAYS Use shadcn/ui Components - NEVER Plain HTML
+
 ```typescript
 // ❌ WRONG - Never use plain HTML elements
 <button onClick={handleClick}>Click me</button>
@@ -25,6 +40,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 ```
 
 ### 2. ALWAYS Use Tabler Icons - NEVER Other Icon Libraries
+
 ```typescript
 // ❌ WRONG - Don't use Lucide or other icon libraries
 import { Plus, Trash2 } from 'lucide-react';
@@ -39,6 +55,7 @@ import { IconPlus, IconTrash, IconEdit, IconFilter, IconDots } from '@tabler/ico
 ```
 
 ### 3. Button Component Usage Patterns
+
 ```typescript
 // Primary action buttons
 <Button>Primary Action</Button>
@@ -67,6 +84,7 @@ import { IconPlus, IconTrash, IconEdit, IconFilter, IconDots } from '@tabler/ico
 ```
 
 ## File Naming Conventions
+
 - **Pages**: `page.tsx` (App Router pages)
 - **Layouts**: `layout.tsx` (App Router layouts)
 - **Components**: PascalCase (`KeyDashboard.tsx`)
@@ -76,6 +94,7 @@ import { IconPlus, IconTrash, IconEdit, IconFilter, IconDots } from '@tabler/ico
 - **Types**: PascalCase (`KeyType.ts`)
 
 ## Server Component Structure (Default)
+
 ```typescript
 import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
@@ -92,7 +111,7 @@ export default async function ServerComponentPage({ params, searchParams }: Page
     where: { cooperativeId: params.id },
     include: { keyCopies: true }
   });
-  
+
   return (
     <div className="container mx-auto p-4">
       <Card>
@@ -109,6 +128,7 @@ export default async function ServerComponentPage({ params, searchParams }: Page
 ```
 
 ## Client Component Structure
+
 ```typescript
 'use client'
 
@@ -129,7 +149,7 @@ export default function ClientComponent({ keyTypes, onUpdate }: ComponentProps) 
   // 1. State hooks first
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   // 2. Event handlers
   const handleSubmit = async (formData: FormData) => {
     setLoading(true)
@@ -143,12 +163,12 @@ export default function ClientComponent({ keyTypes, onUpdate }: ComponentProps) 
       setLoading(false)
     }
   }
-  
+
   // 3. Effects
   useEffect(() => {
     // Client-side effects only
   }, [])
-  
+
   // 4. Render with shadcn/ui components
   if (loading) return (
     <div className="flex items-center gap-2">
@@ -156,7 +176,7 @@ export default function ClientComponent({ keyTypes, onUpdate }: ComponentProps) 
       Loading...
     </div>
   )
-  
+
   if (error) return (
     <Card className="border-destructive">
       <CardContent className="pt-6">
@@ -164,7 +184,7 @@ export default function ClientComponent({ keyTypes, onUpdate }: ComponentProps) 
       </CardContent>
     </Card>
   )
-  
+
   return (
     <Card>
       <CardHeader>
@@ -185,6 +205,7 @@ export default function ClientComponent({ keyTypes, onUpdate }: ComponentProps) 
 ```
 
 ## Data Table Pattern (Mandatory shadcn/ui + TanStack Table)
+
 ```typescript
 'use client';
 
@@ -265,23 +286,24 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
 ```
 
 ## Server Actions Pattern
-```typescript
-'use server'
 
-import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
+```typescript
+'use server';
+
+import { prisma } from '@/lib/prisma';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 export async function createKeyType(formData: FormData) {
   try {
     // Input validation
-    const name = formData.get('name') as string
-    const totalCopies = parseInt(formData.get('totalCopies') as string) || 0
-    
+    const name = formData.get('name') as string;
+    const totalCopies = parseInt(formData.get('totalCopies') as string) || 0;
+
     if (!name || name.length < 2) {
-      return { success: false, error: 'Name must be at least 2 characters' }
+      return { success: false, error: 'Name must be at least 2 characters' };
     }
-    
+
     // Create key type and copies in transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create key type
@@ -291,80 +313,76 @@ export async function createKeyType(formData: FormData) {
           accessArea: formData.get('accessArea') as string,
           totalCopies,
           cooperativeId: formData.get('cooperativeId') as string,
-        }
-      })
-      
+        },
+      });
+
       // Bulk create key copies
       if (totalCopies > 0) {
         const copies = Array.from({ length: totalCopies }, (_, i) => ({
           keyTypeId: keyType.id,
           copyNumber: i + 1,
           status: 'AVAILABLE' as const,
-        }))
-        
+        }));
+
         await tx.keyCopy.createMany({
-          data: copies
-        })
+          data: copies,
+        });
       }
-      
-      return keyType
-    })
-    
+
+      return keyType;
+    });
+
     // Revalidate and redirect
-    revalidatePath('/dashboard')
-    return { success: true, data: result }
+    revalidatePath('/dashboard');
+    return { success: true, data: result };
   } catch (error) {
-    console.error('Failed to create key type:', error)
-    return { success: false, error: 'Failed to create key type' }
+    console.error('Failed to create key type:', error);
+    return { success: false, error: 'Failed to create key type' };
   }
 }
 ```
 
 ## API Route Pattern (App Router)
+
 ```typescript
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const cooperativeId = searchParams.get('cooperativeId')
-    
+    const { searchParams } = new URL(request.url);
+    const cooperativeId = searchParams.get('cooperativeId');
+
     const keyTypes = await prisma.keyType.findMany({
       where: cooperativeId ? { cooperativeId } : {},
-      include: { keyCopies: true }
-    })
-    
-    return NextResponse.json(keyTypes)
+      include: { keyCopies: true },
+    });
+
+    return NextResponse.json(keyTypes);
   } catch (error) {
-    console.error('API Error:', error)
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    )
+    console.error('API Error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    
+    const body = await request.json();
+
     const keyType = await prisma.keyType.create({
-      data: body
-    })
-    
-    return NextResponse.json(keyType, { status: 201 })
+      data: body,
+    });
+
+    return NextResponse.json(keyType, { status: 201 });
   } catch (error) {
-    console.error('API Error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create key type' },
-      { status: 400 }
-    )
+    console.error('API Error:', error);
+    return NextResponse.json({ error: 'Failed to create key type' }, { status: 400 });
   }
 }
 ```
 
 ## Error Handling Patterns
+
 ```typescript
 // Server Component Error Handling
 import { notFound } from 'next/navigation'
@@ -375,11 +393,11 @@ export default async function KeyPage({ params }: { params: { id: string } }) {
     const keyType = await prisma.keyType.findUnique({
       where: { id: params.id }
     })
-    
+
     if (!keyType) {
       notFound()
     }
-    
+
     return <KeyDetails keyType={keyType} />
   } catch (error) {
     console.error('Error fetching key type:', error)
@@ -420,9 +438,10 @@ export default function ErrorComponent({
 ## Tailwind CSS v4 Guidelines
 
 ### Configuration Structure:
+
 ```css
 /* app/globals.css - ALL theme config here */
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --radius: 0.65rem;
@@ -445,12 +464,14 @@ export default config;
 ```
 
 ### Responsive Design Patterns:
+
 - Mobile-first approach: `class="text-sm md:text-base lg:text-lg"`
 - Grid layouts: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
 - Spacing: `p-4 md:p-6 lg:p-8`
 - Typography: `text-base lg:text-lg` (minimum 16px for accessibility)
 
 ## Accessibility Guidelines
+
 - **Font Sizes**: Base 16px minimum, larger for seniors: `text-base lg:text-lg`
 - **Touch Targets**: Minimum 44px: `min-h-[44px] min-w-[44px]`
 - **Contrast**: Use semantic color tokens: `text-foreground bg-background`
@@ -459,6 +480,7 @@ export default config;
 - **Error States**: Use `variant="destructive"` for error buttons and styling
 
 ## TypeScript Rules
+
 - Strict mode enabled in `tsconfig.json`
 - Use Prisma generated types: `import { KeyType } from '@prisma/client'`
 - Always type component props with interfaces
@@ -466,6 +488,7 @@ export default config;
 - Prefer type assertions over any: `formData.get('name') as string`
 
 ## Form Handling with Server Actions
+
 ```typescript
 'use client'
 
@@ -476,7 +499,7 @@ const initialState = { success: false, error: '' }
 
 export default function KeyTypeForm() {
   const [state, formAction] = useFormState(createKeyType, initialState)
-  
+
   return (
     <form action={formAction} className="space-y-4">
       <input
@@ -501,6 +524,7 @@ export default function KeyTypeForm() {
 ```
 
 ## Next.js 15 Best Practices
+
 - **Server Components by default** - Only add 'use client' when needed
 - **Streaming with Suspense** for better UX
 - **Server Actions** for mutations instead of API routes
@@ -509,6 +533,7 @@ export default function KeyTypeForm() {
 - **Middleware** for authentication: `middleware.ts`
 
 ## Next.js Built-in Components Usage
+
 - Always use Next.js built-in components for their intended purposes:
   - Use `next/image` (`<Image />`) for all images to benefit from automatic optimization, lazy loading, and responsive sizing.
   - Use `next/link` (`<Link />`) for all internal navigation to enable client-side routing and prefetching.

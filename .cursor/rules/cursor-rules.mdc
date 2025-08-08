@@ -1,25 +1,33 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
+
 ---
+
 description: How to add or edit Cursor rules in our project
-globs: 
+globs:
 alwaysApply: false
+
 ---
+
 # Cursor Rules & Development Standards
 
 ## Critical Development Rules
 
-### 🚨 MANDATORY UI Component Usage
+### 🚨 MANDATORY Development Standards
+
+- **ALWAYS use Context7 MCP server** for up-to-date library documentation
 - **NEVER use plain HTML elements** (`<button>`, `<input>`, `<table>`, etc.)
 - **ALWAYS use shadcn/ui components** from `@/components/ui/`
 - **ONLY use Tabler Icons** from `@tabler/icons-react`
 - **ALWAYS wrap content in Card components** for proper layout
+- See `context7-mcp-usage.mdc` for Context7 requirements (CRITICAL)
 - See `ui-component-standards.mdc` for complete usage guide
 
 ### 🔧 Technology Stack Requirements
+
 - **Next.js 15** with App Router (server components by default)
 - **React 19** with TypeScript (strict mode)
 - **Tailwind CSS v4** with `@theme` directive in CSS
@@ -29,9 +37,11 @@ alwaysApply: false
 ## Rule File Management
 
 ### 1. Always place rule files in PROJECT_ROOT/.cursor/rules/:
+
 ```
 .cursor/rules/
 ├── cursor-rules.mdc                 # This file (overview)
+├── context7-mcp-usage.mdc           # 🚨 CRITICAL Context7 MCP requirements
 ├── ui-component-standards.mdc       # 🚨 MANDATORY UI standards
 ├── coding-standards.mdc             # Development patterns
 ├── tech-stack.mdc                   # Technology specifications
@@ -41,11 +51,13 @@ alwaysApply: false
 ```
 
 ### 2. Follow the naming convention:
+
 - Use kebab-case for filenames
 - Always use .mdc extension
 - Make names descriptive of the rule's purpose
 
 ### 3. Directory structure:
+
 ```
 PROJECT_ROOT/
 ├── .cursor/
@@ -56,6 +68,7 @@ PROJECT_ROOT/
 ```
 
 ### 4. Never place rule files:
+
 - In the project root
 - In subdirectories outside .cursor/rules
 - In any other location
@@ -67,7 +80,7 @@ PROJECT_ROOT/
 ````
 ---
 description: Short description of the rule's purpose
-globs: optional/path/pattern/**/* 
+globs: optional/path/pattern/**/*
 alwaysApply: true  # For mandatory standards
 ---
 # Rule Title
@@ -98,12 +111,17 @@ import { IconPlus } from '@tabler/icons-react';
 ## Development Workflow
 
 ### Before Writing Any Code:
-1. **Check ui-component-standards.mdc** for mandatory component usage
-2. **Review coding-standards.mdc** for patterns and structure
-3. **Verify tech-stack.mdc** for correct imports and dependencies
-4. **Use ONLY shadcn/ui components and Tabler Icons**
+
+1. **Use Context7 MCP server** for up-to-date library documentation
+2. **Check context7-mcp-usage.mdc** for Context7 usage patterns
+3. **Check ui-component-standards.mdc** for mandatory component usage
+4. **Review coding-standards.mdc** for patterns and structure
+5. **Verify tech-stack.mdc** for correct imports and dependencies
+6. **Use ONLY shadcn/ui components and Tabler Icons**
 
 ### Component Development Checklist:
+
+- [ ] Consulted Context7 MCP server for up-to-date documentation
 - [ ] Uses shadcn/ui components exclusively
 - [ ] Imports icons from `@tabler/icons-react` only
 - [ ] Follows Next.js 15 App Router patterns
@@ -113,11 +131,12 @@ import { IconPlus } from '@tabler/icons-react';
 - [ ] Uses Server Actions for mutations
 
 ### Icon Usage Quick Reference:
+
 ```typescript
 // Standard imports
-import { 
+import {
   IconPlus,      // Add actions
-  IconTrash,     // Delete actions  
+  IconTrash,     // Delete actions
   IconEdit,      // Edit actions
   IconFilter,    // Filter/search
   IconDots,      // More options menu
@@ -133,6 +152,7 @@ import {
 ```
 
 ### Button Usage Quick Reference:
+
 ```typescript
 import { Button } from '@/components/ui/button';
 
@@ -145,19 +165,28 @@ import { Button } from '@/components/ui/button';
 
 ## Rule Priorities
 
-### 1. **CRITICAL** - ui-component-standards.mdc
+### 1. **CRITICAL** - context7-mcp-usage.mdc
+
+ALWAYS use Context7 MCP server for up-to-date library documentation. Must be consulted before any implementation.
+
+### 2. **CRITICAL** - ui-component-standards.mdc
+
 Must be followed without exception. Never use plain HTML elements.
 
-### 2. **ESSENTIAL** - coding-standards.mdc  
+### 3. **ESSENTIAL** - coding-standards.mdc
+
 Core development patterns for Next.js 15 + App Router.
 
-### 3. **IMPORTANT** - tech-stack.mdc
+### 4. **IMPORTANT** - tech-stack.mdc
+
 Technology choices and dependency management.
 
-### 4. **CONTEXTUAL** - project-context.mdc, database-schema.mdc
+### 5. **CONTEXTUAL** - project-context.mdc, database-schema.mdc
+
 Application-specific guidelines and patterns.
 
-### 5. **WORKFLOW** - task-list.mdc
+### 6. **WORKFLOW** - task-list.mdc
+
 Project management and task tracking.
 
-Remember: The goal is consistent, maintainable, and accessible code using modern React patterns with shadcn/ui components and Tabler Icons exclusively.
+Remember: The goal is consistent, maintainable, and accessible code using modern React patterns with shadcn/ui components and Tabler Icons exclusively. ALWAYS use Context7 for up-to-date documentation.
