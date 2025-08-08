@@ -18,6 +18,7 @@ Technical implementation details, tasks, and development workflows.
 
 - **[Tasks](./development/tasks.md)** - Current implementation roadmap and task breakdown
 - **[Architecture](./development/architecture.md)** - Technical architecture (coming soon)
+- **[Features](./development/features/)** - Feature specs and implementation notes
 
 ### 📋 **Product Documentation** → [`product/`](./product/)
 

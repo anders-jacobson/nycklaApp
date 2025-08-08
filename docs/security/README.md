@@ -56,6 +56,10 @@ Comprehensive security information for the Key Management Application.
 - [ ] Cross-cooperative data isolation testing
 - [ ] Session management testing
 
+### **Testing Sessions** 🧪
+
+- **[2025-02 Authentication Testing Session](./testing-sessions/2025-02-auth-session.md)** - Session checklist and notes
+
 ## 🎯 **Priority Actions**
 
 1. **Complete Testing**: Run full authentication workflow tests

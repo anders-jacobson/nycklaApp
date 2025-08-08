@@ -24,6 +24,10 @@ Technical implementation details, tasks, and development workflows for the Key M
 - Component architecture
 - Security architecture integration
 
+### **Features** ✨
+
+- **[Column Customization](./features/column-customization.md)** - Implementation details and testing checklist
+
 ## 🚀 **Development Status**
 
 ### **✅ Phase 1 Complete - Foundation & Authentication**
