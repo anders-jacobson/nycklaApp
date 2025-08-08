@@ -2,7 +2,7 @@
 
 import { ColumnDef, HeaderContext, CellContext } from '@tanstack/react-table';
 
-import { IconArrowsUpDown, IconDots } from '@tabler/icons-react';
+import { IconArrowsUpDown, IconDots, IconInfoCircle } from '@tabler/icons-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,58 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { IconMail, IconPhone, IconKeyOff, IconEdit, IconPlus } from '@tabler/icons-react';
+
+// Affiliation Info Dialog Component
+function AffiliationInfoDialog({ borrower }: { borrower: BorrowerWithKeys }) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1">
+          <IconInfoCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Affiliation Information</DialogTitle>
+          <DialogDescription>
+            Add information about what the affiliation does to help the bostadsrättsförening
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="notes" className="text-sm font-medium">
+              Notes
+            </label>
+            <Textarea
+              id="notes"
+              defaultValue={borrower.purposeNotes || ''}
+              placeholder="Add notes about this borrower..."
+              className="mt-1 min-h-20"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Close</Button>
+          </DialogClose>
+          <Button>Save Changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // Individual borrowed key information
 export type BorrowedKeyInfo = {
@@ -54,7 +105,25 @@ export interface ColumnVisibility {
 // Utility function to format dates
 const formatDate = (dateString: string) => {
   try {
-    return new Date(dateString).toLocaleDateString('sv-SE'); // Swedish date format YYYY-MM-DD
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const monthNames = [
+      'jan',
+      'feb',
+      'mar',
+      'apr',
+      'maj',
+      'jun',
+      'jul',
+      'aug',
+      'sep',
+      'okt',
+      'nov',
+      'dec',
+    ];
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
   } catch {
     return dateString;
   }
@@ -100,11 +169,17 @@ export function getVisibleColumns(
             <div className="flex items-center gap-1">
               <span>🏠</span>
               <span className="text-sm font-medium">Resident</span>
+              <AffiliationInfoDialog borrower={borrower} />
             </div>
           );
         }
         const displayText = borrower.companyName || 'External';
-        return <div className="text-sm font-medium">{displayText}</div>;
+        return (
+          <div className="flex items-center gap-1">
+            <span className="text-sm font-medium">{displayText}</span>
+            <AffiliationInfoDialog borrower={borrower} />
+          </div>
+        );
       },
     });
   }
