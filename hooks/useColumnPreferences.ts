@@ -5,7 +5,7 @@ import {
   ColumnVisibility,
   defaultColumnVisibility,
   mobileColumnVisibility,
-} from '@/components/dashboard/columns';
+} from '@/components/active-loans/borrower-columns';
 import { useIsMobile } from './use-mobile';
 
 const COLUMN_PREFERENCES_KEY = 'borrower-table-column-preferences';

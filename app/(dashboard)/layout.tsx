@@ -1,8 +1,8 @@
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
-import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
-import { SiteHeader } from '@/components/dashboard/site-header';
+import { DashboardSidebar } from '@/components/shared/dashboard-sidebar';
+import { SiteHeader } from '@/components/shared/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 async function Layout({ children }: { children: React.ReactNode }) {

@@ -24,7 +24,7 @@ export async function login(formData: FormData) {
   }
 
   revalidatePath('/', 'layout');
-  redirect('/dashboard');
+  redirect('/active-loans');
 }
 
 export async function logout() {

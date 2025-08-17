@@ -36,7 +36,7 @@ export function LoginForm() {
       }
     } else {
       // Optionally redirect or reload page on success
-      window.location.href = '/dashboard';
+      window.location.href = '/active-loans';
     }
   }
 

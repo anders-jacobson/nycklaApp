@@ -39,7 +39,7 @@ export default function CompleteProfilePage() {
       return;
     }
     // Success: redirect to dashboard
-    window.location.href = '/dashboard';
+    window.location.href = '/active-loans';
   }
 
   if (fetchingEmail) {

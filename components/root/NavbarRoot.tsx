@@ -80,7 +80,7 @@ export default function NavbarRoot() {
         <div className="flex gap-2">
           {loggedIn ? (
             <>
-              <Link href="/dashboard">
+              <Link href="/active-loans">
                 <Button variant="default">Dashboard</Button>
               </Link>
               <Button variant="secondary" onClick={handleLogout} type="button">

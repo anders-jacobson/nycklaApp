@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { IconColumns, IconEye } from '@tabler/icons-react';
-import { ColumnVisibility, defaultColumnVisibility } from './columns';
+import { ColumnVisibility } from './borrower-columns';
 
 type Checked = DropdownMenuCheckboxItemProps['checked'];
 

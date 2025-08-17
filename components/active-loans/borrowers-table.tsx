@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/table';
 import { IconPlus } from '@tabler/icons-react';
 import { ColumnCustomizer } from './column-customizer';
-import { getVisibleColumns } from './columns';
+import { getVisibleColumns } from './borrower-columns';
 import { useColumnPreferences } from '@/hooks/useColumnPreferences';
 
 interface DataTableProps<TData> {

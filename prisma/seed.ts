@@ -240,7 +240,7 @@ async function main() {
         keyCopyId: gKey.id,
         borrowerId: borrower.id,
         issuedDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000), // Random date within last year
-        endDate:
+        dueDate:
           Math.random() > 0.7
             ? new Date(Date.now() + Math.random() * 180 * 24 * 60 * 60 * 1000)
             : null, // 30% have end date
@@ -305,7 +305,7 @@ async function main() {
         keyCopyId: key.id,
         borrowerId: borrower.id,
         issuedDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
-        endDate:
+        dueDate:
           key.keyTypeLabel === 'E'
             ? new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000)
             : Math.random() > 0.6

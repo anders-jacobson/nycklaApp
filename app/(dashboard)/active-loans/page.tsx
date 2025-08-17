@@ -1,6 +1,6 @@
-import KeyChart from '@/components/dashboard/chart-bar';
-import TotalStatusPieChart from '@/components/dashboard/chart-pie';
-import { DataTable } from '@/components/dashboard/data-table';
+import KeyChart from '@/components/active-loans/chart-bar';
+import TotalStatusPieChart from '@/components/active-loans/chart-pie';
+import { DataTable } from '@/components/active-loans/borrowers-table';
 import { getKeyStatusSummary, getBorrowersWithKeysGrouped } from '@/app/actions/dashboard';
 
 export default async function Page() {
