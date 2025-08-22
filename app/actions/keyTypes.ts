@@ -139,3 +139,44 @@ export async function deleteKeyType(formData: FormData): Promise<ActionResult<un
     return { success: false, error: message };
   }
 }
+
+export async function addKeyCopy(formData: FormData): Promise<ActionResult<undefined>> {
+  try {
+    const { id: userId } = await getCurrentUser();
+    const keyTypeId = (formData.get('id') as string | null) ?? '';
+    if (!keyTypeId) return { success: false, error: 'Missing key type id.' };
+
+    // Verify ownership and get current max copy number
+    const keyType = await prisma.keyType.findFirst({
+      where: { id: keyTypeId, userId },
+      include: {
+        keyCopies: {
+          orderBy: { copyNumber: 'desc' },
+          take: 1,
+          select: { copyNumber: true },
+        },
+      },
+    });
+
+    if (!keyType) return { success: false, error: 'Key type not found.' };
+
+    // Get next copy number (highest + 1, or 1 if no copies exist)
+    const nextCopyNumber = keyType.keyCopies.length > 0 ? keyType.keyCopies[0].copyNumber + 1 : 1;
+
+    // Create new key copy
+    await prisma.keyCopy.create({
+      data: {
+        keyTypeId,
+        copyNumber: nextCopyNumber,
+        status: 'AVAILABLE',
+      },
+    });
+
+    revalidatePath('/active-loans');
+    revalidatePath('/keys');
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to add key copy.';
+    return { success: false, error: message };
+  }
+}

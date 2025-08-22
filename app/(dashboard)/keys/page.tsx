@@ -1,7 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
-import { createKeyType, updateKeyType, deleteKeyType } from '@/app/actions/keyTypes';
-
+import { createKeyType, updateKeyType, deleteKeyType, addKeyCopy } from '@/app/actions/keyTypes';
+import { getKeyStatusSummary } from '@/app/actions/dashboard';
+import KeyChart from '@/components/shared/chart-bar';
+import TotalStatusPieChart from '@/components/shared/chart-pie';
 import { KeyTypesTable } from '@/components/keys/key-types-table';
 
 async function getCurrentUserId() {
@@ -52,19 +54,32 @@ async function deleteKeyTypeAction(formData: FormData) {
   await deleteKeyType(formData);
 }
 
+async function addKeyCopyAction(formData: FormData) {
+  'use server';
+  await addKeyCopy(formData);
+}
+
 export default async function Page() {
-  const keyTypes = await getKeyTypes();
+  // Fetch both key types and key status data
+  const [keyTypes, keyChartData] = await Promise.all([getKeyTypes(), getKeyStatusSummary()]);
 
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <TotalStatusPieChart data={keyChartData} />
+              <KeyChart data={keyChartData} />
+            </div>
+          </div>
+          <div className="px-4 lg:px-6">
             <KeyTypesTable
               data={keyTypes}
               updateAction={updateKeyTypeAction}
               deleteAction={deleteKeyTypeAction}
               createAction={createKeyTypeAction}
+              addCopyAction={addKeyCopyAction}
             />
           </div>
         </div>

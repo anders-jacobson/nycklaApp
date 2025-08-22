@@ -15,7 +15,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { IconArrowsUpDown, IconEdit, IconTrash } from '@tabler/icons-react';
+import { IconArrowsUpDown, IconEdit, IconTrash, IconDots, IconPlus } from '@tabler/icons-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export type KeyTypeRow = {
   id: string;
@@ -25,62 +33,109 @@ export type KeyTypeRow = {
   copies: number;
 };
 
+// Column visibility interface for key types
+export interface KeyTypeColumnVisibility {
+  name: boolean;
+  accessArea: boolean;
+}
+
+// Default column visibility
+export const defaultKeyTypeColumnVisibility: KeyTypeColumnVisibility = {
+  name: true,
+  accessArea: true,
+};
+
 export function getKeyTypeColumns(params: {
   updateAction: (formData: FormData) => void | Promise<void>;
   deleteAction: (formData: FormData) => void | Promise<void>;
+  addCopyAction: (formData: FormData) => void | Promise<void>;
+  columnVisibility: KeyTypeColumnVisibility;
 }): ColumnDef<KeyTypeRow>[] {
-  const { updateAction, deleteAction } = params;
+  const { updateAction, deleteAction, addCopyAction, columnVisibility } = params;
 
-  const columns: ColumnDef<KeyTypeRow>[] = [
-    {
-      id: 'label',
-      accessorKey: 'label',
-      header: ({ column }: HeaderContext<KeyTypeRow, unknown>) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="h-auto p-0 font-medium justify-start text-left"
-        >
-          Label
-          <IconArrowsUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }: CellContext<KeyTypeRow, unknown>) => (
-        <div className="font-mono">{row.original.label}</div>
-      ),
-    },
-    {
+  const columns: ColumnDef<KeyTypeRow>[] = [];
+
+  // Label column (always visible)
+  columns.push({
+    id: 'label',
+    accessorKey: 'label',
+    header: ({ column }: HeaderContext<KeyTypeRow, unknown>) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="h-auto p-0 font-medium justify-start text-left"
+      >
+        Label
+        <IconArrowsUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }: CellContext<KeyTypeRow, unknown>) => (
+      <div className="font-mono">{row.original.label}</div>
+    ),
+  });
+
+  // Name column (optional)
+  if (columnVisibility.name) {
+    columns.push({
       id: 'name',
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }: CellContext<KeyTypeRow, unknown>) => <div>{row.original.name}</div>,
-    },
-    {
+    });
+  }
+
+  // Access Area column (optional)
+  if (columnVisibility.accessArea) {
+    columns.push({
       id: 'accessArea',
       accessorKey: 'accessArea',
       header: 'Access Area',
       cell: ({ row }: CellContext<KeyTypeRow, unknown>) => (
         <div className="text-muted-foreground">{row.original.accessArea || '—'}</div>
       ),
-    },
-    {
-      id: 'copies',
-      accessorKey: 'copies',
-      header: 'Copies',
-      cell: ({ row }: CellContext<KeyTypeRow, unknown>) => <div>{row.original.copies}</div>,
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: ({ row }: CellContext<KeyTypeRow, unknown>) => {
-        const kt = row.original;
-        return (
-          <div className="flex items-center justify-end gap-2">
+    });
+  }
+
+  // Copies column (always visible)
+  columns.push({
+    id: 'copies',
+    accessorKey: 'copies',
+    header: 'Copies',
+    cell: ({ row }: CellContext<KeyTypeRow, unknown>) => <div>{row.original.copies}</div>,
+  });
+
+  // Actions column (always visible)
+  columns.push({
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }: CellContext<KeyTypeRow, unknown>) => {
+      const kt = row.original;
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <IconDots className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Key Type Actions</DropdownMenuLabel>
+            <form action={addCopyAction}>
+              <Input type="hidden" name="id" value={kt.id} />
+              <DropdownMenuItem asChild>
+                <button type="submit" className="w-full">
+                  <IconPlus className="h-3.5 w-3.5 mr-2" />
+                  Add Copy
+                </button>
+              </DropdownMenuItem>
+            </form>
+            <DropdownMenuSeparator />
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1">
-                  <IconEdit className="h-3.5 w-3.5" /> Edit
-                </Button>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <IconEdit className="h-3.5 w-3.5 mr-2" />
+                  Edit
+                </DropdownMenuItem>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -96,21 +151,21 @@ export function getKeyTypeColumns(params: {
                 </form>
               </DialogContent>
             </Dialog>
+            <DropdownMenuSeparator />
             <form action={deleteAction}>
               <Input type="hidden" name="id" value={kt.id} />
-              <Button variant="destructive" size="sm" className="gap-1">
-                <IconTrash className="h-3.5 w-3.5" /> Delete
-              </Button>
+              <DropdownMenuItem asChild>
+                <button type="submit" className="w-full text-destructive">
+                  <IconTrash className="h-3.5 w-3.5 mr-2" />
+                  Delete
+                </button>
+              </DropdownMenuItem>
             </form>
-          </div>
-        );
-      },
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
     },
-  ];
+  });
 
   return columns;
 }
-
-
-
-

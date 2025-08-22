@@ -34,8 +34,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ColumnCustomizer } from '../active-loans/column-customizer';
-import { getKeyTypeColumns, KeyTypeRow } from './key-type-columns';
+import { KeyTypeColumnCustomizer } from './key-type-column-customizer';
+import {
+  getKeyTypeColumns,
+  KeyTypeRow,
+  KeyTypeColumnVisibility,
+  defaultKeyTypeColumnVisibility,
+} from './key-type-columns';
 import { IconPlus } from '@tabler/icons-react';
 
 type KeyTypesTableProps = {
@@ -43,6 +48,7 @@ type KeyTypesTableProps = {
   updateAction: (formData: FormData) => void | Promise<void>;
   deleteAction: (formData: FormData) => void | Promise<void>;
   createAction: (formData: FormData) => void | Promise<void>;
+  addCopyAction: (formData: FormData) => void | Promise<void>;
 };
 
 export function KeyTypesTable({
@@ -50,21 +56,19 @@ export function KeyTypesTable({
   updateAction,
   deleteAction,
   createAction,
+  addCopyAction,
 }: KeyTypesTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
-  // For now reuse the same ColumnCustomizer visibility object (keys columns are fixed here)
-  const [columnVisibility, setColumnVisibility] = React.useState({
-    affiliation: false,
-    dateIssued: false,
-    returnDate: false,
-    notes: false,
-  });
+  // Key types column visibility state
+  const [columnVisibility, setColumnVisibility] = React.useState<KeyTypeColumnVisibility>(
+    defaultKeyTypeColumnVisibility,
+  );
 
   const columns = React.useMemo<ColumnDef<KeyTypeRow>[]>(
-    () => getKeyTypeColumns({ updateAction, deleteAction }),
-    [updateAction, deleteAction],
+    () => getKeyTypeColumns({ updateAction, deleteAction, addCopyAction, columnVisibility }),
+    [updateAction, deleteAction, addCopyAction, columnVisibility],
   );
 
   const table = useReactTable({
@@ -92,7 +96,7 @@ export function KeyTypesTable({
         </div>
 
         <div className="flex items-center gap-2">
-          <ColumnCustomizer
+          <KeyTypeColumnCustomizer
             columnVisibility={columnVisibility}
             onColumnVisibilityChange={setColumnVisibility}
           />
