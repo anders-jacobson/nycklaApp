@@ -1,8 +1,15 @@
+---
+description: Swedish housing cooperative key management app business context
+globs: ['**/auth/**/*', '**/dashboard/**/*', '**/borrower*', '**/key*']
+alwaysApply: false
+---
+
 # Key Management App Context
 
 This is a Swedish housing cooperative key management app for nyckelansvariga (key managers) in bostadsrättsföreningar.
 
 ## Key Requirements
+
 - Mobile-first web app using Next.js 15 + TypeScript + Prisma + Supabase
 - Track physical keys, borrowers, and lending records
 - Swedish context: pensioner-friendly UI, GDPR compliance
@@ -11,18 +18,21 @@ This is a Swedish housing cooperative key management app for nyckelansvariga (ke
 - UI: Tailwind CSS + shadcn/ui components with accessibility focus
 
 ## Core Features
-1. Key lending/return workflow with server actions
+
+1. Key lending/return workflow with inline borrower creation (GDPR-compliant)
 2. Dashboard with stacked bar charts (recharts)
 3. Key inventory management with Prisma ORM
-4. Borrower tracking (separate table)
+4. Context-dependent borrower data (only when holding keys - no separate borrower tab)
 5. Mobile-responsive design with App Router
 
 ## Swedish Terms
+
 - nyckelansvarig = key manager
 - bostadsrättsförening = housing cooperative
 - copies = key copies (physical duplicates)
 
 ## Technical Constraints
+
 - No localStorage/sessionStorage (not supported in artifacts)
 - EU data storage (GDPR compliance)
 - Mobile-first responsive design
@@ -30,6 +40,7 @@ This is a Swedish housing cooperative key management app for nyckelansvariga (ke
 - Server-side rendering for better performance
 
 ## Architecture
+
 - **Next.js 15 App Router** for file-based routing
 - **Server Components** by default for optimal performance
 - **Prisma ORM** for type-safe database operations
@@ -37,6 +48,7 @@ This is a Swedish housing cooperative key management app for nyckelansvariga (ke
 - **Supabase** for PostgreSQL database and authentication
 
 ## Supabase Configuration
+
 - **Organization**: test-ai-build (`pxskhfvbsxtaaulctibz`)
 - **Project**: anders.ebrev@gmail.com's Project (`fxrmufcdhibqojyodrdu`)
 - **Region**: EU North (Stockholm) - GDPR compliant

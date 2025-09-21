@@ -1,0 +1,353 @@
+---
+description: Complete development standards - UI components, server actions, patterns
+globs: ['**/*.tsx', '**/*.ts', '**/components/**/*', '**/app/**/*']
+alwaysApply: true
+---
+
+# Development Standards - Master Reference
+
+## 🚨 MANDATORY: Use Context7 MCP First
+
+**ALWAYS consult Context7 for up-to-date library documentation before implementing:**
+
+```bash
+# Get latest patterns for each library
+"use context7 to get Next.js 15 App Router patterns with server components"
+"use context7 to implement shadcn/ui components with latest API"
+"use context7 to get Supabase authentication with @supabase/ssr patterns"
+"use context7 to configure Tailwind CSS v4 with @theme directive"
+"use context7 to implement Prisma ORM best practices"
+```
+
+## 🏗️ Project Architecture Overview
+
+### Tech Stack (Current)
+
+- **Next.js 15** + App Router + TypeScript (strict mode)
+- **React 19** (server components by default)
+- **Tailwind CSS v4** (CSS-first configuration)
+- **Prisma** + **Supabase** (PostgreSQL + Auth)
+- **shadcn/ui** + **Tabler Icons** (mandatory UI components)
+
+### File Structure
+
+```
+app/
+├── (root)/              # Landing + auth pages
+├── (dashboard)/         # Protected dashboard routes
+├── actions/             # Server actions (form mutations)
+├── auth/               # Authentication routes
+└── globals.css         # Tailwind v4 @theme config
+
+components/
+├── ui/                 # shadcn/ui components (mandatory)
+├── dashboard/          # Feature-specific components
+├── shared/             # Reusable business components
+└── root/               # Root layout components
+
+lib/
+├── prisma.ts          # Database client singleton
+├── utils.ts           # Tailwind class merging (cn)
+└── supabase/          # Client factories
+    ├── client.ts      # Browser client
+    ├── server.ts      # Server client
+    └── middleware.ts  # Middleware client
+```
+
+## 🚨 CRITICAL UI RULES
+
+### Never Use Plain HTML Elements
+
+```typescript
+// ❌ FORBIDDEN
+<button>Click</button>
+<input type="text" />
+<table><tr><td>Data</td></tr></table>
+
+// ✅ REQUIRED
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+<Button>Click</Button>
+<Input />
+<Table>...</Table>
+```
+
+### Only Use Tabler Icons
+
+```typescript
+// ❌ FORBIDDEN
+import { Plus } from 'lucide-react';
+
+// ✅ REQUIRED
+import { IconPlus, IconTrash, IconEdit } from '@tabler/icons-react';
+
+<Button className="gap-1">
+  <IconPlus className="h-3.5 w-3.5" />
+  Add Item
+</Button>
+```
+
+## 📊 Database Patterns (Our Schema)
+
+### Current Models
+
+```typescript
+// Core entities in our Prisma schema
+User {
+  id: string (UUID)
+  email: string (unique)
+  cooperative: string (required during signup)
+  // Relations: keyTypes[], borrowers[], issueRecords[]
+}
+
+KeyType {
+  label: string (2 chars, e.g., "A1")
+  function: string (description, e.g., "Main entrance")
+  accessArea?: string
+  // Relations: keyCopies[]
+}
+
+KeyCopy {
+  copyNumber: number (sequential: 1, 2, 3...)
+  status: KeyStatus (AVAILABLE | OUT | LOST)
+  // Relations: issueRecords[]
+}
+
+Borrower {
+  email: string (can be @placeholder.com)
+  // Relations: issueRecords[]
+}
+
+IssueRecord {
+  issuedDate: DateTime
+  dueDate?: DateTime
+  returnedDate?: DateTime (null = active loan)
+  idChecked: boolean
+}
+```
+
+### Standard User Lookup Pattern
+
+```typescript
+// ✅ ALWAYS use this pattern in server actions
+async function getCurrentUserId() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) throw new Error('Not authenticated');
+
+  const userRecord = await prisma.user.findUnique({
+    where: { email: user.email }, // Lookup by email, NOT auth.id
+    select: { id: true },
+  });
+  if (!userRecord) throw new Error('User not found');
+  return userRecord.id;
+}
+```
+
+### Database Access Rules
+
+```typescript
+// ✅ ALWAYS use Prisma for data operations
+import { prisma } from '@/lib/prisma';
+
+// ❌ NEVER use Supabase for data queries
+// const { data } = await supabase.from('User')... // FORBIDDEN
+
+// ✅ Standard query patterns
+const keyTypes = await prisma.keyType.findMany({
+  where: { userId }, // Always filter by current user
+  include: { keyCopies: true }, // Include relations as needed
+});
+
+// ✅ Transaction pattern for complex operations
+const result = await prisma.$transaction(async (tx) => {
+  const keyType = await tx.keyType.create({ data: keyTypeData });
+
+  if (totalCopies > 0) {
+    const copies = Array.from({ length: totalCopies }, (_, i) => ({
+      keyTypeId: keyType.id,
+      copyNumber: i + 1,
+      status: 'AVAILABLE' as const,
+    }));
+    await tx.keyCopy.createMany({ data: copies });
+  }
+
+  return keyType;
+});
+```
+
+## 🔄 Server Action Patterns
+
+### Standard Server Action Structure
+
+```typescript
+'use server';
+
+import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+
+type ActionResult<T> = { success: true; data?: T } | { success: false; error: string };
+
+export async function createKeyType(formData: FormData): Promise<ActionResult<{ id: string }>> {
+  try {
+    // 1. Get current user (standard pattern)
+    const userId = await getCurrentUserId();
+
+    // 2. Extract and validate inputs
+    const name = (formData.get('name') as string)?.trim();
+    if (!name || name.length < 2) {
+      return { success: false, error: 'Name must be at least 2 characters.' };
+    }
+
+    // 3. Database operations (use transactions for multiple operations)
+    const result = await prisma.$transaction(async (tx) => {
+      const keyType = await tx.keyType.create({
+        data: { label, function: name, userId },
+      });
+      // Additional operations...
+      return keyType;
+    });
+
+    // 4. Revalidate affected routes
+    revalidatePath('/dashboard');
+    return { success: true, data: { id: result.id } };
+  } catch (error) {
+    return { success: false, error: 'Failed to create key type' };
+  }
+}
+```
+
+### Form Handling Pattern
+
+```typescript
+// Client component
+'use client';
+
+import { useFormState } from 'react-dom';
+import { createKeyType } from '@/app/actions/keyTypes';
+
+export default function KeyTypeForm() {
+  const [state, formAction] = useFormState(createKeyType, { success: false, error: '' });
+
+  return (
+    <form action={formAction} className="space-y-4">
+      <Input name="name" placeholder="Key name..." required />
+      {state.error && (
+        <p className="text-sm text-destructive">{state.error}</p>
+      )}
+      <Button type="submit">Create Key Type</Button>
+    </form>
+  );
+}
+```
+
+## 🎨 Component Patterns
+
+### Standard Layout Pattern
+
+```typescript
+// Always wrap content in Card components
+<Card>
+  <CardHeader>
+    <CardTitle>Section Title</CardTitle>
+  </CardHeader>
+  <CardContent>
+    {/* Content here */}
+  </CardContent>
+</Card>
+
+// Data table pattern
+<div className="rounded-md border">
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead>Name</TableHead>
+        <TableHead className="text-right">Actions</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {data.map((item) => (
+        <TableRow key={item.id}>
+          <TableCell>{item.name}</TableCell>
+          <TableCell className="text-right">
+            <Button size="icon" variant="ghost">
+              <IconDots className="h-4 w-4" />
+            </Button>
+          </TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+</div>
+```
+
+### Server Component Pattern
+
+```typescript
+// app/dashboard/page.tsx
+import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const data = await prisma.keyType.findMany({
+    where: { userId: user?.id },
+    include: { keyCopies: true }
+  });
+
+  return (
+    <div className="container mx-auto p-4">
+      <DashboardContent data={data} />
+    </div>
+  );
+}
+```
+
+## 🔧 Import Patterns
+
+```typescript
+// Core utilities
+import { cn } from '@/lib/utils';
+import { prisma } from '@/lib/prisma';
+
+// Supabase clients (environment-specific)
+import { createClient } from '@/lib/supabase/server'; // Server components/actions
+import { createClient } from '@/lib/supabase/client'; // Client components
+
+// UI components (mandatory)
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+// Icons (mandatory)
+import { IconPlus, IconTrash, IconEdit } from '@tabler/icons-react';
+
+// Prisma types
+import { KeyType, KeyCopy, KeyStatus } from '@prisma/client';
+```
+
+## 📋 Key Conventions
+
+1. **Authentication**: Supabase Auth + Prisma user lookup by email
+2. **Data Access**: Prisma only (never Supabase .from())
+3. **UI Components**: shadcn/ui only (never plain HTML)
+4. **Icons**: Tabler Icons only
+5. **Server Actions**: Standard pattern with error handling
+6. **Database**: Always filter by userId for data isolation
+7. **Transactions**: Use for multi-step operations
+8. **Validation**: Server-side in actions, client-side for UX
+
+## 📚 Reference Quick Links
+
+- **Context7**: For latest library documentation (use before coding)
+- **Schema**: See `prisma/schema.prisma` for current models
+- **Examples**: Check `app/actions/` for server action patterns
+- **Components**: See `components/ui/` for available UI components
+
+This master file references Context7 for external library patterns and documents our internal schema and conventions based on the actual codebase.

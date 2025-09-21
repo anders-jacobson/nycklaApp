@@ -1,0 +1,365 @@
+---
+description: Database schema reference and common query patterns
+globs: ['**/actions/**/*', '**/prisma/**/*', '**/*.prisma', '**/lib/prisma.ts']
+alwaysApply: true
+---
+
+# Schema Reference - Internal Patterns
+
+## 📊 Current Database Schema
+
+### Core Models (Simplified View)
+
+```typescript
+User {
+  id: UUID (primary key)
+  email: string (unique, lookup key)
+  cooperative: string (required)
+  auth_id?: UUID (Supabase auth reference)
+}
+
+KeyType {
+  id: UUID
+  label: string (2 chars, e.g., "A1")
+  function: string (description)
+  accessArea?: string
+  userId: UUID → User.id
+}
+
+KeyCopy {
+  id: UUID
+  copyNumber: number (1, 2, 3...)
+  status: AVAILABLE | OUT | LOST
+  keyTypeId: UUID → KeyType.id
+}
+
+Borrower {
+  id: UUID
+  name: string
+  email: string (can be @placeholder.com)
+  phone?: string
+  company?: string
+  userId: UUID → User.id
+}
+
+IssueRecord {
+  id: UUID
+  issuedDate: DateTime
+  dueDate?: DateTime
+  returnedDate?: DateTime (null = active)
+  idChecked: boolean
+  notes?: string
+  keyCopyId: UUID → KeyCopy.id
+  borrowerId: UUID → Borrower.id
+  userId: UUID → User.id
+}
+```
+
+## 🔍 Standard Query Patterns
+
+### User Authentication & Lookup
+
+```typescript
+// Standard pattern used in all server actions
+async function getCurrentUserId() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) throw new Error('Not authenticated');
+
+  const userRecord = await prisma.user.findUnique({
+    where: { email: user.email }, // ALWAYS lookup by email
+    select: { id: true },
+  });
+  if (!userRecord) throw new Error('User not found');
+  return userRecord.id;
+}
+```
+
+### Dashboard Data Queries
+
+```typescript
+// Get key status summary for charts
+export async function getKeyStatusSummary() {
+  const userId = await getCurrentUserId();
+
+  return await prisma.keyType.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      label: true,
+      function: true,
+      keyCopies: {
+        select: { status: true },
+      },
+    },
+  });
+}
+
+// Get active loans table data
+export async function getActiveLoans() {
+  const userId = await getCurrentUserId();
+
+  return await prisma.issueRecord.findMany({
+    where: {
+      userId,
+      returnedDate: null, // Active loans only
+    },
+    include: {
+      keyCopy: {
+        include: {
+          keyType: {
+            select: { label: true, function: true },
+          },
+        },
+      },
+      borrower: {
+        select: { name: true, email: true, phone: true, company: true },
+      },
+    },
+    orderBy: { issuedDate: 'desc' },
+  });
+}
+```
+
+### Key Management Operations
+
+```typescript
+// Create key type with copies
+export async function createKeyType(formData: FormData) {
+  const userId = await getCurrentUserId();
+
+  const result = await prisma.$transaction(async (tx) => {
+    // 1. Create key type
+    const keyType = await tx.keyType.create({
+      data: {
+        label: formData.get('label') as string,
+        function: formData.get('function') as string,
+        accessArea: (formData.get('accessArea') as string) || undefined,
+        userId,
+      },
+    });
+
+    // 2. Create copies if specified
+    const totalCopies = parseInt(formData.get('totalCopies') as string) || 0;
+    if (totalCopies > 0) {
+      const copies = Array.from({ length: totalCopies }, (_, i) => ({
+        keyTypeId: keyType.id,
+        copyNumber: i + 1,
+        status: 'AVAILABLE' as const,
+      }));
+      await tx.keyCopy.createMany({ data: copies });
+    }
+
+    return keyType;
+  });
+
+  revalidatePath('/dashboard');
+  return result;
+}
+
+// Check key availability
+export async function checkKeyAvailability(keyTypeId: string) {
+  const userId = await getCurrentUserId();
+
+  const keyType = await prisma.keyType.findFirst({
+    where: { id: keyTypeId, userId },
+    include: {
+      keyCopies: {
+        where: { status: 'AVAILABLE' },
+        orderBy: { copyNumber: 'asc' },
+      },
+    },
+  });
+
+  return {
+    keyType,
+    hasAvailable: (keyType?.keyCopies.length || 0) > 0,
+    availableCopies: keyType?.keyCopies.length || 0,
+  };
+}
+```
+
+### Borrower & Issue Operations
+
+```typescript
+// Issue key transaction
+export async function issueKey(formData: FormData) {
+  const userId = await getCurrentUserId();
+
+  return await prisma.$transaction(async (tx) => {
+    // 1. Find available copy
+    const availableCopy = await tx.keyCopy.findFirst({
+      where: {
+        keyTypeId: formData.get('keyTypeId') as string,
+        status: 'AVAILABLE',
+      },
+      orderBy: { copyNumber: 'asc' },
+    });
+
+    if (!availableCopy) {
+      throw new Error('No available copies');
+    }
+
+    // 2. Find or create borrower
+    const email = formData.get('borrowerEmail') as string;
+    let borrower = await tx.borrower.findFirst({
+      where: { email, userId },
+    });
+
+    if (!borrower) {
+      borrower = await tx.borrower.create({
+        data: {
+          name: formData.get('borrowerName') as string,
+          email,
+          phone: (formData.get('borrowerPhone') as string) || undefined,
+          company: (formData.get('borrowerCompany') as string) || undefined,
+          userId,
+        },
+      });
+    }
+
+    // 3. Update key status
+    await tx.keyCopy.update({
+      where: { id: availableCopy.id },
+      data: { status: 'OUT' },
+    });
+
+    // 4. Create issue record
+    const issueRecord = await tx.issueRecord.create({
+      data: {
+        keyCopyId: availableCopy.id,
+        borrowerId: borrower.id,
+        dueDate: formData.get('dueDate') ? new Date(formData.get('dueDate') as string) : undefined,
+        notes: (formData.get('notes') as string) || undefined,
+        idChecked: formData.get('idChecked') === 'true',
+        userId,
+      },
+    });
+
+    return issueRecord;
+  });
+}
+
+// Return key
+export async function returnKey(issueRecordId: string) {
+  const userId = await getCurrentUserId();
+
+  return await prisma.$transaction(async (tx) => {
+    // 1. Update issue record
+    const issueRecord = await tx.issueRecord.update({
+      where: { id: issueRecordId, userId },
+      data: { returnedDate: new Date() },
+      include: { keyCopy: true, borrower: true },
+    });
+
+    // 2. Update key status
+    await tx.keyCopy.update({
+      where: { id: issueRecord.keyCopyId },
+      data: { status: 'AVAILABLE' },
+    });
+
+    // 3. Check if borrower has other active loans
+    const otherActiveLoans = await tx.issueRecord.count({
+      where: {
+        borrowerId: issueRecord.borrowerId,
+        returnedDate: null,
+        id: { not: issueRecordId },
+      },
+    });
+
+    // 4. Delete borrower if no other active loans (GDPR compliance)
+    if (otherActiveLoans === 0) {
+      await tx.borrower.delete({
+        where: { id: issueRecord.borrowerId },
+      });
+    }
+
+    return issueRecord;
+  });
+}
+```
+
+## 🎯 Key Patterns & Conventions
+
+### Data Isolation
+
+```typescript
+// ALWAYS filter by userId for data security
+const userSpecificData = await prisma.keyType.findMany({
+  where: { userId }, // This ensures data isolation
+});
+```
+
+### Relation Loading
+
+```typescript
+// Include only what you need
+const keyTypesWithCopies = await prisma.keyType.findMany({
+  where: { userId },
+  include: {
+    keyCopies: {
+      select: { status: true, copyNumber: true }, // Only needed fields
+    },
+  },
+});
+```
+
+### Transaction Usage
+
+```typescript
+// Use transactions for multi-step operations
+const result = await prisma.$transaction(async (tx) => {
+  // Multiple related operations
+  // All succeed or all fail
+});
+```
+
+### Error Handling
+
+```typescript
+try {
+  const result = await prisma.user.findUnique({
+    where: { email: user.email },
+  });
+  if (!result) {
+    // Handle not found
+    return { success: false, error: 'User not found' };
+  }
+  return { success: true, data: result };
+} catch (error) {
+  // Handle database errors
+  return { success: false, error: 'Database error' };
+}
+```
+
+## 📝 Common Anti-Patterns to Avoid
+
+```typescript
+// ❌ DON'T lookup by Supabase auth ID
+const user = await prisma.user.findUnique({
+  where: { id: authUser.id }, // Wrong - this is the auth ID, not DB ID
+});
+
+// ✅ DO lookup by email
+const user = await prisma.user.findUnique({
+  where: { email: authUser.email }, // Correct
+});
+
+// ❌ DON'T forget data isolation
+const allKeys = await prisma.keyType.findMany(); // Exposes all users' data
+
+// ✅ DO filter by current user
+const userKeys = await prisma.keyType.findMany({
+  where: { userId },
+});
+
+// ❌ DON'T use Supabase for data queries
+const { data } = await supabase.from('KeyType').select();
+
+// ✅ DO use Prisma for all data operations
+const data = await prisma.keyType.findMany();
+```
+
+This reference covers the actual patterns used in your codebase for database operations.

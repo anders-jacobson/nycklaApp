@@ -46,7 +46,7 @@ A web-based, mobile-first application that provides a centralized system for tra
 **As a key manager, I want to:**
 
 - Select specific key type and copy number
-- Record borrower information: Name, Email, Phone, Company (optional), Notes (optional)
+- Record borrower information: Name, Email, Phone, Affiliation (optional), Notes (optional)
 - Confirm ID has been checked (checkbox)
 - Set optional end date with reminder capability
 - Automatically timestamp the lending transaction

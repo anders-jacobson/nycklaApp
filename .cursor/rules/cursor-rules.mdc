@@ -1,192 +1,157 @@
 ---
-description:
-globs:
+description: Master development rules reference for Swedish key management app
+globs: ['**/*.tsx', '**/*.ts']
 alwaysApply: true
 ---
 
----
+# Development Rules - Master Reference
 
-description: How to add or edit Cursor rules in our project
-globs:
-alwaysApply: false
+## 🚨 PRIMARY RULE: Use Context7 First
 
----
+**ALWAYS consult Context7 MCP server for up-to-date library documentation:**
 
-# Cursor Rules & Development Standards
-
-## Critical Development Rules
-
-### 🚨 MANDATORY Development Standards
-
-- **ALWAYS use Context7 MCP server** for up-to-date library documentation
-- **NEVER use plain HTML elements** (`<button>`, `<input>`, `<table>`, etc.)
-- **ALWAYS use shadcn/ui components** from `@/components/ui/`
-- **ONLY use Tabler Icons** from `@tabler/icons-react`
-- **ALWAYS wrap content in Card components** for proper layout
-- See `context7-mcp-usage.mdc` for Context7 requirements (CRITICAL)
-- See `ui-component-standards.mdc` for complete usage guide
-
-### 🔧 Technology Stack Requirements
-
-- **Next.js 15** with App Router (server components by default)
-- **React 19** with TypeScript (strict mode)
-- **Tailwind CSS v4** with `@theme` directive in CSS
-- **Prisma** with Supabase for database operations
-- **Server Actions** for form submissions and mutations
-
-## Rule File Management
-
-### 1. Always place rule files in PROJECT_ROOT/.cursor/rules/:
-
-```
-.cursor/rules/
-├── cursor-rules.mdc                 # This file (overview)
-├── context7-mcp-usage.mdc           # 🚨 CRITICAL Context7 MCP requirements
-├── ui-component-standards.mdc       # 🚨 MANDATORY UI standards
-├── coding-standards.mdc             # Development patterns
-├── tech-stack.mdc                   # Technology specifications
-├── project-context.mdc              # Application context
-├── database-schema.mdc              # Database patterns
-└── task-list.mdc                    # Task management
+```bash
+"use context7 to get Next.js 15 App Router patterns"
+"use context7 to implement shadcn/ui components"
+"use context7 to configure Tailwind CSS v4"
+"use context7 to implement Supabase authentication with @supabase/ssr"
 ```
 
-### 2. Follow the naming convention:
+## 🏗️ Quick Architecture Reference
 
-- Use kebab-case for filenames
-- Always use .mdc extension
-- Make names descriptive of the rule's purpose
+- **Next.js 15** + App Router + TypeScript + React 19
+- **Prisma** (data) + **Supabase** (auth only)
+- **shadcn/ui** (mandatory) + **Tabler Icons** (mandatory)
+- **Tailwind CSS v4** (CSS-first config)
 
-### 3. Directory structure:
+## 🚨 Critical UI Rules
 
-```
-PROJECT_ROOT/
-├── .cursor/
-│   └── rules/
-│       ├── your-rule-name.mdc
-│       └── ...
-└── ...
-```
-
-### 4. Never place rule files:
-
-- In the project root
-- In subdirectories outside .cursor/rules
-- In any other location
-
-## Rule File Structure
-
-### 5. Cursor rules have the following structure:
-
-````
----
-description: Short description of the rule's purpose
-globs: optional/path/pattern/**/*
-alwaysApply: true  # For mandatory standards
----
-# Rule Title
-
-Main content explaining the rule with markdown formatting.
-
-## Critical Guidelines
-1. Step-by-step instructions
-2. Code examples with ✅ CORRECT and ❌ WRONG patterns
-3. Mandatory usage requirements
-
-### Example Code Blocks:
 ```typescript
-// ✅ CORRECT - Always use shadcn/ui components
+// ❌ NEVER use plain HTML
+<button>Click</button>
+<input type="text" />
+
+// ✅ ALWAYS use shadcn/ui + Tabler Icons
 import { Button } from '@/components/ui/button';
 import { IconPlus } from '@tabler/icons-react';
 
 <Button className="gap-1">
   <IconPlus className="h-3.5 w-3.5" />
-  Add Item
+  Add
 </Button>
-
-// ❌ WRONG - Never use plain HTML
-<button>Add Item</button>
-```
-````
-
-## Development Workflow
-
-### Before Writing Any Code:
-
-1. **Use Context7 MCP server** for up-to-date library documentation
-2. **Check context7-mcp-usage.mdc** for Context7 usage patterns
-3. **Check ui-component-standards.mdc** for mandatory component usage
-4. **Review coding-standards.mdc** for patterns and structure
-5. **Verify tech-stack.mdc** for correct imports and dependencies
-6. **Use ONLY shadcn/ui components and Tabler Icons**
-
-### Component Development Checklist:
-
-- [ ] Consulted Context7 MCP server for up-to-date documentation
-- [ ] Uses shadcn/ui components exclusively
-- [ ] Imports icons from `@tabler/icons-react` only
-- [ ] Follows Next.js 15 App Router patterns
-- [ ] Uses Tailwind CSS v4 classes properly
-- [ ] Implements proper TypeScript typing
-- [ ] Includes proper error handling
-- [ ] Uses Server Actions for mutations
-
-### Icon Usage Quick Reference:
-
-```typescript
-// Standard imports
-import {
-  IconPlus,      // Add actions
-  IconTrash,     // Delete actions
-  IconEdit,      // Edit actions
-  IconFilter,    // Filter/search
-  IconDots,      // More options menu
-  IconHome,      // Navigation
-  IconUser,      // User-related
-  IconLoader     // Loading states
-} from '@tabler/icons-react';
-
-// Standard sizing
-<Icon className="h-4 w-4" />        // Standard
-<Icon className="h-3.5 w-3.5" />    // In buttons
-<Icon className="h-5 w-5" />        // Large
 ```
 
-### Button Usage Quick Reference:
+## 📊 Database Pattern (Standard)
 
 ```typescript
+// Standard user lookup pattern
+async function getCurrentUserId() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) throw new Error('Not authenticated');
+
+  const userRecord = await prisma.user.findUnique({
+    where: { email: user.email }, // ALWAYS lookup by email
+    select: { id: true },
+  });
+  if (!userRecord) throw new Error('User not found');
+  return userRecord.id;
+}
+
+// ✅ ALWAYS use Prisma for data (never Supabase .from())
+const data = await prisma.keyType.findMany({
+  where: { userId }, // Always filter by user
+});
+```
+
+## 🔄 Server Action Pattern (Essential)
+
+```typescript
+'use server';
+import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+
+type ActionResult<T> = { success: true; data?: T } | { success: false; error: string };
+
+export async function serverAction(formData: FormData): Promise<ActionResult<any>> {
+  try {
+    // 1. Get current user ID
+    const userId = await getCurrentUserId();
+
+    // 2. Validate inputs
+    const input = formData.get('input') as string;
+    if (!input) return { success: false, error: 'Input required' };
+
+    // 3. Database operation with transaction if needed
+    const result = await prisma.$transaction(async (tx) => {
+      return await tx.model.create({ data: { input, userId } });
+    });
+
+    // 4. Revalidate affected pages
+    revalidatePath('/dashboard');
+    return { success: true, data: result };
+  } catch (error) {
+    return { success: false, error: 'Operation failed' };
+  }
+}
+```
+
+## 🎨 Component Pattern (Essential)
+
+```typescript
+'use client';
+import { useFormState } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconPlus } from '@tabler/icons-react';
 
-<Button>Primary Action</Button>                    // Default primary
-<Button variant="outline">Secondary</Button>       // Secondary action
-<Button variant="destructive">Delete</Button>      // Danger action
-<Button variant="ghost">Subtle</Button>            // Subtle action
-<Button size="icon"><IconEdit /></Button>          // Icon only
+export default function MyComponent() {
+  const [state, formAction] = useFormState(serverAction, { success: false, error: '' });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Component Title</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction} className="space-y-4">
+          <Input name="input" required />
+          {state.error && <p className="text-destructive text-sm">{state.error}</p>}
+          <Button type="submit" className="gap-1">
+            <IconPlus className="h-3.5 w-3.5" />
+            Submit
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
 ```
 
-## Rule Priorities
+## 📋 Essential References
 
-### 1. **CRITICAL** - context7-mcp-usage.mdc
+### Context-Sensitive Rules (Auto-Applied by File Type)
 
-ALWAYS use Context7 MCP server for up-to-date library documentation. Must be consulted before any implementation.
+- **Database files** (`**/actions/**/*`, `**/prisma/**/*`): schema-reference.mdc
+- **UI Components** (`**/components/**/*`): development-standards.mdc
+- **Auth/Dashboard** (`**/auth/**/*`, `**/dashboard/**/*`): project-context.mdc
+- **Feature files** (`**/keys/**/*`, `**/borrower*`): key-features.mdc
 
-### 2. **CRITICAL** - ui-component-standards.mdc
+### External Documentation (Mandatory)
 
-Must be followed without exception. Never use plain HTML elements.
+- **Always check Context7 MCP first** for library documentation
+- **Use latest patterns** for Next.js 15, shadcn/ui, Prisma, Supabase
 
-### 3. **ESSENTIAL** - coding-standards.mdc
+### Quick Validation Checklist
 
-Core development patterns for Next.js 15 + App Router.
+- [ ] Used Context7 for external library patterns?
+- [ ] Used shadcn/ui components (never plain HTML)?
+- [ ] Used Tabler Icons only?
+- [ ] Followed user lookup pattern (by email)?
+- [ ] Added userId filter for data isolation?
+- [ ] Used transactions for multi-step operations?
 
-### 4. **IMPORTANT** - tech-stack.mdc
-
-Technology choices and dependency management.
-
-### 5. **CONTEXTUAL** - project-context.mdc, database-schema.mdc
-
-Application-specific guidelines and patterns.
-
-### 6. **WORKFLOW** - task-list.mdc
-
-Project management and task tracking.
-
-Remember: The goal is consistent, maintainable, and accessible code using modern React patterns with shadcn/ui components and Tabler Icons exclusively. ALWAYS use Context7 for up-to-date documentation.
+Remember: Context7 for external libraries, these rules for internal patterns.

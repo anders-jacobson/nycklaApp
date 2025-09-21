@@ -46,13 +46,19 @@ model KeyCopy {
 model Borrower {
   id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String        @db.VarChar(100)
-  email        String?       @db.VarChar(255)
+  email        String        @db.VarChar(255)  // Now required
   phone        String?       @db.VarChar(20)
   company      String?       @db.VarChar(100)
   createdAt    DateTime      @default(now())
   userId       String        @db.Uuid
   user         User          @relation(fields: [userId], references: [id])
   issueRecords IssueRecord[]
+
+  // Ensure email uniqueness within each cooperative
+  @@unique([email, userId])
+  
+  // GDPR Note: Borrower records automatically deleted when no active lending records
+  // Placeholder emails (@placeholder.com) indicate missing real email addresses
 }
 
 model IssueRecord {

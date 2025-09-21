@@ -330,8 +330,7 @@ Implementation roadmap for the Swedish housing cooperative key management applic
 - **Accessibility**: Full keyboard navigation, ARIA labels, screen reader support
 - **Mobile**: Responsive design with collapsible columns
 
-- [ ] **Borrower management system** 🔄 _[HIGH PRIORITY: Needed for lending workflow]_
-- [ ] **Key lending workflow implementation** ⏳ _[Ready for breakdown after above]_
+- [ ] **Key lending workflow with inline borrower creation** 🔄 _[HIGH PRIORITY: GDPR-compliant approach, no separate borrower tab]_
 - [ ] **Key return workflow implementation** ⏳ _[Ready for breakdown after lending]_
 - [ ] **Bulk key copy creation workflow** ⏳ _[Ready for breakdown]_
 - [ ] **Key status tracking (Available/Out/Lost)** ⏳ _[Ready for breakdown]_
@@ -350,7 +349,7 @@ Implementation roadmap for the Swedish housing cooperative key management applic
 
 ### Future Tasks
 
-- [ ] **Borrower search and autocomplete** ⏳ _[Ready for breakdown]_
+- [ ] **Borrower search and autocomplete within lending workflow** ⏳ _[Ready for breakdown]_
 - [ ] **Multiple key lending workflow** ⏳ _[Ready for breakdown]_
 - [ ] **Bulk return operations** ⏳ _[Ready for breakdown]_
 - [ ] **Advanced reporting and analytics** ⏳ _[Ready for breakdown]_

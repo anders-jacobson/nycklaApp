@@ -1,18 +1,22 @@
 ---
-description:
-globs:
+description: Core feature requirements - dashboard, lending workflows, key management
+globs: ['**/dashboard/**/*', '**/keys/**/*', '**/borrower*', '**/loan*', '**/issue*']
 alwaysApply: false
 ---
+
 # Key Management Features
 
 ## Dashboard Component Requirements
+
 Create a dashboard showing:
+
 - Stacked bar chart for each key type (available/out/lost) using recharts
 - Sortable table of all key copies with current status
 - Overview statistics
 - Mobile-responsive layout
 
 ## Lending Workflow
+
 1. Select key type and copy number
 2. Capture borrower info: name, email, phone, company (optional), notes (optional)
 3. Set optional end date with reminder
@@ -20,7 +24,8 @@ Create a dashboard showing:
 5. Auto-timestamp the transaction
 6. Update key status to "out"
 
-## Return Workflow  
+## Return Workflow
+
 1. Search for borrowed keys
 2. Select key to return
 3. Mark as returned (clears lending record)
@@ -28,6 +33,7 @@ Create a dashboard showing:
 5. Keep borrower record for future use
 
 ## Key Copy Management
+
 - **Bulk Creation**: Create multiple copies efficiently (30+ for high-volume keys)
 - **Sequential Numbering**: Auto-assign copy numbers (1, 2, 3, etc.)
 - **Copy Addition**: Add new copies to existing key types
@@ -35,6 +41,7 @@ Create a dashboard showing:
 - **Status Tracking**: Available, Out, Lost status for each copy
 
 ## Data Validation Rules
+
 - Name: Required, min 2 characters
 - Email: Valid email format if provided
 - Phone: Valid phone format if provided
@@ -43,6 +50,7 @@ Create a dashboard showing:
 - Cooperative: Required during registration, cannot be changed
 
 ## Mobile-First UI Requirements
+
 - Touch-friendly buttons (min 44px)
 - Easy form navigation
 - Readable text sizes

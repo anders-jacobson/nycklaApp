@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import type { ComponentType } from 'react';
 
-
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -13,9 +12,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-
-
-
 
 export function NavMain({
   items,

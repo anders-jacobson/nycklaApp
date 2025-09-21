@@ -1,0 +1,507 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import {
+  IconArrowLeft,
+  IconX,
+  IconCheck,
+  IconKey,
+  IconUser,
+  IconNotes,
+  IconCalendar,
+} from '@tabler/icons-react';
+import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
+import { BorrowerSearch } from '@/components/shared/borrower-search';
+import { BorrowerForm } from '@/components/shared/borrower-form';
+import { isPlaceholderEmail } from '@/lib/borrower-utils';
+import { issueMultipleKeysAction } from '@/app/actions/issueKeyWrapper';
+
+interface KeyType {
+  id: string;
+  label: string;
+  function: string;
+  accessArea: string | null;
+  totalCopies: number;
+  availableCopies: number;
+}
+
+interface Borrower {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string; // Note: Still using 'company' field name for database compatibility
+}
+
+interface IssueKeyWorkflowProps {
+  initialKeyTypes: KeyType[];
+}
+
+type WorkflowStep = 'select-keys' | 'borrower-details' | 'lending-details' | 'confirm';
+
+export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
+  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState<WorkflowStep>('select-keys');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form data
+  const [selectedKeyIds, setSelectedKeyIds] = useState<string[]>([]);
+  const [borrowerData, setBorrowerData] = useState<Borrower>({
+    id: '',
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+  });
+  const [lendingDetails, setLendingDetails] = useState({
+    dueDate: '',
+    notes: '',
+    idChecked: false,
+  });
+
+  // Workflow state
+  const [keyTypes, setKeyTypes] = useState<KeyType[]>(initialKeyTypes);
+
+  // Prevent browser back button during workflow
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      // Custom back handling within workflow
+      handleBack();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentStep]);
+
+  const handleBack = () => {
+    switch (currentStep) {
+      case 'borrower-details':
+        setCurrentStep('select-keys');
+        break;
+      case 'lending-details':
+        setCurrentStep('borrower-details');
+        break;
+      case 'confirm':
+        setCurrentStep('lending-details');
+        break;
+      default:
+        handleExit();
+    }
+  };
+
+  const handleExit = () => {
+    router.push('/keys'); // Return to keys page
+  };
+
+  const handleNext = () => {
+    setError(null);
+
+    switch (currentStep) {
+      case 'select-keys':
+        if (selectedKeyIds.length === 0) {
+          setError('Please select at least one key to issue.');
+          return;
+        }
+        setCurrentStep('borrower-details');
+        break;
+      case 'borrower-details':
+        if (!borrowerData.name || !borrowerData.email) {
+          setError('Please provide borrower details.');
+          return;
+        }
+        setCurrentStep('lending-details');
+        break;
+      case 'lending-details':
+        if (!lendingDetails.idChecked) {
+          setError('ID verification is required to issue keys.');
+          return;
+        }
+        setCurrentStep('confirm');
+        break;
+    }
+  };
+
+  const handleBorrowerSelected = (borrower: Borrower) => {
+    setBorrowerData(borrower);
+    setCurrentStep('lending-details');
+  };
+
+  const handleSubmit = async () => {
+    if (!lendingDetails.idChecked) {
+      setError('ID verification is required to issue keys.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await issueMultipleKeysAction({
+        keyTypeIds: selectedKeyIds,
+        borrowerName: borrowerData.name,
+        borrowerEmail: borrowerData.email,
+        borrowerPhone: borrowerData.phone,
+        borrowerCompany: borrowerData.company,
+        dueDate: lendingDetails.dueDate,
+        notes: lendingDetails.notes,
+        idChecked: lendingDetails.idChecked,
+        borrowerId: borrowerData.id || undefined, // Pass existing borrower ID if available
+      });
+
+      if (result.success) {
+        // Success - redirect to keys page with success message
+        router.push('/keys?success=keys-issued');
+      } else {
+        setError(result.error || 'Failed to issue keys.');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const availableKeyOptions: MultiSelectOption[] = keyTypes.map((keyType) => ({
+    label: `${keyType.label} - ${keyType.function}`,
+    value: keyType.id,
+    badge: `${keyType.availableCopies} available`,
+    description: keyType.accessArea || 'No specific access area',
+    disabled: keyType.availableCopies === 0,
+  }));
+
+  const getSelectedKeys = () => {
+    return keyTypes.filter((keyType) => selectedKeyIds.includes(keyType.id));
+  };
+
+  const getAccessAreasSummary = () => {
+    const areas = getSelectedKeys()
+      .map((key) => key.accessArea)
+      .filter((area) => area !== null)
+      .filter((area, index, arr) => arr.indexOf(area) === index); // Remove duplicates
+
+    return areas.length > 0 ? areas.join(', ') : 'No specific access areas defined';
+  };
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 'select-keys':
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl font-bold">Select Keys to Issue</h1>
+              <p className="text-muted-foreground">
+                Choose one or more keys to issue to the borrower
+              </p>
+            </div>
+
+            {selectedKeyIds.length > 0 && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <IconKey className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">
+                        Combined Access Areas ({selectedKeyIds.length} keys):
+                      </span>
+                    </div>
+                    <p className="text-muted-foreground">{getAccessAreasSummary()}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <MultiSelect
+              options={availableKeyOptions}
+              onValueChange={setSelectedKeyIds}
+              selectedValues={selectedKeyIds}
+              placeholder="Select keys to issue..."
+              emptyIndicator="No keys found."
+              disabled={isLoading}
+            />
+          </div>
+        );
+
+      case 'borrower-details':
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl font-bold">Borrower Details</h1>
+              <p className="text-muted-foreground">
+                Search for an existing borrower or add a new one
+              </p>
+            </div>
+
+            <BorrowerSearch
+              onSelectBorrower={handleBorrowerSelected}
+              onAddBorrower={() => setCurrentStep('borrower-details')}
+              isLoading={isLoading}
+            />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or add new borrower
+                </span>
+              </div>
+            </div>
+
+            <BorrowerForm
+              onSubmit={handleBorrowerSelected}
+              onCancel={handleBack}
+              isLoading={isLoading}
+            />
+          </div>
+        );
+
+      case 'lending-details':
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl font-bold">Lending Details</h1>
+              <p className="text-muted-foreground">Set due date, notes, and verify ID</p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <IconCalendar className="h-5 w-5" />
+                  Due Date (Optional)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <input
+                  type="date"
+                  value={lendingDetails.dueDate}
+                  onChange={(e) =>
+                    setLendingDetails({ ...lendingDetails, dueDate: e.target.value })
+                  }
+                  className="w-full p-2 border rounded-md"
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <IconNotes className="h-5 w-5" />
+                  Notes (Optional)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <textarea
+                  value={lendingDetails.notes}
+                  onChange={(e) => setLendingDetails({ ...lendingDetails, notes: e.target.value })}
+                  placeholder="Add any notes about this key issue..."
+                  className="w-full p-2 border rounded-md min-h-20"
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="idChecked"
+                    checked={lendingDetails.idChecked}
+                    onChange={(e) =>
+                      setLendingDetails({ ...lendingDetails, idChecked: e.target.checked })
+                    }
+                    className="h-4 w-4"
+                  />
+                  <label htmlFor="idChecked" className="text-sm font-medium">
+                    I have verified the borrower's ID
+                  </label>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'confirm':
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl font-bold">Confirm Key Issue</h1>
+              <p className="text-muted-foreground">Review the details and confirm the key issue</p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Issue Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="font-medium">Keys ({selectedKeyIds.length})</p>
+                    <ul className="list-disc list-inside text-muted-foreground">
+                      {getSelectedKeys().map((key) => (
+                        <li key={key.id}>
+                          {key.label} - {key.function}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-medium">Borrower</p>
+                    <p className="text-muted-foreground">{borrowerData.name}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Email</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-muted-foreground">{borrowerData.email}</p>
+                      {isPlaceholderEmail(borrowerData.email) && (
+                        <Badge variant="outline" className="text-xs">
+                          Placeholder
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-medium">Due Date</p>
+                    <p className="text-muted-foreground">
+                      {lendingDetails.dueDate || 'No due date set'}
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <IconKey className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">Combined Access Areas:</span>
+                  </div>
+                  <p className="text-muted-foreground">{getAccessAreasSummary()}</p>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center gap-2">
+                  <IconCheck
+                    className={`h-4 w-4 ${
+                      lendingDetails.idChecked ? 'text-green-500' : 'text-muted-foreground'
+                    }`}
+                  />
+                  <span
+                    className={
+                      lendingDetails.idChecked ? 'text-foreground' : 'text-muted-foreground'
+                    }
+                  >
+                    ID verification: {lendingDetails.idChecked ? 'Completed' : 'Not completed'}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header with navigation */}
+      <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={handleBack}>
+            <IconArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <IconKey className="h-5 w-5" />
+            <span className="font-semibold">Issue Keys</span>
+          </div>
+        </div>
+
+        <Button variant="ghost" size="icon" onClick={handleExit}>
+          <IconX className="h-4 w-4" />
+        </Button>
+      </header>
+
+      {/* Progress indicator */}
+      <div className="px-4 py-2 border-b">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>
+            Step{' '}
+            {currentStep === 'select-keys'
+              ? 1
+              : currentStep === 'borrower-details'
+                ? 2
+                : currentStep === 'lending-details'
+                  ? 3
+                  : 4}{' '}
+            of 4
+          </span>
+          <div className="flex gap-1">
+            {['select-keys', 'borrower-details', 'lending-details', 'confirm'].map(
+              (step, index) => (
+                <div
+                  key={step}
+                  className={`h-2 w-8 rounded-full ${
+                    currentStep === step
+                      ? 'bg-primary'
+                      : index <
+                          ['select-keys', 'borrower-details', 'lending-details', 'confirm'].indexOf(
+                            currentStep,
+                          )
+                        ? 'bg-primary/50'
+                        : 'bg-muted'
+                  }`}
+                />
+              ),
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="max-w-2xl mx-auto">
+          {renderStepContent()}
+
+          {error && (
+            <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer with navigation */}
+      <footer className="p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-2xl mx-auto flex justify-between">
+          <Button
+            variant="outline"
+            onClick={handleBack}
+            disabled={isLoading || currentStep === 'select-keys'}
+          >
+            Back
+          </Button>
+
+          {currentStep === 'confirm' ? (
+            <Button onClick={handleSubmit} disabled={isLoading} className="gap-2">
+              {isLoading && (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              )}
+              Issue Keys
+            </Button>
+          ) : (
+            <Button onClick={handleNext} disabled={isLoading}>
+              Next
+            </Button>
+          )}
+        </div>
+      </footer>
+    </div>
+  );
+}
