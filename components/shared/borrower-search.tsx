@@ -34,41 +34,10 @@ export function BorrowerSearch({
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  // Mock search function - replace with actual API call
+  // Real search function using server action
   const searchBorrowers = async (term: string): Promise<Borrower[]> => {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    // Mock data - replace with actual API call
-    const mockBorrowers: Borrower[] = [
-      {
-        id: '1',
-        name: 'Anna Andersson',
-        email: 'anna.andersson@example.com',
-        phone: '070-123 4567',
-        company: '',
-      },
-      {
-        id: '2',
-        name: 'Erik Eriksson',
-        email: 'erik.eriksson@placeholder.com',
-        phone: '073-987 6543',
-        company: 'Fastighetsskötsel AB',
-      },
-      {
-        id: '3',
-        name: 'Maria Nilsson',
-        email: 'maria.nilsson@email.com',
-        phone: '',
-        company: '',
-      },
-    ];
-
-    return mockBorrowers.filter(
-      (borrower) =>
-        borrower.name.toLowerCase().includes(term.toLowerCase()) ||
-        borrower.email.toLowerCase().includes(term.toLowerCase()),
-    );
+    const { searchBorrowers: searchAction } = await import('@/app/actions/dashboard');
+    return await searchAction(term);
   };
 
   // Debounced search

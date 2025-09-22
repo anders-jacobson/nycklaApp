@@ -3,7 +3,12 @@
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { validateBorrowerData } from '@/lib/borrower-utils';
+import {
+  validateBorrowerData,
+  createBorrowerWithAffiliation,
+  findBorrowerByEmail,
+  getBorrowerDetails,
+} from '@/lib/borrower-utils';
 
 type ActionResult<T> = { success: true; data?: T } | { success: false; error: string };
 
@@ -200,30 +205,30 @@ export async function issueKey(formData: FormData): Promise<
             id: borrowerId,
             userId, // Ensure borrower belongs to current user
           },
+          include: {
+            residentBorrower: true,
+            externalBorrower: true,
+          },
         });
         if (!borrower) {
           throw new Error('Borrower not found or access denied.');
         }
       } else {
         // Find existing borrower by email or create new one
-        borrower = await tx.borrower.findFirst({
-          where: {
-            email: validation.sanitized.email,
-            userId,
-          },
-        });
+        borrower = await findBorrowerByEmail(validation.sanitized.email, userId);
 
         if (!borrower) {
-          // Create new borrower
-          borrower = await tx.borrower.create({
-            data: {
+          // Create new borrower with affiliation structure
+          borrower = await createBorrowerWithAffiliation(
+            {
               name: validation.sanitized.name,
               email: validation.sanitized.email,
               phone: validation.sanitized.phone,
               company: validation.sanitized.company,
-              userId,
             },
-          });
+            userId,
+            tx, // Pass transaction
+          );
         }
       }
 
@@ -246,10 +251,12 @@ export async function issueKey(formData: FormData): Promise<
         select: { id: true },
       });
 
+      const borrowerDetails = getBorrowerDetails(borrower);
+
       return {
         issueId: issueRecord.id,
         keyInfo: `${availableCopy.keyType.label}-${availableCopy.copyNumber} (${availableCopy.keyType.function})`,
-        borrowerName: borrower.name,
+        borrowerName: borrowerDetails.name,
       };
     });
 

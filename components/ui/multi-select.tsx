@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { X, ChevronDown, Check } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
+import { IconKey, IconCheck } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -197,7 +198,11 @@ export function MultiSelect({
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start" container={container}>
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] p-0"
+        align="start"
+        container={container}
+      >
         <Command>
           <CommandInput
             placeholder="Search keys..."
@@ -224,25 +229,23 @@ export function MultiSelect({
                     <div
                       className={cn(
                         'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary cursor-pointer hover:border-primary/80',
-                        isSelected
-                          ? 'bg-primary text-primary-foreground'
-                          : 'opacity-50 [&_svg]:invisible',
+                        isSelected ? 'bg-primary text-white' : 'opacity-50',
                       )}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleSelect(option.value);
                       }}
                     >
-                      <Check className="h-4 w-4" />
+                      {isSelected && <IconCheck className="h-4 w-4 text-white" />}
                     </div>
                     <div
-                      className="flex-1 flex items-center justify-between cursor-pointer"
+                      className="flex-1 flex items-center justify-between cursor-pointer gap-4"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleSelect(option.value);
                       }}
                     >
-                      <div className="flex flex-col">
+                      <div className="flex flex-col flex-1 min-w-0">
                         <span className="font-medium">{option.label}</span>
                         {option.description && (
                           <span className="text-xs text-muted-foreground">
@@ -252,15 +255,10 @@ export function MultiSelect({
                       </div>
                       {option.badge && (
                         <Badge
-                          variant={
-                            option.badge === '0 available'
-                              ? 'destructive'
-                              : parseInt(option.badge.split(' ')[0]) <= 2
-                                ? 'secondary'
-                                : 'default'
-                          }
-                          className="text-xs"
+                          variant="secondary"
+                          className="text-xs flex items-center gap-1 shrink-0"
                         >
+                          <IconKey className="h-3 w-3" />
                           {option.badge}
                         </Badge>
                       )}

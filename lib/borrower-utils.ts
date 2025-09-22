@@ -2,6 +2,9 @@
  * Borrower utility functions for placeholder email handling and validation
  */
 
+import { prisma } from '@/lib/prisma';
+import { BorrowerAffiliation, Borrower, ResidentBorrower, ExternalBorrower } from '@prisma/client';
+
 export const PLACEHOLDER_EMAIL_DOMAIN = '@placeholder.com';
 
 /**
@@ -197,4 +200,131 @@ export function validateBorrowerData(data: {
       company: company || undefined,
     },
   };
+}
+
+/**
+ * Create a borrower with the new affiliation-based structure
+ */
+export async function createBorrowerWithAffiliation(
+  data: {
+    name: string;
+    email: string;
+    phone?: string;
+    company?: string;
+    address?: string;
+    isExternal?: boolean;
+  },
+  userId: string,
+  tx?: typeof prisma, // Prisma transaction
+) {
+  const prismaClient = tx || prisma;
+  const { name, email, phone, company, address, isExternal } = data;
+
+  // Determine if this should be an external borrower
+  const shouldBeExternal = isExternal || !!company || !!address;
+
+  if (shouldBeExternal) {
+    // Create external borrower
+    const externalBorrower = await prismaClient.externalBorrower.create({
+      data: {
+        name,
+        email,
+        phone,
+        company,
+        address,
+      },
+    });
+
+    return await prismaClient.borrower.create({
+      data: {
+        affiliation: BorrowerAffiliation.EXTERNAL,
+        externalBorrowerId: externalBorrower.id,
+        userId,
+      },
+      include: {
+        externalBorrower: true,
+      },
+    });
+  } else {
+    // Create resident borrower
+    const residentBorrower = await prismaClient.residentBorrower.create({
+      data: {
+        name,
+        email,
+        phone,
+      },
+    });
+
+    return await prismaClient.borrower.create({
+      data: {
+        affiliation: BorrowerAffiliation.RESIDENT,
+        residentBorrowerId: residentBorrower.id,
+        userId,
+      },
+      include: {
+        residentBorrower: true,
+      },
+    });
+  }
+}
+
+/**
+ * Find existing borrower by email with new structure
+ */
+export async function findBorrowerByEmail(email: string, userId: string) {
+  return await prisma.borrower.findFirst({
+    where: {
+      userId,
+      OR: [
+        {
+          residentBorrower: {
+            email,
+          },
+        },
+        {
+          externalBorrower: {
+            email,
+          },
+        },
+      ],
+    },
+    include: {
+      residentBorrower: true,
+      externalBorrower: true,
+    },
+  });
+}
+
+/**
+ * Get borrower details for display
+ */
+export function getBorrowerDetails(
+  borrower: Borrower & {
+    residentBorrower?: ResidentBorrower | null;
+    externalBorrower?: ExternalBorrower | null;
+  },
+) {
+  if (borrower.affiliation === BorrowerAffiliation.RESIDENT && borrower.residentBorrower) {
+    return {
+      id: borrower.id,
+      name: borrower.residentBorrower.name,
+      email: borrower.residentBorrower.email,
+      phone: borrower.residentBorrower.phone,
+      affiliation: BorrowerAffiliation.RESIDENT,
+      company: null,
+      address: null,
+    };
+  } else if (borrower.affiliation === BorrowerAffiliation.EXTERNAL && borrower.externalBorrower) {
+    return {
+      id: borrower.id,
+      name: borrower.externalBorrower.name,
+      email: borrower.externalBorrower.email,
+      phone: borrower.externalBorrower.phone,
+      affiliation: BorrowerAffiliation.EXTERNAL,
+      company: borrower.externalBorrower.company,
+      address: borrower.externalBorrower.address,
+    };
+  }
+
+  throw new Error('Invalid borrower data structure');
 }

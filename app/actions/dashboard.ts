@@ -1,6 +1,7 @@
 'use server';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
+import { getBorrowerDetails } from '@/lib/borrower-utils';
 
 // Server-side: Get the current user's User.id from Supabase Auth session (for Server Actions)
 async function getCurrentUserId() {
@@ -60,7 +61,12 @@ export async function getBorrowedKeysTableData() {
   const issueRecords = await prisma.issueRecord.findMany({
     where: { userId },
     include: {
-      borrower: true,
+      borrower: {
+        include: {
+          residentBorrower: true,
+          externalBorrower: true,
+        },
+      },
       keyCopy: {
         include: {
           keyType: true,
@@ -70,11 +76,13 @@ export async function getBorrowedKeysTableData() {
   });
 
   return issueRecords.map((record) => {
+    const borrowerDetails = getBorrowerDetails(record.borrower);
+
     return {
-      borrowerName: record.borrower.name,
-      company: record.borrower.company ?? '',
-      email: record.borrower.email ?? '',
-      phone: record.borrower.phone ?? '',
+      borrowerName: borrowerDetails.name,
+      company: borrowerDetails.company ?? '',
+      email: borrowerDetails.email ?? '',
+      phone: borrowerDetails.phone ?? '',
       keyId: record.keyCopyId,
       keyLabel: record.keyCopy.keyType.label,
       copyNumber: record.keyCopy.copyNumber,
@@ -94,7 +102,12 @@ export async function getBorrowersWithKeysGrouped() {
       returnedDate: null, // Only active loans
     },
     include: {
-      borrower: true,
+      borrower: {
+        include: {
+          residentBorrower: true,
+          externalBorrower: true,
+        },
+      },
       keyCopy: {
         include: {
           keyType: true,
@@ -110,16 +123,15 @@ export async function getBorrowersWithKeysGrouped() {
     const borrowerId = record.borrower.id;
 
     if (!borrowerMap.has(borrowerId)) {
-      // Temporary mapping: existing company field to new affiliation structure
-      const hasCompany = record.borrower.company && record.borrower.company.length > 0;
+      const borrowerDetails = getBorrowerDetails(record.borrower);
       borrowerMap.set(borrowerId, {
         borrowerId: record.borrower.id,
-        borrowerName: record.borrower.name,
-        email: record.borrower.email ?? '',
-        phone: record.borrower.phone ?? '',
-        isResident: !hasCompany, // If no company, assume resident
-        companyName: record.borrower.company ?? undefined,
-        purposeNotes: undefined, // Will be added when DB is updated
+        borrowerName: borrowerDetails.name,
+        email: borrowerDetails.email ?? '',
+        phone: borrowerDetails.phone ?? '',
+        isResident: borrowerDetails.affiliation === 'RESIDENT',
+        companyName: borrowerDetails.company ?? undefined,
+        purposeNotes: undefined, // Can be extended if needed
         borrowedKeys: [],
         activeLoanCount: 0,
         hasOverdue: false,
@@ -144,4 +156,55 @@ export async function getBorrowersWithKeysGrouped() {
   });
 
   return Array.from(borrowerMap.values());
+}
+
+/**
+ * Search for borrowers by name or email (for borrower search component)
+ */
+export async function searchBorrowers(searchTerm: string) {
+  const userId = await getCurrentUserId();
+
+  if (!searchTerm || searchTerm.length < 2) {
+    return [];
+  }
+
+  const borrowers = await prisma.borrower.findMany({
+    where: {
+      userId,
+      OR: [
+        {
+          residentBorrower: {
+            OR: [
+              { name: { contains: searchTerm, mode: 'insensitive' } },
+              { email: { contains: searchTerm, mode: 'insensitive' } },
+            ],
+          },
+        },
+        {
+          externalBorrower: {
+            OR: [
+              { name: { contains: searchTerm, mode: 'insensitive' } },
+              { email: { contains: searchTerm, mode: 'insensitive' } },
+            ],
+          },
+        },
+      ],
+    },
+    include: {
+      residentBorrower: true,
+      externalBorrower: true,
+    },
+    take: 10, // Limit results
+  });
+
+  return borrowers.map((borrower) => {
+    const details = getBorrowerDetails(borrower);
+    return {
+      id: details.id,
+      name: details.name,
+      email: details.email,
+      phone: details.phone,
+      company: details.company,
+    };
+  });
 }

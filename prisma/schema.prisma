@@ -44,21 +44,48 @@ model KeyCopy {
 }
 
 model Borrower {
-  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String        @db.VarChar(100)
-  email        String        @db.VarChar(255)  // Now required
-  phone        String?       @db.VarChar(20)
-  company      String?       @db.VarChar(100)
-  createdAt    DateTime      @default(now())
-  userId       String        @db.Uuid
-  user         User          @relation(fields: [userId], references: [id])
-  issueRecords IssueRecord[]
-
-  // Ensure email uniqueness within each cooperative
-  @@unique([email, userId])
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  affiliation       BorrowerAffiliation
+  createdAt         DateTime            @default(now())
+  userId            String              @db.Uuid
+  
+  // Polymorphic relations - only one will be populated based on affiliation
+  residentBorrowerId  String?           @unique @db.Uuid
+  externalBorrowerId  String?           @unique @db.Uuid
+  
+  user              User                @relation(fields: [userId], references: [id])
+  residentBorrower  ResidentBorrower?   @relation(fields: [residentBorrowerId], references: [id], onDelete: Cascade)
+  externalBorrower  ExternalBorrower?   @relation(fields: [externalBorrowerId], references: [id], onDelete: Cascade)
+  issueRecords      IssueRecord[]
   
   // GDPR Note: Borrower records automatically deleted when no active lending records
   // Placeholder emails (@placeholder.com) indicate missing real email addresses
+}
+
+model ResidentBorrower {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @db.VarChar(100)
+  email     String    @db.VarChar(255)
+  phone     String?   @db.VarChar(20)
+  createdAt DateTime  @default(now())
+  borrower  Borrower?
+  
+  // Ensure email uniqueness for residents within the system
+  @@unique([email])
+}
+
+model ExternalBorrower {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @db.VarChar(100)
+  email     String    @db.VarChar(255)
+  phone     String?   @db.VarChar(20)
+  address   String?   @db.VarChar(200)
+  company   String?   @db.VarChar(100)
+  createdAt DateTime  @default(now())
+  borrower  Borrower?
+  
+  // Ensure email uniqueness for external borrowers within the system
+  @@unique([email])
 }
 
 model IssueRecord {
@@ -81,4 +108,9 @@ enum KeyStatus {
   AVAILABLE
   OUT
   LOST
+}
+
+enum BorrowerAffiliation {
+  RESIDENT
+  EXTERNAL
 }

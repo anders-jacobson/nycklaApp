@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma';
-import { KeyStatus } from '@prisma/client';
+import { KeyStatus, BorrowerAffiliation } from '@prisma/client';
 
 // Swedish names for realistic data
 const SWEDISH_NAMES = [
@@ -89,12 +89,65 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
+async function createBorrower(
+  name: string,
+  userId: string,
+  company?: string | null,
+  isExternal: boolean = false,
+) {
+  const email =
+    Math.random() > 0.1
+      ? generateEmail(name)
+      : `${name.toLowerCase().replace(/\s+/g, '.')}@placeholder.com`;
+  const phone = Math.random() > 0.05 ? generateSwedishPhone() : null;
+
+  if (isExternal || company) {
+    // Create external borrower
+    const externalBorrower = await prisma.externalBorrower.create({
+      data: {
+        name,
+        email,
+        phone,
+        company: company || null,
+        address: isExternal ? `${Math.floor(Math.random() * 999 + 1)} Gatan, Stockholm` : null,
+      },
+    });
+
+    return await prisma.borrower.create({
+      data: {
+        affiliation: BorrowerAffiliation.EXTERNAL,
+        externalBorrowerId: externalBorrower.id,
+        userId,
+      },
+    });
+  } else {
+    // Create resident borrower
+    const residentBorrower = await prisma.residentBorrower.create({
+      data: {
+        name,
+        email,
+        phone,
+      },
+    });
+
+    return await prisma.borrower.create({
+      data: {
+        affiliation: BorrowerAffiliation.RESIDENT,
+        residentBorrowerId: residentBorrower.id,
+        userId,
+      },
+    });
+  }
+}
+
 async function main() {
   console.log('🧹 Cleaning existing key data...');
   // Clean up existing key data in correct order (but keep users!)
   await prisma.issueRecord.deleteMany({});
   await prisma.keyCopy.deleteMany({});
   await prisma.borrower.deleteMany({});
+  await prisma.residentBorrower.deleteMany({});
+  await prisma.externalBorrower.deleteMany({});
   await prisma.keyType.deleteMany({});
 
   console.log('👤 Finding or creating user...');
@@ -222,15 +275,13 @@ async function main() {
     if (nameIndex >= shuffledNames.length) break;
 
     const name = shuffledNames[nameIndex++];
-    const borrower = await prisma.borrower.create({
-      data: {
-        name: name,
-        email: Math.random() > 0.1 ? generateEmail(name) : null, // 90% have email
-        phone: Math.random() > 0.05 ? generateSwedishPhone() : null, // 95% have phone
-        company: Math.random() > 0.8 ? 'Bostadsrättsföreningen' : null, // 20% are company contacts
-        userId: userId,
-      },
-    });
+    const isCompanyContact = Math.random() > 0.8; // 20% are company contacts
+    const borrower = await createBorrower(
+      name,
+      userId,
+      isCompanyContact ? 'Bostadsrättsföreningen' : null,
+      false, // Residents are not external
+    );
 
     gKeyHolders.push(borrower);
 
@@ -285,20 +336,19 @@ async function main() {
     if (nameIndex >= shuffledNames.length) break;
 
     const name = shuffledNames[nameIndex++];
-    const borrower = await prisma.borrower.create({
-      data: {
-        name: name,
-        email: Math.random() > 0.15 ? generateEmail(name) : null,
-        phone: Math.random() > 0.1 ? generateSwedishPhone() : null,
-        company:
-          key.keyTypeLabel === 'E'
-            ? 'Avfallshantering AB'
-            : key.keyTypeLabel === 'C'
-              ? 'Fastighetsskötsel Service'
-              : null,
-        userId: userId,
-      },
-    });
+    const company =
+      key.keyTypeLabel === 'E'
+        ? 'Avfallshantering AB'
+        : key.keyTypeLabel === 'C'
+          ? 'Fastighetsskötsel Service'
+          : null;
+
+    const borrower = await createBorrower(
+      name,
+      userId,
+      company,
+      !!company, // External if they have a company
+    );
 
     await prisma.issueRecord.create({
       data: {

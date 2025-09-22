@@ -80,6 +80,13 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [currentStep]);
 
+  // Clear error when keys are selected on the select-keys step
+  useEffect(() => {
+    if (currentStep === 'select-keys' && selectedKeyIds.length > 0 && error) {
+      setError(null);
+    }
+  }, [selectedKeyIds, currentStep, error]);
+
   const handleBack = () => {
     switch (currentStep) {
       case 'borrower-details':
@@ -169,7 +176,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
   const availableKeyOptions: MultiSelectOption[] = keyTypes.map((keyType) => ({
     label: `${keyType.label} - ${keyType.function}`,
     value: keyType.id,
-    badge: `${keyType.availableCopies} available`,
+    badge: `${keyType.availableCopies}`,
     description: keyType.accessArea || 'No specific access area',
     disabled: keyType.availableCopies === 0,
   }));
@@ -466,42 +473,41 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
 
       {/* Main content */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto space-y-6">
           {renderStepContent()}
 
           {error && (
-            <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
               <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
+
+          {/* Navigation buttons positioned after content */}
+          <div className="flex justify-between pt-4">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleBack}
+              disabled={isLoading || currentStep === 'select-keys'}
+            >
+              Back
+            </Button>
+
+            {currentStep === 'confirm' ? (
+              <Button onClick={handleSubmit} disabled={isLoading} size="lg" className="gap-2">
+                {isLoading && (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                )}
+                Issue Keys
+              </Button>
+            ) : (
+              <Button onClick={handleNext} disabled={isLoading} size="lg">
+                Next
+              </Button>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Footer with navigation */}
-      <footer className="p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-2xl mx-auto flex justify-between">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={isLoading || currentStep === 'select-keys'}
-          >
-            Back
-          </Button>
-
-          {currentStep === 'confirm' ? (
-            <Button onClick={handleSubmit} disabled={isLoading} className="gap-2">
-              {isLoading && (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              )}
-              Issue Keys
-            </Button>
-          ) : (
-            <Button onClick={handleNext} disabled={isLoading}>
-              Next
-            </Button>
-          )}
-        </div>
-      </footer>
     </div>
   );
 }
