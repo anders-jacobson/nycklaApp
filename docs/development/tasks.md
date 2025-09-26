@@ -330,13 +330,20 @@ Implementation roadmap for the Swedish housing cooperative key management applic
 - **Accessibility**: Full keyboard navigation, ARIA labels, screen reader support
 - **Mobile**: Responsive design with collapsible columns
 
-- [ ] **Key lending workflow with inline borrower creation** 🔄 _[HIGH PRIORITY: GDPR-compliant approach, no separate borrower tab]_
+- [x] **Key lending workflow with inline borrower creation** ✅ _[COMPLETED: Multi-key issue flow, borrower search/create, validation]_
 - [ ] **Key return workflow implementation** ⏳ _[Ready for breakdown after lending]_
+  - [ ] Create `returnKey` server action (transactional): update `IssueRecord.returnedDate`, set `KeyCopy.status` to `AVAILABLE`, delete borrower if no other active loans
+  - [ ] Add "Return Keys" UI in Active Loans table (dropdown action + confirm dialog)
+  - [ ] Revalidate `/active-loans` and `/keys` after returns
 - [ ] **Bulk key copy creation workflow** ⏳ _[Ready for breakdown]_
-- [ ] **Key status tracking (Available/Out/Lost)** ⏳ _[Ready for breakdown]_
+- [x] **Key status tracking (Available/Out/Lost)** ✅ _[COMPLETED: Status badges + charts wired to DB]_
 - [ ] **Form validation with proper error handling** ⏳ _[Ready for breakdown]_
+  - [ ] Add consistent success/error toasts for issue/return flows
+  - [ ] Standardize server action result handling across pages
 - [ ] **Mobile-optimized forms and inputs** ⏳ _[Ready for breakdown]_
+  - [ ] Replace plain inputs in `components/workflow/issue-key-workflow.tsx` with shadcn/ui `Input`, `Checkbox` (and date input via `Input type="date"` wrapper)
 - [ ] **Data import functionality (CSV)** ⏳ _[Lower priority - Ready for breakdown]_
+- [ ] Borrower edit dialog + server action to update contact details
 
 ## Phase 3: Dashboard & Visualization (Week 5-6)
 
