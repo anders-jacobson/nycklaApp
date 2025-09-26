@@ -27,6 +27,7 @@ import { IconPlus } from '@tabler/icons-react';
 import { ColumnCustomizer } from './column-customizer';
 import { getVisibleColumns } from './borrower-columns';
 import { useColumnPreferences } from '@/hooks/useColumnPreferences';
+import { DataTablePagination } from '@/components/shared/data-table-pagination';
 
 interface DataTableProps<TData> {
   data: TData[]; // Borrowers data only
@@ -134,29 +135,7 @@ export function DataTable<TData>({ data }: DataTableProps<TData>) {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between space-x-2 py-4 w-full">
-        <span className="text-sm text-muted-foreground">
-          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-        </span>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination table={table} />
     </div>
   );
 }
