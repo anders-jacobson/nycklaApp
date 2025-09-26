@@ -131,7 +131,7 @@ export async function getBorrowersWithKeysGrouped() {
         phone: borrowerDetails.phone ?? '',
         isResident: borrowerDetails.affiliation === 'RESIDENT',
         companyName: borrowerDetails.company ?? undefined,
-        purposeNotes: undefined, // Can be extended if needed
+        purposeNotes: borrowerDetails.borrowerPurpose ?? undefined,
         borrowedKeys: [],
         activeLoanCount: 0,
         hasOverdue: false,
@@ -207,4 +207,47 @@ export async function searchBorrowers(searchTerm: string) {
       company: details.company,
     };
   });
+}
+
+/**
+ * Update borrower purpose for external borrowers
+ */
+export async function updateBorrowerPurpose(
+  borrowerId: string,
+  purpose: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const userId = await getCurrentUserId();
+
+    // Find the borrower and ensure it belongs to the current user
+    const borrower = await prisma.borrower.findFirst({
+      where: {
+        id: borrowerId,
+        userId,
+        affiliation: 'EXTERNAL', // Only allow updating external borrowers
+      },
+      include: {
+        externalBorrower: true,
+      },
+    });
+
+    if (!borrower || !borrower.externalBorrower) {
+      return { success: false, error: 'External borrower not found' };
+    }
+
+    // Update the purpose in the ExternalBorrower table
+    await prisma.externalBorrower.update({
+      where: {
+        id: borrower.externalBorrower.id,
+      },
+      data: {
+        borrowerPurpose: purpose.trim() || null,
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to update borrower purpose:', error);
+    return { success: false, error: 'Failed to update borrower purpose' };
+  }
 }

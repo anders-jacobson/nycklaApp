@@ -75,14 +75,15 @@ model ResidentBorrower {
 }
 
 model ExternalBorrower {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String    @db.VarChar(100)
-  email     String    @db.VarChar(255)
-  phone     String?   @db.VarChar(20)
-  address   String?   @db.VarChar(200)
-  company   String?   @db.VarChar(100)
-  createdAt DateTime  @default(now())
-  borrower  Borrower?
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String    @db.VarChar(100)
+  email          String    @db.VarChar(255)
+  phone          String?   @db.VarChar(20)
+  address        String?   @db.VarChar(200)
+  company        String?   @db.VarChar(100)
+  borrowerPurpose String?   @db.VarChar(500)  // Description of why they need keys
+  createdAt      DateTime  @default(now())
+  borrower       Borrower?
   
   // Ensure email uniqueness for external borrowers within the system
   @@unique([email])

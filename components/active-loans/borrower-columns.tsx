@@ -1,8 +1,9 @@
 'use client';
 
+import { useState, useRef } from 'react';
 import { ColumnDef, HeaderContext, CellContext } from '@tanstack/react-table';
 
-import { IconArrowsUpDown, IconDots, IconInfoCircle } from '@tabler/icons-react';
+import { IconArrowsUpDown, IconDots, IconInfoCircle, IconLoader } from '@tabler/icons-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,45 +23,120 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { KeyboardShortcutTip } from '@/components/ui/keyboard-tip';
 import { IconMail, IconPhone, IconKeyOff, IconEdit, IconPlus } from '@tabler/icons-react';
+import { updateBorrowerPurpose } from '@/app/actions/dashboard';
 
 // Affiliation Info Dialog Component
 function AffiliationInfoDialog({ borrower }: { borrower: BorrowerWithKeys }) {
+  const [purpose, setPurpose] = useState(borrower.purposeNotes || '');
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasChanged, setHasChanged] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  const handlePurposeChange = (value: string) => {
+    setPurpose(value);
+    setHasChanged(value !== (borrower.purposeNotes || ''));
+  };
+
+  const handleSave = async () => {
+    if (!hasChanged) {
+      setIsOpen(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await updateBorrowerPurpose(borrower.borrowerId, purpose);
+      if (result.success) {
+        // Update the local borrower data
+        borrower.purposeNotes = purpose;
+        setHasChanged(false);
+        setIsOpen(false);
+      } else {
+        console.error('Failed to update purpose:', result.error);
+        // Reset to original value on error
+        setPurpose(borrower.purposeNotes || '');
+        setHasChanged(false);
+      }
+    } catch (error) {
+      console.error('Error updating purpose:', error);
+      // Reset to original value on error
+      setPurpose(borrower.purposeNotes || '');
+      setHasChanged(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      // Ctrl+Enter or Cmd+Enter to save and close
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      // Escape to close without saving (if no changes) or reset changes
+      e.preventDefault();
+      if (hasChanged) {
+        setPurpose(borrower.purposeNotes || '');
+        setHasChanged(false);
+      }
+      setIsOpen(false);
+    }
+  };
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1">
           <IconInfoCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onKeyDown={handleKeyDown}>
         <DialogHeader>
-          <DialogTitle>Affiliation Information</DialogTitle>
-          <DialogDescription>
-            Add information that helps you understand the affiliation and its purpose.
-          </DialogDescription>
+          <DialogTitle>Borrower Purpose</DialogTitle>
+          <DialogDescription>Why this external borrower needs access to keys.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <label htmlFor="notes" className="text-sm font-medium">
-              Notes
+            <label htmlFor="purpose" className="text-sm font-medium flex items-center gap-2">
+              Purpose Description
+              <KeyboardShortcutTip
+                shortcuts={[
+                  { key: 'Click', action: 'Edit purpose text' },
+                  { key: 'Ctrl+Enter', action: 'Save and close' },
+                  { key: 'Escape', action: 'Cancel changes' },
+                ]}
+                position="right"
+              />
             </label>
             <Textarea
-              id="notes"
-              defaultValue={borrower.purposeNotes || ''}
-              placeholder="Add notes about this borrower..."
+              id="purpose"
+              value={purpose}
+              onChange={(e) => handlePurposeChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter purpose for key access..."
               className="mt-1 min-h-20"
+              disabled={isLoading}
             />
           </div>
+          <div className="text-xs text-muted-foreground">
+            <strong>Company:</strong> {borrower.companyName || 'Not specified'}
+          </div>
+          {hasChanged && (
+            <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+              Changes will be saved when you close this dialog.
+            </div>
+          )}
         </div>
         <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Close</Button>
-          </DialogClose>
-          <Button>Save Changes</Button>
+          <Button ref={closeButtonRef} onClick={handleSave} disabled={isLoading} className="gap-1">
+            {isLoading && <IconLoader className="h-3 w-3 animate-spin" />}
+            {hasChanged ? 'Save & Close' : 'Close'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -169,7 +245,6 @@ export function getVisibleColumns(
             <div className="flex items-center gap-1">
               <span>🏠</span>
               <span className="text-sm font-medium">Resident</span>
-              <AffiliationInfoDialog borrower={borrower} />
             </div>
           );
         }

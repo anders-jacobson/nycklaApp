@@ -140,6 +140,7 @@ export async function issueKey(formData: FormData): Promise<
     const borrowerEmail = (formData.get('borrowerEmail') as string | null)?.trim() ?? '';
     const borrowerPhone = (formData.get('borrowerPhone') as string | null)?.trim() || undefined;
     const borrowerCompany = (formData.get('borrowerCompany') as string | null)?.trim() || undefined;
+    const borrowerPurpose = (formData.get('borrowerPurpose') as string | null)?.trim() || undefined;
     const dueDate = (formData.get('dueDate') as string | null) || undefined;
     const notes = (formData.get('notes') as string | null)?.trim() || undefined;
     const idChecked = formData.get('idChecked') === 'true';
@@ -156,6 +157,7 @@ export async function issueKey(formData: FormData): Promise<
       email: borrowerEmail,
       phone: borrowerPhone,
       company: borrowerCompany,
+      borrowerPurpose: borrowerPurpose,
     });
 
     if (!validation.isValid) {
@@ -169,10 +171,10 @@ export async function issueKey(formData: FormData): Promise<
       return { success: false, error: availabilityCheck.error };
     }
 
-    if (!availabilityCheck.data.hasAvailable) {
+    if (!availabilityCheck.data?.hasAvailable) {
       return {
         success: false,
-        error: `No available copies of ${availabilityCheck.data.keyType.label} - ${availabilityCheck.data.keyType.function}. Would you like to create a new copy first?`,
+        error: `No available copies of ${availabilityCheck.data?.keyType.label} - ${availabilityCheck.data?.keyType.function}. Would you like to create a new copy first?`,
       };
     }
 
@@ -225,6 +227,7 @@ export async function issueKey(formData: FormData): Promise<
               email: validation.sanitized.email,
               phone: validation.sanitized.phone,
               company: validation.sanitized.company,
+              borrowerPurpose: validation.sanitized.borrowerPurpose,
             },
             userId,
             tx, // Pass transaction

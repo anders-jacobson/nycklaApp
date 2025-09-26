@@ -3,7 +3,13 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import { BorrowerAffiliation, Borrower, ResidentBorrower, ExternalBorrower } from '@prisma/client';
+import {
+  BorrowerAffiliation,
+  Borrower,
+  ResidentBorrower,
+  ExternalBorrower,
+  Prisma,
+} from '@prisma/client';
 
 export const PLACEHOLDER_EMAIL_DOMAIN = '@placeholder.com';
 
@@ -129,6 +135,12 @@ export const borrowerValidation = {
     pattern: /^[a-zA-ZÅÄÖåäö\s\-'\.&0-9AB]+$/,
     message: 'Affiliation contains invalid characters',
   },
+  borrowerPurpose: {
+    required: false,
+    maxLength: 500,
+    pattern: /^[a-zA-ZÅÄÖåäö\s\-'\.,:;!?&0-9\n\r]+$/,
+    message: 'Purpose description contains invalid characters',
+  },
 } as const;
 
 export type BorrowerValidationResult = {
@@ -139,6 +151,7 @@ export type BorrowerValidationResult = {
     email: string;
     phone?: string;
     company?: string;
+    borrowerPurpose?: string;
   };
 };
 
@@ -150,6 +163,7 @@ export function validateBorrowerData(data: {
   email: string;
   phone?: string;
   company?: string;
+  borrowerPurpose?: string;
 }): BorrowerValidationResult {
   const errors: Record<string, string> = {};
 
@@ -190,6 +204,14 @@ export function validateBorrowerData(data: {
     errors.company = borrowerValidation.company.message;
   }
 
+  // Validate borrower purpose (optional)
+  const borrowerPurpose = data.borrowerPurpose?.trim();
+  if (borrowerPurpose && borrowerPurpose.length > borrowerValidation.borrowerPurpose.maxLength) {
+    errors.borrowerPurpose = `Purpose description must be less than ${borrowerValidation.borrowerPurpose.maxLength} characters`;
+  } else if (borrowerPurpose && !borrowerValidation.borrowerPurpose.pattern.test(borrowerPurpose)) {
+    errors.borrowerPurpose = borrowerValidation.borrowerPurpose.message;
+  }
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors,
@@ -198,6 +220,7 @@ export function validateBorrowerData(data: {
       email: email || '',
       phone: sanitizedPhone,
       company: company || undefined,
+      borrowerPurpose: borrowerPurpose || undefined,
     },
   };
 }
@@ -212,16 +235,17 @@ export async function createBorrowerWithAffiliation(
     phone?: string;
     company?: string;
     address?: string;
+    borrowerPurpose?: string;
     isExternal?: boolean;
   },
   userId: string,
-  tx?: typeof prisma, // Prisma transaction
+  tx?: Prisma.TransactionClient, // Prisma transaction
 ) {
   const prismaClient = tx || prisma;
-  const { name, email, phone, company, address, isExternal } = data;
+  const { name, email, phone, company, address, borrowerPurpose, isExternal } = data;
 
   // Determine if this should be an external borrower
-  const shouldBeExternal = isExternal || !!company || !!address;
+  const shouldBeExternal = isExternal || !!company || !!address || !!borrowerPurpose;
 
   if (shouldBeExternal) {
     // Create external borrower
@@ -232,6 +256,7 @@ export async function createBorrowerWithAffiliation(
         phone,
         company,
         address,
+        borrowerPurpose,
       },
     });
 
@@ -313,6 +338,7 @@ export function getBorrowerDetails(
       affiliation: BorrowerAffiliation.RESIDENT,
       company: null,
       address: null,
+      borrowerPurpose: null,
     };
   } else if (borrower.affiliation === BorrowerAffiliation.EXTERNAL && borrower.externalBorrower) {
     return {
@@ -323,6 +349,7 @@ export function getBorrowerDetails(
       affiliation: BorrowerAffiliation.EXTERNAL,
       company: borrower.externalBorrower.company,
       address: borrower.externalBorrower.address,
+      borrowerPurpose: borrower.externalBorrower.borrowerPurpose,
     };
   }
 

@@ -16,7 +16,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 
-interface MultiSelectOption {
+export interface MultiSelectOption {
   label: string;
   value: string;
   disabled?: boolean;
@@ -217,7 +217,7 @@ export function MultiSelect({
                 return (
                   <CommandItem
                     key={option.value}
-                    onSelect={(currentValue) => {
+                    onSelect={() => {
                       handleSelect(option.value);
                     }}
                     className={cn(

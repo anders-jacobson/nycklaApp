@@ -9,6 +9,7 @@ export async function issueKeyAction(data: {
   borrowerEmail: string;
   borrowerPhone?: string;
   borrowerCompany?: string;
+  borrowerPurpose?: string;
   dueDate?: string;
   notes?: string;
   idChecked: boolean;
@@ -40,6 +41,7 @@ export async function issueMultipleKeysAction(data: {
   borrowerEmail: string;
   borrowerPhone?: string;
   borrowerCompany?: string;
+  borrowerPurpose?: string;
   dueDate?: string;
   notes?: string;
   idChecked: boolean;
@@ -55,6 +57,7 @@ export async function issueMultipleKeysAction(data: {
           borrowerEmail: data.borrowerEmail,
           borrowerPhone: data.borrowerPhone,
           borrowerCompany: data.borrowerCompany,
+          borrowerPurpose: data.borrowerPurpose,
           dueDate: data.dueDate,
           notes: data.notes,
           idChecked: data.idChecked,

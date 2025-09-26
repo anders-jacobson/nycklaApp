@@ -37,7 +37,13 @@ export function BorrowerSearch({
   // Real search function using server action
   const searchBorrowers = async (term: string): Promise<Borrower[]> => {
     const { searchBorrowers: searchAction } = await import('@/app/actions/dashboard');
-    return await searchAction(term);
+    const results = await searchAction(term);
+    // Map null to undefined for optional fields
+    return results.map((borrower) => ({
+      ...borrower,
+      phone: borrower.phone ?? undefined,
+      company: borrower.company ?? undefined,
+    }));
   };
 
   // Debounced search
@@ -154,7 +160,7 @@ export function BorrowerSearch({
               <div className="flex flex-col items-center justify-center py-6 text-center">
                 <IconUser className="h-8 w-8 text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground mb-3">
-                  No borrowers found for "{searchTerm}"
+                  No borrowers found for &quot;{searchTerm}&quot;
                 </p>
                 <Button onClick={handleCreateNew} variant="outline" size="sm" className="gap-1">
                   <IconPlus className="h-3.5 w-3.5" />

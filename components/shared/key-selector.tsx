@@ -143,7 +143,8 @@ export function KeySelector({
                 {!hasAvailable && (
                   <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-sm text-amber-800">
-                      No copies available. You'll need to create a new copy before issuing this key.
+                      No copies available. You&apos;ll need to create a new copy before issuing this
+                      key.
                     </p>
                   </div>
                 )}

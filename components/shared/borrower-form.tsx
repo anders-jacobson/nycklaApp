@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -13,6 +14,7 @@ import {
   IconBuilding,
   IconWand,
   IconAlertCircle,
+  IconNotes,
 } from '@tabler/icons-react';
 import {
   generatePlaceholderEmail,
@@ -27,6 +29,7 @@ interface BorrowerFormProps {
     email: string;
     phone?: string;
     company?: string;
+    borrowerPurpose?: string;
   }) => void;
   onCancel: () => void;
   existingBorrower?: {
@@ -35,6 +38,7 @@ interface BorrowerFormProps {
     email: string;
     phone?: string;
     company?: string;
+    borrowerPurpose?: string;
   } | null;
   isLoading?: boolean;
 }
@@ -50,6 +54,7 @@ export function BorrowerForm({
     email: existingBorrower?.email || '',
     phone: existingBorrower?.phone || '',
     company: existingBorrower?.company || '',
+    borrowerPurpose: existingBorrower?.borrowerPurpose || '',
   });
 
   const [validation, setValidation] = useState<BorrowerValidationResult>({
@@ -230,6 +235,31 @@ export function BorrowerForm({
               </p>
             )}
           </div>
+
+          {/* Purpose Field (only show if affiliation is filled - indicates external borrower) */}
+          {formData.company && (
+            <div className="space-y-2">
+              <Label htmlFor="borrowerPurpose" className="flex items-center gap-2">
+                <IconNotes className="h-4 w-4" />
+                Purpose/Description
+              </Label>
+              <Textarea
+                id="borrowerPurpose"
+                value={formData.borrowerPurpose}
+                onChange={(e) => handleInputChange('borrowerPurpose', e.target.value)}
+                placeholder="Describe why they need access to keys (optional)"
+                className={validation.errors.borrowerPurpose ? 'border-destructive' : ''}
+                disabled={isLoading}
+                rows={3}
+              />
+              {validation.errors.borrowerPurpose && (
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  <IconAlertCircle className="h-3.5 w-3.5" />
+                  {validation.errors.borrowerPurpose}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-4">
