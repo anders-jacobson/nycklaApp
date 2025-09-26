@@ -335,6 +335,11 @@ Implementation roadmap for the Swedish housing cooperative key management applic
   - [ ] Create `returnKey` server action (transactional): update `IssueRecord.returnedDate`, set `KeyCopy.status` to `AVAILABLE`, delete borrower if no other active loans
   - [ ] Add "Return Keys" UI in Active Loans table (dropdown action + confirm dialog)
   - [ ] Revalidate `/active-loans` and `/keys` after returns
+- [ ] **Mark key as lost workflow** ⏳ _[Ready for breakdown]_
+  - [ ] Create `markKeyLost` server action (transactional): set `KeyCopy.status` to `LOST`, set `IssueRecord.returnedDate` to now (if currently OUT), then delete borrower if no other active loans
+  - [ ] Add "Mark Lost" per-key action in Active Loans table (with confirm dialog and clear warning)
+  - [ ] Optional follow-up prompt: offer to create replacement copy via existing `addKeyCopy`
+  - [ ] Revalidate `/active-loans` and `/keys`; charts must reflect lost counts
 - [ ] **Bulk key copy creation workflow** ⏳ _[Ready for breakdown]_
 - [x] **Key status tracking (Available/Out/Lost)** ✅ _[COMPLETED: Status badges + charts wired to DB]_
 - [ ] **Form validation with proper error handling** ⏳ _[Ready for breakdown]_
