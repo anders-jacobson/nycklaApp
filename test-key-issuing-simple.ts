@@ -59,7 +59,6 @@ async function testKeyIssuingDirect() {
           keyCopyId: availableKeyCopy.id,
           borrowerId: residentBorrower.id,
           userId: testUser.id,
-          notes: 'Test resident key issuing',
           idChecked: true,
         },
       });
@@ -104,7 +103,6 @@ async function testKeyIssuingDirect() {
             keyCopyId: anotherAvailableKey.id,
             borrowerId: externalBorrower.id,
             userId: testUser.id,
-            notes: 'External contractor access',
             idChecked: true,
           },
         });
@@ -237,4 +235,3 @@ async function testKeyIssuingDirect() {
 }
 
 testKeyIssuingDirect();
-

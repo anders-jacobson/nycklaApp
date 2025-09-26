@@ -27,6 +27,7 @@ import { IconPlus } from '@tabler/icons-react';
 import { ColumnCustomizer } from './column-customizer';
 import { getVisibleColumns } from './borrower-columns';
 import { useColumnPreferences } from '@/hooks/useColumnPreferences';
+import Link from 'next/link';
 import { DataTablePagination } from '@/components/shared/data-table-pagination';
 
 interface DataTableProps<TData> {
@@ -67,33 +68,34 @@ export function DataTable<TData>({ data }: DataTableProps<TData>) {
 
   return (
     <div className="space-y-4">
-      {/* Header with Actions */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">All Borrowers</h2>
           <p className="text-muted-foreground">Manage borrower contacts and track borrowed keys</p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <ColumnCustomizer
-            columnVisibility={columnVisibility}
-            onColumnVisibilityChange={setColumnVisibility}
-          />
-          <Button className="gap-1">
-            <IconPlus className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Issue Key</span>
-          </Button>
-        </div>
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex items-center py-4">
+      {/* Search, Filter and Actions */}
+      <div className="flex items-center justify-between gap-2 py-4">
         <Input
           placeholder="Filter by name..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={(event) => handleNameFilter(event.target.value)}
           className="max-w-xs"
         />
+        <div className="ml-auto flex items-center gap-2">
+          <ColumnCustomizer
+            columnVisibility={columnVisibility}
+            onColumnVisibilityChange={setColumnVisibility}
+          />
+          <Button asChild className="gap-1">
+            <Link href="/issue-key">
+              <IconPlus className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Issue Key</span>
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Table */}

@@ -62,7 +62,6 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
   });
   const [lendingDetails, setLendingDetails] = useState({
     dueDate: '',
-    notes: '',
     idChecked: false,
   });
 
@@ -177,7 +176,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
         borrowerCompany: borrowerData.company,
         borrowerPurpose: borrowerData.borrowerPurpose,
         dueDate: lendingDetails.dueDate,
-        notes: lendingDetails.notes,
+
         idChecked: lendingDetails.idChecked,
         borrowerId: borrowerData.id || undefined, // Pass existing borrower ID if available
       });
@@ -317,22 +316,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <IconNotes className="h-5 w-5" />
-                  Notes (Optional)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <textarea
-                  value={lendingDetails.notes}
-                  onChange={(e) => setLendingDetails({ ...lendingDetails, notes: e.target.value })}
-                  placeholder="Add any notes about this key issue..."
-                  className="w-full p-2 border rounded-md min-h-20"
-                />
-              </CardContent>
-            </Card>
+            {/* Notes section removed per requirements */}
 
             <Card>
               <CardContent className="pt-6">

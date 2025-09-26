@@ -42,6 +42,7 @@ import {
   defaultKeyTypeColumnVisibility,
 } from './key-type-columns';
 import { IconPlus } from '@tabler/icons-react';
+import Link from 'next/link';
 import { DataTablePagination } from '@/components/shared/data-table-pagination';
 
 type KeyTypesTableProps = {
@@ -95,12 +96,26 @@ export function KeyTypesTable({
           <h2 className="text-2xl font-bold tracking-tight">Key Types</h2>
           <p className="text-muted-foreground">Manage key types in your cooperative</p>
         </div>
+      </div>
 
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 py-4">
+        <Input
+          placeholder="Filter by label..."
+          value={(table.getColumn('label')?.getFilterValue() as string) ?? ''}
+          onChange={(event) => handleFilter(event.target.value)}
+          className="max-w-xs"
+        />
+        <div className="ml-auto flex items-center gap-2">
           <KeyTypeColumnCustomizer
             columnVisibility={columnVisibility}
             onColumnVisibilityChange={setColumnVisibility}
           />
+          <Button className="gap-1" asChild>
+            <Link href="/issue-key">
+              <IconPlus className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Issue Key</span>
+            </Link>
+          </Button>
           <Dialog>
             <DialogTrigger asChild>
               <Button className="gap-1">
@@ -133,15 +148,6 @@ export function KeyTypesTable({
             </DialogContent>
           </Dialog>
         </div>
-      </div>
-
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter by label..."
-          value={(table.getColumn('label')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => handleFilter(event.target.value)}
-          className="max-w-xs"
-        />
       </div>
 
       <div className="rounded-md border">

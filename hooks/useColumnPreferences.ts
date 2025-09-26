@@ -63,7 +63,6 @@ export function useColumnPreferences() {
       setColumnVisibility((prev) => ({
         ...prev,
         affiliation: false, // Hide on mobile to save space
-        notes: false,
         dateIssued: false,
         returnDate: false,
       }));
@@ -88,7 +87,6 @@ export function useColumnPreferences() {
       affiliation: isMobile ? false : true,
       dateIssued: false,
       returnDate: false,
-      notes: false,
     });
   };
 

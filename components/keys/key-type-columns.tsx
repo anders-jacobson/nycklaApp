@@ -15,7 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { IconArrowsUpDown, IconEdit, IconTrash, IconDots, IconPlus } from '@tabler/icons-react';
+import {
+  IconArrowsUpDown,
+  IconEdit,
+  IconTrash,
+  IconDotsVertical,
+  IconPlus,
+} from '@tabler/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,62 +113,66 @@ export function getKeyTypeColumns(params: {
   // Actions column (always visible)
   columns.push({
     id: 'actions',
-    header: 'Actions',
+    header: () => null,
+    enableSorting: false,
+    enableHiding: false,
     cell: ({ row }: CellContext<KeyTypeRow, unknown>) => {
       const kt = row.original;
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <IconDots className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Key Type Actions</DropdownMenuLabel>
-            <form action={addCopyAction}>
-              <Input type="hidden" name="id" value={kt.id} />
-              <DropdownMenuItem asChild>
-                <button type="submit" className="w-full">
-                  <IconPlus className="h-3.5 w-3.5 mr-2" />
-                  Add Copy
-                </button>
-              </DropdownMenuItem>
-            </form>
-            <DropdownMenuSeparator />
-            <Dialog>
-              <DialogTrigger asChild>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <IconEdit className="h-3.5 w-3.5 mr-2" />
-                  Edit
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <IconDotsVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Key Type Actions</DropdownMenuLabel>
+              <form action={addCopyAction}>
+                <Input type="hidden" name="id" value={kt.id} />
+                <DropdownMenuItem asChild>
+                  <button type="submit" className="w-full">
+                    <IconPlus className="h-3.5 w-3.5 mr-2" />
+                    Add Copy
+                  </button>
                 </DropdownMenuItem>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Edit Key Type</DialogTitle>
-                </DialogHeader>
-                <form action={updateAction} className="grid gap-3">
-                  <Input type="hidden" name="id" value={kt.id} />
-                  <Input name="name" defaultValue={kt.name} required minLength={2} />
-                  <Input name="accessArea" defaultValue={kt.accessArea} />
-                  <DialogFooter>
-                    <Button type="submit">Save</Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-            <DropdownMenuSeparator />
-            <form action={deleteAction}>
-              <Input type="hidden" name="id" value={kt.id} />
-              <DropdownMenuItem asChild>
-                <button type="submit" className="w-full text-destructive">
-                  <IconTrash className="h-3.5 w-3.5 mr-2" />
-                  Delete
-                </button>
-              </DropdownMenuItem>
-            </form>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              </form>
+              <DropdownMenuSeparator />
+              <Dialog>
+                <DialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <IconEdit className="h-3.5 w-3.5 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit Key Type</DialogTitle>
+                  </DialogHeader>
+                  <form action={updateAction} className="grid gap-3">
+                    <Input type="hidden" name="id" value={kt.id} />
+                    <Input name="name" defaultValue={kt.name} required minLength={2} />
+                    <Input name="accessArea" defaultValue={kt.accessArea} />
+                    <DialogFooter>
+                      <Button type="submit">Save</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              <DropdownMenuSeparator />
+              <form action={deleteAction}>
+                <Input type="hidden" name="id" value={kt.id} />
+                <DropdownMenuItem asChild>
+                  <button type="submit" className="w-full text-destructive">
+                    <IconTrash className="h-3.5 w-3.5 mr-2" />
+                    Delete
+                  </button>
+                </DropdownMenuItem>
+              </form>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
   });

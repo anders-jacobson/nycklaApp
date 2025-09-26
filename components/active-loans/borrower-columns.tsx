@@ -3,7 +3,12 @@
 import { useState, useRef } from 'react';
 import { ColumnDef, HeaderContext, CellContext } from '@tanstack/react-table';
 
-import { IconArrowsUpDown, IconDots, IconInfoCircle, IconLoader } from '@tabler/icons-react';
+import {
+  IconArrowsUpDown,
+  IconDotsVertical,
+  IconInfoCircle,
+  IconLoader,
+} from '@tabler/icons-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -175,7 +180,6 @@ export interface ColumnVisibility {
   affiliation: boolean;
   dateIssued: boolean;
   returnDate: boolean;
-  notes: boolean;
 }
 
 // Utility function to format dates
@@ -352,75 +356,62 @@ export function getVisibleColumns(
     });
   }
 
-  if (columnVisibility.notes) {
-    columns.push({
-      id: 'notes',
-      accessorKey: 'notes',
-      header: 'Notes',
-      cell: ({ row }: CellContext<BorrowerWithKeys, unknown>) => {
-        const borrower = row.original;
-        if (!borrower.purposeNotes) {
-          return <div className="text-sm text-muted-foreground">—</div>;
-        }
-        return (
-          <div className="text-sm truncate max-w-[200px]" title={borrower.purposeNotes}>
-            {borrower.purposeNotes}
-          </div>
-        );
-      },
-    });
-  }
+  // Notes column removed per requirements
 
   // Actions column (always visible, always last)
   columns.push({
     id: 'actions',
-    header: 'Actions',
+    header: () => null,
+    enableSorting: false,
+    enableHiding: false,
     cell: ({ row }: CellContext<BorrowerWithKeys, unknown>) => {
       const record = row.original;
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <IconDots className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Contact Actions</DropdownMenuLabel>
-            {record.email && (
-              <DropdownMenuItem onClick={() => (window.location.href = `mailto:${record.email}`)}>
-                <IconMail className="h-3.5 w-3.5 mr-2" />
-                Email
-              </DropdownMenuItem>
-            )}
-            {record.phone && (
-              <DropdownMenuItem onClick={() => (window.location.href = `tel:${record.phone}`)}>
-                <IconPhone className="h-3.5 w-3.5 mr-2" />
-                Call
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Borrower Management</DropdownMenuLabel>
-            <DropdownMenuItem>
-              <IconEdit className="h-3.5 w-3.5 mr-2" />
-              Edit Contact
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <IconPlus className="h-3.5 w-3.5 mr-2" />
-              Issue Key
-            </DropdownMenuItem>
-            {record.borrowedKeys.length > 0 && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Loan Actions</DropdownMenuLabel>
-                <DropdownMenuItem>
-                  <IconKeyOff className="h-3.5 w-3.5 mr-2" />
-                  Return Keys ({record.borrowedKeys.length})
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <IconDotsVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Contact Actions</DropdownMenuLabel>
+              {record.email && (
+                <DropdownMenuItem onClick={() => (window.location.href = `mailto:${record.email}`)}>
+                  <IconMail className="h-3.5 w-3.5 mr-2" />
+                  Email
                 </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              )}
+              {record.phone && (
+                <DropdownMenuItem onClick={() => (window.location.href = `tel:${record.phone}`)}>
+                  <IconPhone className="h-3.5 w-3.5 mr-2" />
+                  Call
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Borrower Management</DropdownMenuLabel>
+              <DropdownMenuItem>
+                <IconEdit className="h-3.5 w-3.5 mr-2" />
+                Edit Contact
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <IconPlus className="h-3.5 w-3.5 mr-2" />
+                Issue Key
+              </DropdownMenuItem>
+              {record.borrowedKeys.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Loan Actions</DropdownMenuLabel>
+                  <DropdownMenuItem>
+                    <IconKeyOff className="h-3.5 w-3.5 mr-2" />
+                    Return Keys ({record.borrowedKeys.length})
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
   });
@@ -433,7 +424,6 @@ export const defaultColumnVisibility: ColumnVisibility = {
   affiliation: true,
   dateIssued: false,
   returnDate: false,
-  notes: false,
 };
 
 // Mobile-optimized column visibility
@@ -441,7 +431,6 @@ export const mobileColumnVisibility: ColumnVisibility = {
   affiliation: false,
   dateIssued: false,
   returnDate: false,
-  notes: false,
 };
 
 // Default columns (for backward compatibility)

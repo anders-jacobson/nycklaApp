@@ -95,7 +95,6 @@ model IssueRecord {
   borrowerId   String    @db.Uuid
   issuedDate   DateTime  @default(now())
   dueDate      DateTime?
-  notes        String?
   idChecked    Boolean   @default(false)
   returnedDate DateTime?
   createdAt    DateTime  @default(now())
@@ -103,6 +102,7 @@ model IssueRecord {
   borrower     Borrower  @relation(fields: [borrowerId], references: [id], onDelete: Cascade)
   keyCopy      KeyCopy   @relation(fields: [keyCopyId], references: [id], onDelete: Cascade)
   user         User      @relation(fields: [userId], references: [id])
+  notesArchive IssueRecordNote[]
 }
 
 enum KeyStatus {
@@ -114,4 +114,15 @@ enum KeyStatus {
 enum BorrowerAffiliation {
   RESIDENT
   EXTERNAL
+}
+
+model IssueRecordNote {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  issueRecordId String      @db.Uuid
+  note          String?
+  archivedAt    DateTime    @default(now())
+
+  issueRecord IssueRecord @relation(fields: [issueRecordId], references: [id], onDelete: Cascade)
+
+  @@index([issueRecordId])
 }

@@ -11,7 +11,6 @@ export async function issueKeyAction(data: {
   borrowerCompany?: string;
   borrowerPurpose?: string;
   dueDate?: string;
-  notes?: string;
   idChecked: boolean;
   borrowerId?: string; // Optional: if provided, use existing borrower instead of creating
 }) {
@@ -43,7 +42,6 @@ export async function issueMultipleKeysAction(data: {
   borrowerCompany?: string;
   borrowerPurpose?: string;
   dueDate?: string;
-  notes?: string;
   idChecked: boolean;
   borrowerId?: string; // Optional: if provided, use existing borrower instead of creating
 }) {
@@ -59,7 +57,6 @@ export async function issueMultipleKeysAction(data: {
           borrowerCompany: data.borrowerCompany,
           borrowerPurpose: data.borrowerPurpose,
           dueDate: data.dueDate,
-          notes: data.notes,
           idChecked: data.idChecked,
           borrowerId: data.borrowerId,
         }),

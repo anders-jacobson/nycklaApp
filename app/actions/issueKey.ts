@@ -142,7 +142,6 @@ export async function issueKey(formData: FormData): Promise<
     const borrowerCompany = (formData.get('borrowerCompany') as string | null)?.trim() || undefined;
     const borrowerPurpose = (formData.get('borrowerPurpose') as string | null)?.trim() || undefined;
     const dueDate = (formData.get('dueDate') as string | null) || undefined;
-    const notes = (formData.get('notes') as string | null)?.trim() || undefined;
     const idChecked = formData.get('idChecked') === 'true';
     const borrowerId = (formData.get('borrowerId') as string | null) || undefined;
 
@@ -248,7 +247,6 @@ export async function issueKey(formData: FormData): Promise<
           borrowerId: borrower.id,
           userId,
           dueDate: dueDate ? new Date(dueDate) : null,
-          notes,
           idChecked,
         },
         select: { id: true },

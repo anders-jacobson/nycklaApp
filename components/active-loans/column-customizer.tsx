@@ -68,12 +68,7 @@ export function ColumnCustomizer({
           Due
         </DropdownMenuCheckboxItem>
 
-        <DropdownMenuCheckboxItem
-          checked={columnVisibility.notes}
-          onCheckedChange={(checked) => handleColumnToggle('notes', checked)}
-        >
-          Notes
-        </DropdownMenuCheckboxItem>
+        {/* Notes column removed per requirements */}
       </DropdownMenuContent>
     </DropdownMenu>
   );

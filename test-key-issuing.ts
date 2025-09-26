@@ -49,7 +49,7 @@ async function testKeyIssuing() {
     residentFormData.append('borrowerName', 'Test Resident Borrower');
     residentFormData.append('borrowerEmail', 'test.resident.issuing@test.com');
     residentFormData.append('borrowerPhone', '070-111-2222');
-    residentFormData.append('notes', 'Test resident key issuing');
+    // notes removed
     residentFormData.append('idChecked', 'true');
 
     const residentResult = await issueKey(residentFormData);
@@ -87,7 +87,7 @@ async function testKeyIssuing() {
     externalFormData.append('borrowerEmail', 'test.external.issuing@testcompany.com');
     externalFormData.append('borrowerPhone', '073-333-4444');
     externalFormData.append('borrowerCompany', 'Test Maintenance Company AB');
-    externalFormData.append('notes', 'External contractor access');
+    // notes removed
     externalFormData.append('idChecked', 'true');
 
     const externalResult = await issueKey(externalFormData);
@@ -229,4 +229,3 @@ async function testKeyIssuing() {
 }
 
 testKeyIssuing();
-
