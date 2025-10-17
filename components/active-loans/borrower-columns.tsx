@@ -11,6 +11,8 @@ import {
 } from '@tabler/icons-react';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -31,8 +33,23 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { KeyboardShortcutTip } from '@/components/ui/keyboard-tip';
-import { IconMail, IconPhone, IconKeyOff, IconEdit, IconPlus } from '@tabler/icons-react';
+import {
+  IconMail,
+  IconPhone,
+  IconKeyOff,
+  IconEdit,
+  IconPlus,
+  IconArrowBackUp,
+  IconReplace,
+} from '@tabler/icons-react';
+import {
+  returnKeyAction,
+  returnMultipleKeysAction,
+  markKeyLostAction,
+} from '@/app/actions/issueKeyWrapper';
 import { updateBorrowerPurpose } from '@/app/actions/dashboard';
+import { updateBorrowerAffiliation } from '@/app/actions/borrowers';
+import { toastError, toastSuccess } from '@/components/ui/toast-store';
 
 // Affiliation Info Dialog Component
 function AffiliationInfoDialog({ borrower }: { borrower: BorrowerWithKeys }) {
@@ -55,21 +72,48 @@ function AffiliationInfoDialog({ borrower }: { borrower: BorrowerWithKeys }) {
 
     setIsLoading(true);
     try {
-      const result = await updateBorrowerPurpose(borrower.borrowerId, purpose);
-      if (result.success) {
-        // Update the local borrower data
-        borrower.purposeNotes = purpose;
-        setHasChanged(false);
-        setIsOpen(false);
+      // If resident and purpose/company added, prompt convert
+      if (!borrower.isResident) {
+        const result = await updateBorrowerPurpose(borrower.borrowerId, purpose);
+        if (result.success) {
+          borrower.purposeNotes = purpose;
+          setHasChanged(false);
+          setIsOpen(false);
+        } else {
+          console.error('Failed to update purpose:', result.error);
+          setPurpose(borrower.purposeNotes || '');
+          setHasChanged(false);
+        }
       } else {
-        console.error('Failed to update purpose:', result.error);
-        // Reset to original value on error
-        setPurpose(borrower.purposeNotes || '');
-        setHasChanged(false);
+        // For residents, converting to external when adding purpose/company info
+        const confirmConvert = window.confirm('Convert to external borrower and save purpose?');
+        if (!confirmConvert) {
+          setIsLoading(false);
+          return;
+        }
+        const convert = await updateBorrowerAffiliation({
+          borrowerId: borrower.borrowerId,
+          target: 'EXTERNAL',
+          data: {
+            name: borrower.borrowerName,
+            email: borrower.email || '',
+            phone: borrower.phone,
+            company: borrower.companyName || 'External',
+            borrowerPurpose: purpose,
+          },
+        });
+        if (convert.success) {
+          borrower.purposeNotes = purpose;
+          setHasChanged(false);
+          setIsOpen(false);
+        } else {
+          console.error('Failed to convert borrower:', convert.error);
+          setPurpose(borrower.purposeNotes || '');
+          setHasChanged(false);
+        }
       }
     } catch (error) {
       console.error('Error updating purpose:', error);
-      // Reset to original value on error
       setPurpose(borrower.purposeNotes || '');
       setHasChanged(false);
     } finally {
@@ -366,6 +410,447 @@ export function getVisibleColumns(
     enableHiding: false,
     cell: ({ row }: CellContext<BorrowerWithKeys, unknown>) => {
       const record = row.original;
+      // Local components for return confirmations
+      function ReturnSingleKeyItem({ keyInfo }: { keyInfo: BorrowedKeyInfo }) {
+        const [open, setOpen] = useState(false);
+        const [isLoading, setIsLoading] = useState(false);
+        const handleConfirm = async () => {
+          setIsLoading(true);
+          try {
+            const result = await returnKeyAction(keyInfo.issueId);
+            if (result.success) {
+              toastSuccess('Key returned');
+            } else {
+              toastError('Failed to return key', result.error);
+            }
+          } finally {
+            setIsLoading(false);
+            setOpen(false);
+          }
+        };
+        const isLastKeyForBorrower = record.borrowedKeys.length === 1;
+        return (
+          <>
+            <DropdownMenuItem onClick={() => setOpen(true)}>
+              <IconArrowBackUp className="h-3.5 w-3.5 mr-2" /> Return {keyInfo.keyLabel}
+              {keyInfo.copyNumber}
+            </DropdownMenuItem>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    Return key {keyInfo.keyLabel}
+                    {keyInfo.copyNumber}?
+                  </DialogTitle>
+                  <DialogDescription>
+                    This will mark the key as available and close the loan.
+                    {isLastKeyForBorrower && (
+                      <div className="mt-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-900 text-sm">
+                        This is the last active key for <strong>{record.borrowerName}</strong>.
+                        Returning it will remove their contact from the system.
+                      </div>
+                    )}
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleConfirm} disabled={isLoading} className="gap-1">
+                    {isLoading && <IconLoader className="h-3.5 w-3.5 animate-spin" />}
+                    Return Key
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        );
+      }
+
+      function ReturnAllKeysItem({ keys }: { keys: BorrowedKeyInfo[] }) {
+        const [open, setOpen] = useState(false);
+        const [isLoading, setIsLoading] = useState(false);
+        const handleConfirm = async () => {
+          setIsLoading(true);
+          try {
+            const ids = keys.map((k) => k.issueId);
+            const result = await returnMultipleKeysAction(ids);
+            if (result.success) {
+              toastSuccess('All keys returned');
+            } else {
+              toastError('Failed to return all keys', result.error);
+            }
+          } finally {
+            setIsLoading(false);
+            setOpen(false);
+          }
+        };
+        return (
+          <>
+            <DropdownMenuItem onClick={() => setOpen(true)}>
+              <IconArrowBackUp className="h-3.5 w-3.5 mr-2" /> Return All Keys ({keys.length})
+            </DropdownMenuItem>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Return all keys?</DialogTitle>
+                  <DialogDescription>
+                    This will mark all selected keys as available and close their loans.
+                    <div className="mt-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-900 text-sm">
+                      Returning all keys for <strong>{record.borrowerName}</strong> will remove
+                      their contact from the system.
+                    </div>
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleConfirm} disabled={isLoading} className="gap-1">
+                    {isLoading && <IconLoader className="h-3.5 w-3.5 animate-spin" />}
+                    Return All
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        );
+      }
+
+      // Modal: Return selected keys
+      function ReturnKeysModal({ keys }: { keys: BorrowedKeyInfo[] }) {
+        const [open, setOpen] = useState(false);
+        const [isLoading, setIsLoading] = useState(false);
+        const [selectedIds, setSelectedIds] = useState<string[]>(keys.map((k) => k.issueId));
+
+        const isLastSelectionForBorrower = selectedIds.length === record.borrowedKeys.length;
+
+        const toggle = (id: string) => {
+          setSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+          );
+        };
+
+        const handleConfirm = async () => {
+          if (selectedIds.length === 0) return;
+          setIsLoading(true);
+          try {
+            const result = await returnMultipleKeysAction(selectedIds);
+            if (result.success) {
+              toastSuccess(selectedIds.length === 1 ? 'Key returned' : 'Keys returned');
+            } else {
+              toastError('Failed to return keys', result.error);
+            }
+          } finally {
+            setIsLoading(false);
+            setOpen(false);
+          }
+        };
+
+        return (
+          <>
+            <DropdownMenuItem onClick={() => setOpen(true)}>
+              <IconArrowBackUp className="h-3.5 w-3.5 mr-2" /> Return keys
+            </DropdownMenuItem>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Select keys to return</DialogTitle>
+                  <DialogDescription>
+                    Choose which keys to return for {record.borrowerName}.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2">
+                  {keys.map((k) => (
+                    <label key={k.issueId} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(k.issueId)}
+                        onChange={() => toggle(k.issueId)}
+                      />
+                      <span className="text-sm">
+                        {k.keyLabel}
+                        {k.copyNumber} • {k.keyFunction}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {isLastSelectionForBorrower && (
+                  <div className="mt-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-900 text-sm">
+                    Returning all keys will remove <strong>{record.borrowerName}</strong> from the
+                    system.
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleConfirm} disabled={isLoading || selectedIds.length === 0}>
+                    {isLoading && <IconLoader className="h-3.5 w-3.5 animate-spin mr-1" />}
+                    Confirm
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        );
+      }
+
+      // Modal: Mark a single key as lost (choose which one)
+      function LostKeyModal({ keys }: { keys: BorrowedKeyInfo[] }) {
+        const [open, setOpen] = useState(false);
+        const [isLoading, setIsLoading] = useState(false);
+        const [selectedId, setSelectedId] = useState<string>(keys[0]?.issueId ?? '');
+
+        const isLastKeyForBorrower = record.borrowedKeys.length === 1;
+
+        const handleConfirm = async () => {
+          if (!selectedId) return;
+          setIsLoading(true);
+          try {
+            const result = await markKeyLostAction({ issueRecordId: selectedId });
+            if (result.success) {
+              toastSuccess('Key marked as lost');
+            } else {
+              toastError('Failed to mark key as lost', result.error);
+            }
+          } finally {
+            setIsLoading(false);
+            setOpen(false);
+          }
+        };
+
+        return (
+          <>
+            <DropdownMenuItem onClick={() => setOpen(true)}>
+              <IconKeyOff className="h-3.5 w-3.5 mr-2" /> Lost key
+            </DropdownMenuItem>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Select the lost key</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-2">
+                  {keys.map((k) => (
+                    <label key={k.issueId} className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="lostKey"
+                        checked={selectedId === k.issueId}
+                        onChange={() => setSelectedId(k.issueId)}
+                      />
+                      <span className="text-sm">
+                        {k.keyLabel}
+                        {k.copyNumber} • {k.keyFunction}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {isLastKeyForBorrower && (
+                  <div className="mt-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-900 text-sm">
+                    If this is the last key, the borrower will be removed.
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleConfirm} disabled={isLoading || !selectedId}>
+                    {isLoading && <IconLoader className="h-3.5 w-3.5 animate-spin mr-1" />}
+                    Confirm
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        );
+      }
+
+      // Modal: Replace a key (mark lost + create + issue replacement)
+      function ReplaceKeyModal({ keys }: { keys: BorrowedKeyInfo[] }) {
+        const [open, setOpen] = useState(false);
+        const [isLoading, setIsLoading] = useState(false);
+        const [selectedId, setSelectedId] = useState<string>(keys[0]?.issueId ?? '');
+        const [dueDate, setDueDate] = useState('');
+        const [idChecked, setIdChecked] = useState(false);
+
+        const handleConfirm = async () => {
+          if (!selectedId || !idChecked) return;
+          setIsLoading(true);
+          try {
+            const result = await markKeyLostAction({
+              issueRecordId: selectedId,
+              createReplacement: true,
+              issueReplacement: true,
+              idChecked,
+              dueDate: dueDate || undefined,
+            });
+            if (result.success) {
+              toastSuccess('Key replaced and issued');
+            } else {
+              toastError('Failed to replace key', result.error);
+            }
+          } finally {
+            setIsLoading(false);
+            setOpen(false);
+          }
+        };
+
+        return (
+          <>
+            <DropdownMenuItem onClick={() => setOpen(true)}>
+              <IconReplace className="h-3.5 w-3.5 mr-2" /> Replace key
+            </DropdownMenuItem>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Select key to replace</DialogTitle>
+                  <DialogDescription>
+                    This marks the original key as lost, creates a new copy and issues it to the
+                    same borrower.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    {keys.map((k) => (
+                      <label key={k.issueId} className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="replaceKey"
+                          checked={selectedId === k.issueId}
+                          onChange={() => setSelectedId(k.issueId)}
+                        />
+                        <span className="text-sm">
+                          {k.keyLabel}
+                          {k.copyNumber} • {k.keyFunction}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Due date (optional)</label>
+                    <Input
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={idChecked}
+                      onCheckedChange={(v) => setIdChecked(!!v)}
+                      aria-label="ID checked"
+                    />
+                    <span className="text-sm">I have verified the borrower's ID</span>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleConfirm} disabled={isLoading || !selectedId || !idChecked}>
+                    {isLoading && <IconLoader className="h-3.5 w-3.5 animate-spin mr-1" />}
+                    Confirm
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        );
+      }
+
+      function MarkLostMenuItems({ keyInfo }: { keyInfo: BorrowedKeyInfo }) {
+        const [open, setOpen] = useState<null | 'lost' | 'lost-create' | 'lost-create-issue'>(null);
+        const [isLoading, setIsLoading] = useState(false);
+        const isLastKeyForBorrower = record.borrowedKeys.length === 1;
+
+        const handle = async (mode: 'lost' | 'lost-create' | 'lost-create-issue') => {
+          setIsLoading(true);
+          try {
+            const result = await markKeyLostAction({
+              issueRecordId: keyInfo.issueId,
+              createReplacement: mode !== 'lost',
+              issueReplacement: mode === 'lost-create-issue',
+              idChecked: mode === 'lost-create-issue' ? true : undefined,
+            });
+            if (result.success) {
+              if (mode === 'lost') {
+                toastSuccess('Key marked as lost');
+              } else if (mode === 'lost-create') {
+                toastSuccess('Key marked as lost and replacement created');
+              } else {
+                toastSuccess('Key marked as lost, replacement created and issued');
+              }
+            } else {
+              toastError('Failed to mark key as lost', result.error);
+            }
+          } finally {
+            setIsLoading(false);
+            setOpen(null);
+          }
+        };
+
+        return (
+          <>
+            <DropdownMenuItem onClick={() => setOpen('lost')}>
+              <IconKeyOff className="h-3.5 w-3.5 mr-2" /> Mark Lost {keyInfo.keyLabel}
+              {keyInfo.copyNumber}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setOpen('lost-create')}>
+              <IconReplace className="h-3.5 w-3.5 mr-2" /> Mark Lost + Create Replacement{' '}
+              {keyInfo.keyLabel}
+              {keyInfo.copyNumber}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setOpen('lost-create-issue')}>
+              <IconReplace className="h-3.5 w-3.5 mr-2" /> Mark Lost + Create + Issue Replacement{' '}
+              {keyInfo.keyLabel}
+              {keyInfo.copyNumber}
+            </DropdownMenuItem>
+
+            {/* Basic confirm dialogs for each mode */}
+            <Dialog open={open !== null} onOpenChange={() => !isLoading && setOpen(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {open === 'lost'
+                      ? `Mark key ${keyInfo.keyLabel}${keyInfo.copyNumber} as lost?`
+                      : open === 'lost-create'
+                        ? `Mark lost and create replacement for ${keyInfo.keyLabel}${keyInfo.copyNumber}?`
+                        : `Mark lost, create and issue replacement for ${keyInfo.keyLabel}${keyInfo.copyNumber}?`}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {open === 'lost'
+                      ? 'This will close the loan and mark the key as LOST.'
+                      : open === 'lost-create'
+                        ? 'This will mark the key as LOST and create a new AVAILABLE copy.'
+                        : 'This will mark the key as LOST, create a new copy and issue it to the same borrower.'}
+                    {!open || open === 'lost-create-issue' ? null : <></>}
+                    {open !== 'lost-create-issue' && isLastKeyForBorrower && (
+                      <div className="mt-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-900 text-sm">
+                        This may be the last active key for <strong>{record.borrowerName}</strong>.
+                        If no other keys remain, their contact will be removed.
+                      </div>
+                    )}
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpen(null)} disabled={isLoading}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => open && handle(open)}
+                    disabled={isLoading}
+                    className="gap-1"
+                  >
+                    {isLoading && <IconLoader className="h-3.5 w-3.5 animate-spin" />}
+                    Confirm
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        );
+      }
       return (
         <div className="flex justify-end">
           <DropdownMenu>
@@ -403,10 +888,9 @@ export function getVisibleColumns(
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel>Loan Actions</DropdownMenuLabel>
-                  <DropdownMenuItem>
-                    <IconKeyOff className="h-3.5 w-3.5 mr-2" />
-                    Return Keys ({record.borrowedKeys.length})
-                  </DropdownMenuItem>
+                  <ReturnKeysModal keys={record.borrowedKeys} />
+                  <LostKeyModal keys={record.borrowedKeys} />
+                  <ReplaceKeyModal keys={record.borrowedKeys} />
                 </>
               )}
             </DropdownMenuContent>

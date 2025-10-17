@@ -180,3 +180,61 @@ export async function addKeyCopy(formData: FormData): Promise<ActionResult<undef
     return { success: false, error: message };
   }
 }
+
+export async function getKeyCopies(keyTypeId: string): Promise<
+  ActionResult<
+    Array<{
+      id: string;
+      copyNumber: number;
+      status: 'AVAILABLE' | 'OUT' | 'LOST';
+    }>
+  >
+> {
+  try {
+    const { id: userId } = await getCurrentUser();
+    const keyType = await prisma.keyType.findFirst({
+      where: { id: keyTypeId, userId },
+      select: {
+        keyCopies: {
+          select: { id: true, copyNumber: true, status: true },
+          orderBy: { copyNumber: 'asc' },
+        },
+      },
+    });
+    if (!keyType) return { success: false, error: 'Key type not found.' };
+    return {
+      success: true,
+      data: keyType.keyCopies as Array<{
+        id: string;
+        copyNumber: number;
+        status: 'AVAILABLE' | 'OUT' | 'LOST';
+      }>,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to fetch key copies.';
+    return { success: false, error: message };
+  }
+}
+
+export async function markAvailableCopyLost(copyId: string): Promise<ActionResult<undefined>> {
+  try {
+    const { id: userId } = await getCurrentUser();
+    // Verify ownership and status
+    const copy = await prisma.keyCopy.findFirst({
+      where: { id: copyId, keyType: { userId } },
+      select: { id: true, status: true },
+    });
+    if (!copy) return { success: false, error: 'Key copy not found.' };
+    if (copy.status !== 'AVAILABLE') {
+      return { success: false, error: 'Only AVAILABLE copies can be marked as lost here.' };
+    }
+
+    await prisma.keyCopy.update({ where: { id: copyId }, data: { status: 'LOST' } });
+    revalidatePath('/keys');
+    revalidatePath('/active-loans');
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to mark copy as lost.';
+    return { success: false, error: message };
+  }
+}

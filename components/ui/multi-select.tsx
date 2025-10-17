@@ -1,8 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { X, ChevronDown } from 'lucide-react';
-import { IconKey, IconCheck } from '@tabler/icons-react';
+import { IconKey, IconCheck, IconX, IconChevronDown } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,10 +47,13 @@ export function MultiSelect({
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
   const [container, setContainer] = React.useState<HTMLElement | null>(null);
+  const [pendingValues, setPendingValues] = React.useState<string[]>(selectedValues || []);
 
   const handleUnselect = (value: string) => {
     if (disabled) return;
-    onValueChange((selectedValues || []).filter((v) => v !== value));
+    const newValues = (pendingValues || []).filter((v) => v !== value);
+    setPendingValues(newValues);
+    onValueChange(newValues); // Immediately update parent when removing from badge
   };
 
   const handleSelect = (value: string) => {
@@ -59,17 +61,17 @@ export function MultiSelect({
     const option = options?.find((opt) => opt.value === value);
     if (option?.disabled) return;
 
-    if ((selectedValues || []).includes(value)) {
+    if ((pendingValues || []).includes(value)) {
       handleUnselect(value);
     } else {
-      onValueChange([...(selectedValues || []), value]);
+      setPendingValues([...(pendingValues || []), value]);
     }
     // Keep the popover open for multi-selection
   };
 
   const handleClear = () => {
     if (disabled) return;
-    onValueChange([]);
+    setPendingValues([]);
   };
 
   const filteredOptions = React.useMemo(() => {
@@ -81,7 +83,7 @@ export function MultiSelect({
     );
   }, [options, searchValue]);
 
-  const selectedOptions = (selectedValues || [])
+  const selectedOptions = (pendingValues || [])
     .map((value) => options?.find((opt) => opt.value === value))
     .filter(Boolean) as MultiSelectOption[];
 
@@ -96,6 +98,20 @@ export function MultiSelect({
       setContainer(dialogElement as HTMLElement);
     }
   }, []);
+
+  // Sync pending state with external value when it changes
+  React.useEffect(() => {
+    setPendingValues(selectedValues || []);
+  }, [selectedValues]);
+
+  // When popover closes by any means (including outside click), commit selection
+  React.useEffect(() => {
+    if (!open) {
+      if (JSON.stringify(pendingValues) !== JSON.stringify(selectedValues)) {
+        onValueChange(pendingValues || []);
+      }
+    }
+  }, [open]);
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={true}>
@@ -112,7 +128,7 @@ export function MultiSelect({
           disabled={disabled}
         >
           <div className="flex flex-1 flex-wrap items-center gap-1">
-            {(selectedValues || []).length === 0 ? (
+            {(pendingValues || []).length === 0 ? (
               <span className="text-muted-foreground">{placeholder}</span>
             ) : (
               <>
@@ -139,7 +155,7 @@ export function MultiSelect({
                         handleUnselect(option.value);
                       }}
                     >
-                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                      <IconX className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                     </div>
                   </Badge>
                 ))}
@@ -166,7 +182,7 @@ export function MultiSelect({
                         handleClear();
                       }}
                     >
-                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                      <IconX className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                     </div>
                   </Badge>
                 )}
@@ -174,7 +190,7 @@ export function MultiSelect({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {(selectedValues || []).length > 0 && (
+            {(pendingValues || []).length > 0 && (
               <div
                 role="button"
                 tabIndex={0}
@@ -191,10 +207,10 @@ export function MultiSelect({
                 }}
                 className="rounded-full p-1 hover:bg-muted cursor-pointer"
               >
-                <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                <IconX className="h-4 w-4 text-muted-foreground hover:text-foreground" />
               </div>
             )}
-            <ChevronDown className="h-4 w-4 opacity-50" />
+            <IconChevronDown className="h-4 w-4 opacity-50" />
           </div>
         </Button>
       </PopoverTrigger>
@@ -213,7 +229,7 @@ export function MultiSelect({
             <CommandEmpty>{emptyIndicator || 'No keys found.'}</CommandEmpty>
             <CommandGroup>
               {filteredOptions.map((option) => {
-                const isSelected = (selectedValues || []).includes(option.value);
+                const isSelected = (pendingValues || []).includes(option.value);
                 return (
                   <CommandItem
                     key={option.value}
@@ -268,6 +284,18 @@ export function MultiSelect({
               })}
             </CommandGroup>
           </CommandList>
+          <div className="p-2 border-t flex justify-end">
+            <Button
+              size="sm"
+              onClick={() => {
+                onValueChange(pendingValues || []);
+                setOpen(false);
+              }}
+              className="gap-1"
+            >
+              Select keys
+            </Button>
+          </div>
         </Command>
       </PopoverContent>
     </Popover>

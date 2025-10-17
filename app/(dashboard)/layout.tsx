@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { DashboardSidebar } from '@/components/shared/dashboard-sidebar';
 import { SiteHeader } from '@/components/shared/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { Toaster } from '@/components/ui/toaster';
 
 async function Layout({ children }: { children: React.ReactNode }) {
   // Create a Supabase client configured to use cookies
@@ -55,6 +56,7 @@ async function Layout({ children }: { children: React.ReactNode }) {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>
+        <Toaster />
       </SidebarInset>
     </SidebarProvider>
   );

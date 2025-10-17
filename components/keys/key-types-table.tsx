@@ -110,12 +110,6 @@ export function KeyTypesTable({
             columnVisibility={columnVisibility}
             onColumnVisibilityChange={setColumnVisibility}
           />
-          <Button className="gap-1" asChild>
-            <Link href="/issue-key">
-              <IconPlus className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Issue Key</span>
-            </Link>
-          </Button>
           <Dialog>
             <DialogTrigger asChild>
               <Button className="gap-1">

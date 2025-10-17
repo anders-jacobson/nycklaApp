@@ -40,6 +40,7 @@ export async function getAvailableKeyTypes(): Promise<
       accessArea: string | null;
       totalCopies: number;
       availableCopies: number;
+      availableCopyDetails: Array<{ id: string; copyNumber: number }>;
     }>
   >
 > {
@@ -51,7 +52,7 @@ export async function getAvailableKeyTypes(): Promise<
       orderBy: { label: 'asc' },
       include: {
         keyCopies: {
-          select: { status: true },
+          select: { status: true, id: true, copyNumber: true },
         },
       },
     });
@@ -63,6 +64,9 @@ export async function getAvailableKeyTypes(): Promise<
       accessArea: kt.accessArea,
       totalCopies: kt.keyCopies.length,
       availableCopies: kt.keyCopies.filter((copy) => copy.status === 'AVAILABLE').length,
+      availableCopyDetails: kt.keyCopies
+        .filter((copy) => copy.status === 'AVAILABLE')
+        .map((copy) => ({ id: copy.id, copyNumber: copy.copyNumber })),
     }));
 
     return { success: true, data: result };
@@ -136,10 +140,12 @@ export async function issueKey(formData: FormData): Promise<
 
     // Extract form data
     const keyTypeId = (formData.get('keyTypeId') as string | null) ?? '';
+    const keyCopyId = (formData.get('keyCopyId') as string | null) || undefined;
     const borrowerName = (formData.get('borrowerName') as string | null)?.trim() ?? '';
     const borrowerEmail = (formData.get('borrowerEmail') as string | null)?.trim() ?? '';
     const borrowerPhone = (formData.get('borrowerPhone') as string | null)?.trim() || undefined;
     const borrowerCompany = (formData.get('borrowerCompany') as string | null)?.trim() || undefined;
+    const borrowerAddress = (formData.get('borrowerAddress') as string | null)?.trim() || undefined;
     const borrowerPurpose = (formData.get('borrowerPurpose') as string | null)?.trim() || undefined;
     const dueDate = (formData.get('dueDate') as string | null) || undefined;
     const idChecked = formData.get('idChecked') === 'true';
@@ -156,6 +162,7 @@ export async function issueKey(formData: FormData): Promise<
       email: borrowerEmail,
       phone: borrowerPhone,
       company: borrowerCompany,
+      address: borrowerAddress,
       borrowerPurpose: borrowerPurpose,
     });
 
@@ -180,18 +187,20 @@ export async function issueKey(formData: FormData): Promise<
     // Execute the key issuing transaction
     const result = await prisma.$transaction(async (tx) => {
       // 1. Find an available key copy
-      const availableCopy = await tx.keyCopy.findFirst({
-        where: {
-          keyTypeId,
-          status: 'AVAILABLE',
-        },
-        include: {
-          keyType: {
-            select: { label: true, function: true },
-          },
-        },
-        orderBy: { copyNumber: 'asc' }, // Issue lowest numbered copy first
-      });
+      const availableCopy = keyCopyId
+        ? await tx.keyCopy.findFirst({
+            where: {
+              id: keyCopyId,
+              keyTypeId,
+              status: 'AVAILABLE',
+            },
+            include: { keyType: { select: { label: true, function: true } } },
+          })
+        : await tx.keyCopy.findFirst({
+            where: { keyTypeId, status: 'AVAILABLE' },
+            include: { keyType: { select: { label: true, function: true } } },
+            orderBy: { copyNumber: 'asc' },
+          });
 
       if (!availableCopy) {
         throw new Error('No available copies found.');
@@ -226,6 +235,7 @@ export async function issueKey(formData: FormData): Promise<
               email: validation.sanitized.email,
               phone: validation.sanitized.phone,
               company: validation.sanitized.company,
+              address: validation.sanitized.address,
               borrowerPurpose: validation.sanitized.borrowerPurpose,
             },
             userId,
@@ -313,6 +323,175 @@ export async function getAvailableKeyCopy(keyTypeId: string): Promise<
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to get key copy.';
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Return a key: mark issue as returned and set the key copy back to AVAILABLE.
+ * If the borrower has no other active loans, delete the borrower (GDPR cleanup).
+ */
+export async function returnKey(issueRecordId: string): Promise<ActionResult<undefined>> {
+  try {
+    const { id: userId } = await getCurrentUser();
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Fetch and validate the issue record for the current user
+      const issueRecord = await tx.issueRecord.findFirst({
+        where: { id: issueRecordId, userId },
+        include: { keyCopy: true },
+      });
+
+      if (!issueRecord) {
+        throw new Error('Issue record not found.');
+      }
+
+      if (issueRecord.returnedDate) {
+        throw new Error('Key already returned.');
+      }
+
+      // 2. Mark the issue as returned
+      await tx.issueRecord.update({
+        where: { id: issueRecordId },
+        data: { returnedDate: new Date() },
+      });
+
+      // 3. Set the key copy back to AVAILABLE
+      await tx.keyCopy.update({
+        where: { id: issueRecord.keyCopyId },
+        data: { status: 'AVAILABLE' },
+      });
+
+      // 4. If borrower has no other active loans, delete borrower
+      const otherActiveLoans = await tx.issueRecord.count({
+        where: {
+          borrowerId: issueRecord.borrowerId,
+          returnedDate: null,
+          id: { not: issueRecordId },
+        },
+      });
+
+      if (otherActiveLoans === 0) {
+        await tx.borrower.delete({ where: { id: issueRecord.borrowerId } });
+      }
+    });
+
+    // Revalidate affected pages
+    revalidatePath('/active-loans');
+    revalidatePath('/keys');
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to return key.';
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Mark a key as LOST. Optionally create a replacement copy and optionally issue it to the same borrower.
+ */
+export async function markKeyLost(params: {
+  issueRecordId: string;
+  createReplacement?: boolean;
+  issueReplacement?: boolean;
+  idChecked?: boolean;
+  dueDate?: string;
+}): Promise<
+  ActionResult<{
+    replacementCopyId?: string;
+  }>
+> {
+  try {
+    const { id: userId } = await getCurrentUser();
+
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Load current issue record with key info and borrower
+      const issueRecord = await tx.issueRecord.findFirst({
+        where: { id: params.issueRecordId, userId },
+        include: {
+          keyCopy: {
+            include: { keyType: { select: { id: true } } },
+          },
+        },
+      });
+
+      if (!issueRecord) {
+        throw new Error('Issue record not found.');
+      }
+      if (issueRecord.returnedDate) {
+        throw new Error('Key already returned.');
+      }
+
+      // 2. Mark current copy as LOST
+      await tx.keyCopy.update({
+        where: { id: issueRecord.keyCopyId },
+        data: { status: 'LOST' },
+      });
+
+      // 3. Close the current issue record
+      await tx.issueRecord.update({
+        where: { id: issueRecord.id },
+        data: { returnedDate: new Date() },
+      });
+
+      let replacementCopyId: string | undefined;
+
+      // 4. Optionally create a replacement copy
+      if (params.createReplacement) {
+        // Get next copy number for this key type
+        const maxCopy = await tx.keyCopy.findFirst({
+          where: { keyTypeId: issueRecord.keyCopy.keyTypeId },
+          orderBy: { copyNumber: 'desc' },
+          select: { copyNumber: true },
+        });
+        const nextCopyNumber = (maxCopy?.copyNumber ?? 0) + 1;
+
+        const replacement = await tx.keyCopy.create({
+          data: {
+            keyTypeId: issueRecord.keyCopy.keyTypeId,
+            copyNumber: nextCopyNumber,
+            status: params.issueReplacement ? 'OUT' : 'AVAILABLE',
+          },
+          select: { id: true },
+        });
+
+        replacementCopyId = replacement.id;
+
+        // 5. If issuing the replacement, create a new issue record to same borrower
+        if (params.issueReplacement) {
+          await tx.issueRecord.create({
+            data: {
+              keyCopyId: replacement.id,
+              borrowerId: issueRecord.borrowerId,
+              userId,
+              dueDate: params.dueDate ? new Date(params.dueDate) : null,
+              idChecked: !!params.idChecked,
+            },
+          });
+        }
+      }
+
+      // 6. If we did NOT issue a replacement, check borrower cleanup
+      if (!params.issueReplacement) {
+        const otherActiveLoans = await tx.issueRecord.count({
+          where: {
+            borrowerId: issueRecord.borrowerId,
+            returnedDate: null,
+          },
+        });
+
+        if (otherActiveLoans === 0) {
+          await tx.borrower.delete({ where: { id: issueRecord.borrowerId } });
+        }
+      }
+
+      return { replacementCopyId };
+    });
+
+    revalidatePath('/active-loans');
+    revalidatePath('/keys');
+    return { success: true, data: result };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to mark key as lost.';
     return { success: false, error: message };
   }
 }
