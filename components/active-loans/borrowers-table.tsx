@@ -132,7 +132,7 @@ export function DataTable<TData>({ data }: DataTableProps<TData>) {
             placeholder="Filter by name or company..."
             value={(columnFilters.find((f) => f.id === 'name')?.value as string) ?? ''}
             onChange={(event) => handleNameFilter(event.target.value)}
-            className="max-w-xs"
+            className="flex-1 min-w-60 max-w-sm"
           />
           <div className="ml-auto flex items-center gap-2">
             <AffiliationFilter value={affiliationFilter} onValueChange={setAffiliationFilter} />
@@ -143,7 +143,7 @@ export function DataTable<TData>({ data }: DataTableProps<TData>) {
             <Button asChild className="gap-1">
               <Link href="/issue-key">
                 <IconPlus className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Issue Key</span>
+                <span className="sr-only md:not-sr-only md:whitespace-nowrap">Issue Key</span>
               </Link>
             </Button>
           </div>

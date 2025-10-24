@@ -26,7 +26,7 @@ export function AffiliationFilter({ value, onValueChange }: AffiliationFilterPro
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="gap-1">
           <IconFilter className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Filter Affiliation</span>
+          <span className="sr-only md:not-sr-only md:whitespace-nowrap">Filter Affiliation</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end">
