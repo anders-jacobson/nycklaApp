@@ -232,7 +232,7 @@ export function getVisibleColumns(
 
   // Name column (always visible)
   columns.push({
-    accessorKey: 'borrowerName',
+    accessorKey: 'name',
     id: 'name',
     header: ({ column }: HeaderContext<BorrowerWithKeys, unknown>) => {
       return (
@@ -249,30 +249,14 @@ export function getVisibleColumns(
       return <div className="font-medium">{row.original.borrowerName}</div>;
     },
     enableHiding: false,
-    filterFn: (row, id, filterValue: string) => {
-      const name = row.original.borrowerName?.toLowerCase() || '';
-      const company = row.original.companyName?.toLowerCase() || '';
-      const search = filterValue.toLowerCase();
-      return name.includes(search) || company.includes(search);
-    },
   });
 
   // Affiliation column (toggleable)
   if (columnVisibility.affiliation) {
     columns.push({
-      accessorKey: 'isResident',
+      accessorKey: 'affiliation',
       id: 'affiliation',
-      header: ({ column }: HeaderContext<BorrowerWithKeys, unknown>) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Affiliation
-            <IconArrowsUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: () => <div>Affiliation</div>,
       cell: ({ row }: CellContext<BorrowerWithKeys, unknown>) => {
         const borrower = row.original;
         return (
@@ -292,19 +276,6 @@ export function getVisibleColumns(
           </div>
         );
       },
-      sortingFn: (rowA, rowB) => {
-        // Sort residents first, then by company name
-        const aResident = rowA.original.isResident;
-        const bResident = rowB.original.isResident;
-
-        if (aResident && !bResident) return -1;
-        if (!aResident && bResident) return 1;
-
-        // Both same type, sort by company name (or "Resident")
-        const aName = aResident ? 'Resident' : rowA.original.companyName || 'External';
-        const bName = bResident ? 'Resident' : rowB.original.companyName || 'External';
-        return aName.localeCompare(bName);
-      },
     });
   }
 
@@ -312,11 +283,21 @@ export function getVisibleColumns(
   columns.push({
     accessorKey: 'keys',
     id: 'keys',
-    header: () => <div>Borrowed Keys</div>,
+    header: ({ column }: HeaderContext<BorrowerWithKeys, unknown>) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Borrowed Keys
+          <IconArrowsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
     cell: ({ row }: CellContext<BorrowerWithKeys, unknown>) => {
       const borrower = row.original;
       return (
-        <div className="flex flex-wrap gap-1">
+        <div className="space-y-1">
           {borrower.borrowedKeys.map((key, index) => {
             const isOverdue =
               key.dueDate && new Date(key.dueDate) < new Date() && !key.dueDate.startsWith('9999');
@@ -326,21 +307,25 @@ export function getVisibleColumns(
               new Date(key.dueDate).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
 
             return (
-              <Badge
-                key={index}
-                variant={isOverdue ? 'destructive' : isWarning ? 'default' : 'secondary'}
-                className="text-xs"
-              >
-                {key.keyLabel}
-                {key.copyNumber}
-              </Badge>
+              <div key={index} className="flex items-center gap-2">
+                <Badge
+                  variant={isOverdue ? 'destructive' : isWarning ? 'default' : 'secondary'}
+                  className="text-xs"
+                >
+                  {key.keyLabel}
+                  {key.copyNumber}
+                </Badge>
+                <span className="text-sm text-muted-foreground">{key.keyFunction}</span>
+              </div>
             );
           })}
         </div>
       );
     },
     enableHiding: false,
-    enableSorting: false,
+    sortingFn: (rowA, rowB) => {
+      return rowA.original.borrowedKeys.length - rowB.original.borrowedKeys.length;
+    },
   });
 
   // Date Issued column (toggleable)
@@ -438,11 +423,7 @@ export function getVisibleColumns(
     enableHiding: false,
     cell: ({ row, table }: CellContext<BorrowerWithKeys, unknown>) => {
       const borrower = row.original;
-      const onOpenDialog = (
-        table.options.meta as {
-          onOpenDialog?: (type: DialogType, borrower: BorrowerWithKeys) => void;
-        }
-      )?.onOpenDialog;
+      const onOpenDialog = (table.options.meta as any)?.onOpenDialog;
 
       if (!onOpenDialog) {
         console.error('onOpenDialog not found in table meta');
@@ -480,3 +461,4 @@ export const columns: ColumnDef<BorrowerWithKeys>[] = getVisibleColumns(defaultC
 
 // Legacy columns export for backward compatibility
 export const legacyColumns = columns;
+

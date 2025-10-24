@@ -270,6 +270,8 @@ Implementation roadmap for the Swedish housing cooperative key management applic
 
 ### ✅ **Recently Completed:**
 
+- [x] **Issue Key Workflow** ✅ _[COMPLETED: 4-step multi-key issue flow with borrower search/create, validation, confirmations]_
+- [x] **Return Key Workflow** ✅ _[COMPLETED: Single/bulk returns with GDPR-compliant borrower cleanup, UI integration in Active Loans]_
 - [x] **Column customization feature** ✅ _[COMPLETED: Full implementation with color-coded badges, localStorage persistence, mobile responsive]_
 - [x] **Database migration endDate → dueDate** ✅ _[COMPLETED: Schema updated, data preserved]_
 - [x] **Color-coded key status badges** ✅ _[COMPLETED: Red=overdue, yellow=warning, gray=normal]_
@@ -278,6 +280,7 @@ Implementation roadmap for the Swedish housing cooperative key management applic
 ### **Priority Order for Development:**
 
 - [x] **Key type CRUD operations with server actions** ✅ _[COMPLETED: Full CRUD with UI, "Add Copy" feature, custom column picker]_
+- [x] **Key lending & return workflows** ✅ _[COMPLETED: Full issue/return implementation with UI, server actions, and validations]_
 
 ### ✅ **Key Type Management System - COMPLETED**
 
@@ -331,10 +334,55 @@ Implementation roadmap for the Swedish housing cooperative key management applic
 - **Mobile**: Responsive design with collapsible columns
 
 - [x] **Key lending workflow with inline borrower creation** ✅ _[COMPLETED: Multi-key issue flow, borrower search/create, validation]_
-- [ ] **Key return workflow implementation** ⏳ _[Ready for breakdown after lending]_
-  - [ ] Create `returnKey` server action (transactional): update `IssueRecord.returnedDate`, set `KeyCopy.status` to `AVAILABLE`, delete borrower if no other active loans
-  - [ ] Add "Return Keys" UI in Active Loans table (dropdown action + confirm dialog)
-  - [ ] Revalidate `/active-loans` and `/keys` after returns
+
+### ✅ **Key Lending & Return Workflows - COMPLETED**
+
+**Issue Key Workflow (Fully Implemented):**
+
+- [x] Multi-step workflow with 4 steps: Select Keys → Borrower Details → Lending Details → Confirm
+- [x] Multi-key selection with copy picker (choose specific copy numbers)
+- [x] Borrower search/create integration with autocomplete
+- [x] Due date setting and ID verification
+- [x] Confirmation screen with summary
+- [x] Server actions: `issueMultipleKeysAction` with transaction support
+- [x] Toast notifications and comprehensive error handling
+- [x] Path revalidation for `/active-loans` and `/keys`
+
+**Return Key Workflow (Fully Implemented):**
+
+- [x] Server action `returnKey` in `app/actions/issueKey.ts` (transactional)
+  - [x] Updates `IssueRecord.returnedDate` to current timestamp
+  - [x] Sets `KeyCopy.status` back to `AVAILABLE`
+  - [x] Deletes borrower if no other active loans (GDPR compliance)
+  - [x] Validates ownership and prevents double returns
+- [x] Wrapper actions in `app/actions/issueKeyWrapper.ts`
+  - [x] `returnKeyAction` for single key returns
+  - [x] `returnMultipleKeysAction` for bulk returns
+- [x] UI integration in Active Loans table (`borrower-columns.tsx`)
+  - [x] Return button in actions dropdown menu
+  - [x] Confirmation dialog with borrower context
+  - [x] Success/error toast notifications
+  - [x] Loading states during return process
+- [x] Path revalidation for `/active-loans` and `/keys`
+
+**Files Involved:**
+
+- `components/workflow/issue-key-workflow.tsx` - Issue workflow UI
+- `app/issue-key/page.tsx` - Issue workflow page
+- `app/actions/issueKey.ts` - Core issue/return logic
+- `app/actions/issueKeyWrapper.ts` - Wrapper actions
+- `components/active-loans/borrower-columns.tsx` - Return UI integration
+- `components/shared/borrower-form.tsx` - Borrower search/create
+- `components/ui/multi-select.tsx` - Multi-key selector
+
+**Key Features:**
+
+- ✅ Transaction safety (all-or-nothing database operations)
+- ✅ Data validation and error handling
+- ✅ GDPR compliance (automatic borrower cleanup)
+- ✅ Real-time UI updates via path revalidation
+- ✅ User-friendly confirmations and feedback
+- ✅ Support for both single and multiple key operations
 - [ ] **Mark key as lost workflow** ⏳ _[Ready for breakdown]_
   - [ ] Create `markKeyLost` server action (transactional): set `KeyCopy.status` to `LOST`, set `IssueRecord.returnedDate` to now (if currently OUT), then delete borrower if no other active loans
   - [ ] Add "Mark Lost" per-key action in Active Loans table (with confirm dialog and clear warning)

@@ -4,7 +4,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:workflows": "tsx tests/test-issue-return-workflows.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

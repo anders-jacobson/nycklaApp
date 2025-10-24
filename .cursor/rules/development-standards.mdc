@@ -52,6 +52,9 @@ lib/
     ├── client.ts      # Browser client
     ├── server.ts      # Server client
     └── middleware.ts  # Middleware client
+
+tests/                 # Backend integration tests
+└── README.md          # Test documentation
 ```
 
 ## 🚨 CRITICAL UI RULES
