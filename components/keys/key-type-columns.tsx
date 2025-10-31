@@ -40,6 +40,10 @@ export type KeyCopy = {
   id: string;
   copyNumber: number;
   status: 'AVAILABLE' | 'OUT' | 'LOST';
+  borrower: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 export type KeyTypeRow = {
@@ -294,6 +298,28 @@ export function ExpandedCopiesRow({
                         Mark Lost
                       </Button>
                     </form>
+                  )}
+                  {copy.status === 'OUT' && copy.borrower && (
+                    <>
+                      <span className="text-sm text-muted-foreground">
+                        In use by <span className="font-medium">{copy.borrower.name}</span>
+                      </span>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
+                        onClick={() => {
+                          window.location.href = `/active-loans?borrowerId=${copy.borrower!.id}`;
+                        }}
+                      >
+                        View →
+                      </Button>
+                    </>
+                  )}
+                  {copy.status === 'OUT' && !copy.borrower && (
+                    <span className="text-sm text-muted-foreground italic">
+                      In use (borrower unknown)
+                    </span>
                   )}
                   {copy.status === 'LOST' && (
                     <form action={markFoundAction}>

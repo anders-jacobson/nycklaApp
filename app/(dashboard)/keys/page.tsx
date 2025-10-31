@@ -34,7 +34,33 @@ async function getKeyTypes() {
     orderBy: [{ label: 'asc' }],
     include: {
       keyCopies: {
-        select: { id: true, copyNumber: true, status: true },
+        select: {
+          id: true,
+          copyNumber: true,
+          status: true,
+          issueRecords: {
+            where: { returnedDate: null },
+            select: {
+              borrower: {
+                select: {
+                  id: true,
+                  affiliation: true,
+                  residentBorrower: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                  externalBorrower: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+            take: 1,
+          },
+        },
         orderBy: { copyNumber: 'asc' },
       },
     },
@@ -44,7 +70,20 @@ async function getKeyTypes() {
     label: kt.label,
     name: kt.function,
     accessArea: kt.accessArea ?? '',
-    copies: kt.keyCopies,
+    copies: kt.keyCopies.map((copy) => ({
+      id: copy.id,
+      copyNumber: copy.copyNumber,
+      status: copy.status,
+      borrower: copy.issueRecords[0]?.borrower
+        ? {
+            id: copy.issueRecords[0].borrower.id,
+            name:
+              copy.issueRecords[0].borrower.residentBorrower?.name ||
+              copy.issueRecords[0].borrower.externalBorrower?.name ||
+              'Unknown',
+          }
+        : null,
+    })),
   }));
 }
 

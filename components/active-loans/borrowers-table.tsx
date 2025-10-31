@@ -12,6 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,7 @@ import type { DialogType } from './borrower-actions-menu';
 
 interface DataTableProps<TData> {
   data: TData[]; // Borrowers data only
+  highlightBorrowerId?: string;
 }
 
 // Dialog state type
@@ -45,7 +47,7 @@ type DialogState = {
   borrower: BorrowerWithKeys | null;
 };
 
-export function DataTable<TData>({ data }: DataTableProps<TData>) {
+export function DataTable<TData>({ data, highlightBorrowerId }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [dialogState, setDialogState] = React.useState<DialogState>({
@@ -53,6 +55,9 @@ export function DataTable<TData>({ data }: DataTableProps<TData>) {
     borrower: null,
   });
   const [affiliationFilter, setAffiliationFilter] = React.useState<AffiliationFilterValue>('all');
+  const [highlightedRow, setHighlightedRow] = React.useState<string | null>(
+    highlightBorrowerId || null
+  );
 
   // Use column preferences hook
   const { columnVisibility, setColumnVisibility } = useColumnPreferences();
@@ -100,6 +105,39 @@ export function DataTable<TData>({ data }: DataTableProps<TData>) {
       onOpenDialog: openDialog,
     },
   });
+
+  // Navigate to correct page and scroll to highlighted row
+  React.useEffect(() => {
+    if (highlightBorrowerId && filteredData.length > 0) {
+      // Find the index of the borrower in the filtered data
+      const borrowerIndex = (filteredData as BorrowerWithKeys[]).findIndex(
+        (b) => b.borrowerId === highlightBorrowerId
+      );
+
+      if (borrowerIndex !== -1) {
+        // Calculate which page the borrower is on
+        const pageSize = table.getState().pagination.pageSize;
+        const targetPage = Math.floor(borrowerIndex / pageSize);
+        
+        // Set the table to the correct page
+        table.setPageIndex(targetPage);
+
+        // Wait for page change and render, then scroll
+        const timer = setTimeout(() => {
+          const element = document.querySelector(`[data-borrower-id="${highlightBorrowerId}"]`);
+          if (element) {
+            element.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+            });
+            // Clear highlight after 3 seconds
+            setTimeout(() => setHighlightedRow(null), 3000);
+          }
+        }, 200); // Increased delay to allow page change
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [highlightBorrowerId, filteredData, table]);
 
   // Handle filtering by name and company
   const handleNameFilter = (value: string) => {
@@ -185,15 +223,26 @@ export function DataTable<TData>({ data }: DataTableProps<TData>) {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                table.getRowModel().rows.map((row) => {
+                  const borrower = row.original as BorrowerWithKeys;
+                  return (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && 'selected'}
+                      data-borrower-id={borrower.borrowerId}
+                      className={cn(
+                        highlightedRow === borrower.borrowerId &&
+                          'bg-yellow-100 dark:bg-yellow-900/20 transition-colors duration-1000'
+                      )}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-24 text-center">
