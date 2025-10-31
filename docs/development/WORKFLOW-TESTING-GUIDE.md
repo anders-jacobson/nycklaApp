@@ -378,23 +378,172 @@ While automated tests cover backend logic, manual testing ensures the UI works c
 
 ---
 
-### Lost Key Workflow UI Tests (if implemented)
+### Lost Key Workflow UI Tests
 
-#### Test 10: Mark Key as Lost
+#### Test 10: Mark Single Key as Lost (No Replacement)
 
 **Steps:**
 
-1. Active Loans → Kebab menu → **"Mark Lost"**
-2. Confirm lost status
-3. Optional: Create replacement
-4. Optional: Issue replacement to same borrower
+1. Navigate to **Active Loans** page
+2. Find borrower with multiple active keys
+3. Click **kebab menu** (⋮) → **"Mark Key Lost"**
+4. Dialog appears showing all borrowed keys
+5. **Select one key** using radio buttons
+6. Click **"Confirm"**
 
 **Expected Results:**
 
-- ✅ Key status changes to LOST
-- ✅ Issue record closed
-- ✅ Replacement copy created (if selected)
-- ✅ Charts reflect lost key count
+- ✅ Dialog shows all borrowed keys for selection
+- ✅ Radio button selection (single key only)
+- ✅ Success toast: "Key marked as lost"
+- ✅ Borrower row updates: badge decrements (e.g., "3 keys" → "2 keys")
+- ✅ Borrower still exists (has remaining keys)
+- ✅ Lost key no longer shown in borrowed keys
+- ✅ Charts update to show lost count (Keys page)
+- ✅ Key shows status LOST in database
+
+**Database Verification (optional):**
+
+```sql
+-- Check key copy status
+SELECT * FROM "KeyCopy" WHERE id = '[copy-id]';
+-- status should be 'LOST'
+
+-- Check issue record closed
+SELECT * FROM "IssueRecord" WHERE id = '[issue-id]';
+-- returnedDate should be set to current timestamp
+
+-- Verify borrower still exists
+SELECT * FROM "Borrower" WHERE id = '[borrower-id]';
+-- Should return the borrower record
+```
+
+---
+
+#### Test 11: Mark Last Key as Lost (GDPR Cleanup)
+
+**Steps:**
+
+1. Find borrower with only **one active key**
+2. Kebab menu → **"Mark Key Lost"**
+3. **Expected Warning:** "If this is the last key, [Borrower Name] will be removed from the system."
+4. Select the key → Click **"Confirm"**
+
+**Expected Results:**
+
+- ✅ Warning message displayed before confirmation
+- ✅ Success toast: "Key marked as lost"
+- ✅ **Borrower row disappears** from Active Loans table
+- ✅ Borrower deleted from database (GDPR compliance)
+- ✅ Key status = LOST in Keys page
+- ✅ Lost count incremented in charts
+
+**Database Verification:**
+
+```sql
+-- Verify borrower deleted
+SELECT * FROM "Borrower" WHERE id = '[borrower-id]';
+-- Should return no rows
+
+-- Verify key marked as lost
+SELECT * FROM "KeyCopy" WHERE id = '[copy-id]';
+-- status = 'LOST'
+```
+
+---
+
+#### Test 12: Replace Lost Key (Create + Issue)
+
+**Steps:**
+
+1. Navigate to **Active Loans** page
+2. Find borrower with active key
+3. Kebab menu → **"Replace Key"**
+4. Dialog shows:
+   - Radio buttons to select which key to replace
+   - Due date field (optional)
+   - ID verification checkbox (required)
+5. Select one key
+6. Set due date: 7 days from now (optional)
+7. **Check** "I have verified the borrower's ID" ✓
+8. Click **"Replace Key"**
+
+**Expected Results:**
+
+- ✅ Dialog shows descriptive text: "This marks the original key as lost, creates a new copy and issues it to [Name]"
+- ✅ ID verification required (button disabled until checked)
+- ✅ Success toast: "Key replaced and issued"
+- ✅ Borrower row persists (still has active loan)
+- ✅ Borrowed keys badge stays same or updates correctly
+- ✅ Old key status = LOST
+- ✅ New key copy created with next sequential number
+- ✅ New key status = OUT
+- ✅ New issue record created for same borrower
+- ✅ Charts updated (lost count +1, in use count stays same)
+
+**Database Verification:**
+
+```sql
+-- Check old copy marked as lost
+SELECT * FROM "KeyCopy" WHERE id = '[old-copy-id]';
+-- status = 'LOST'
+
+-- Check new copy created and issued
+SELECT * FROM "KeyCopy" WHERE keyTypeId = '[key-type-id]' ORDER BY copyNumber DESC LIMIT 1;
+-- status = 'OUT', copyNumber should be highest
+
+-- Verify new issue record
+SELECT * FROM "IssueRecord" WHERE borrowerId = '[borrower-id]' AND returnedDate IS NULL;
+-- Should have new record with new keyCopyId
+```
+
+---
+
+#### Test 13: Replace Lost Key (Cancel)
+
+**Steps:**
+
+1. Open **"Replace Key"** dialog
+2. Select a key
+3. **Do NOT check ID verification**
+4. Click **"Replace Key"**
+
+**Expected Results:**
+
+- ✅ Button remains disabled until ID checked
+- ✅ User cannot proceed without verification
+
+**Alternative Cancel Test:**
+
+1. Open **"Replace Key"** dialog
+2. Click **"Cancel"** button
+
+**Expected Results:**
+
+- ✅ Dialog closes
+- ✅ No changes made
+- ✅ Borrower still has original keys
+
+---
+
+#### Test 14: Lost Key Error Handling
+
+**Test Invalid Issue Record:**
+
+1. Open browser console
+2. Try to mark a non-existent issue record as lost (requires manual API call)
+3. **Expected:** Error message: "Issue record not found"
+
+**Test Already Returned Key:**
+
+1. Return a key using **"Return Keys"**
+2. Try to mark the same key as lost (requires database manipulation or UI bug)
+3. **Expected:** Error message: "Key already returned"
+
+**Test Permission Validation:**
+
+1. Attempt to mark lost a key from another cooperative (requires database manipulation)
+2. **Expected:** Error or no access to that borrower
 
 ---
 

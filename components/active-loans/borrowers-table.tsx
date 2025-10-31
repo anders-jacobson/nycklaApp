@@ -113,6 +113,24 @@ export function DataTable<TData>({ data }: DataTableProps<TData>) {
 
   const currentBorrower = dialogState.borrower;
 
+  // Close dialog if borrower is no longer available (e.g., deleted after return)
+  React.useEffect(() => {
+    if (dialogState.type !== null && !currentBorrower) {
+      // Force close any open dialogs when borrower is deleted
+      closeDialog();
+    }
+  }, [dialogState.type, currentBorrower, closeDialog]);
+
+  // Cleanup: Ensure dialog closes on unmount
+  React.useEffect(() => {
+    return () => {
+      // Cleanup function - close dialog if component unmounts
+      if (dialogState.type !== null) {
+        setDialogState({ type: null, borrower: null });
+      }
+    };
+  }, [dialogState.type]);
+
   return (
     <>
       <div className="space-y-4">
@@ -192,27 +210,41 @@ export function DataTable<TData>({ data }: DataTableProps<TData>) {
       </div>
 
       {/* Dialogs - Rendered as siblings to table, not nested */}
+      {/* Always render dialogs but control with open prop - prevents overlay from staying */}
       {currentBorrower && (
         <>
           <ReturnKeysDialog
+            key={`return-${currentBorrower.borrowerId}-${dialogState.type}`}
             open={dialogState.type === 'return-keys'}
-            onOpenChange={closeDialog}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                closeDialog();
+              }
+            }}
             borrowerName={currentBorrower.borrowerName}
             borrowedKeys={currentBorrower.borrowedKeys}
             totalKeysForBorrower={currentBorrower.activeLoanCount}
           />
           <LostKeyDialog
+            key={`lost-${currentBorrower.borrowerId}-${dialogState.type}`}
             open={dialogState.type === 'lost-key'}
-            onOpenChange={closeDialog}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                closeDialog();
+              }
+            }}
             borrowerName={currentBorrower.borrowerName}
             borrowedKeys={currentBorrower.borrowedKeys}
-            isLastKeyForBorrower={
-              currentBorrower.borrowedKeys.length === currentBorrower.activeLoanCount
-            }
+            isLastKeyForBorrower={currentBorrower.activeLoanCount === 1}
           />
           <ReplaceKeyDialog
+            key={`replace-${currentBorrower.borrowerId}-${dialogState.type}`}
             open={dialogState.type === 'replace-key'}
-            onOpenChange={closeDialog}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                closeDialog();
+              }
+            }}
             borrowerName={currentBorrower.borrowerName}
             borrowedKeys={currentBorrower.borrowedKeys}
           />

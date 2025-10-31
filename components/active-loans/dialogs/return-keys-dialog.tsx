@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -45,18 +47,67 @@ export function ReturnKeysDialog({
     try {
       const result = await returnMultipleKeysAction(selectedIds);
       if (result.success) {
-        toastSuccess(selectedIds.length === 1 ? 'Key returned' : 'Keys returned');
+        // Close dialog immediately
         onOpenChange(false);
+        
+        // Get key information for the returned keys
+        const returnedKeys = borrowedKeys.filter((k) => selectedIds.includes(k.issueId));
+        
+        // Create descriptive toast message
+        let message: string;
+        if (returnedKeys.length === 1) {
+          const key = returnedKeys[0];
+          message = `Key ${key.keyLabel}${key.copyNumber} returned successfully`;
+        } else {
+          const keyList = returnedKeys
+            .map((k) => `${k.keyLabel}${k.copyNumber}`)
+            .join(', ');
+          message = `${returnedKeys.length} keys returned: ${keyList}`;
+        }
+        
+        toastSuccess(message);
       } else {
         toastError('Failed to return keys', result.error);
       }
+    } catch (error) {
+      toastError('Failed to return keys', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Ensure dialog closes if borrowedKeys becomes empty
+  React.useEffect(() => {
+    if (open && borrowedKeys.length === 0) {
+      onOpenChange(false);
+    }
+  }, [open, borrowedKeys.length, onOpenChange]);
+
+  // Cleanup: Ensure body pointer-events is restored when dialog closes
+  React.useEffect(() => {
+    if (!open) {
+      // Force cleanup of body styles when dialog closes
+      // Use requestAnimationFrame + setTimeout to ensure this runs after Radix cleanup and animations
+      const cleanup = () => {
+        document.body.style.pointerEvents = '';
+        document.body.style.overflow = '';
+      };
+      // Run after animation completes (200ms duration + buffer)
+      const timer = setTimeout(cleanup, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  // Also cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      document.body.style.pointerEvents = '';
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open && borrowedKeys.length > 0} onOpenChange={onOpenChange} modal={true}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Select keys to return</DialogTitle>
@@ -64,18 +115,17 @@ export function ReturnKeysDialog({
         </DialogHeader>
         <div className="space-y-2">
           {borrowedKeys.map((k) => (
-            <label key={k.issueId} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
+            <div key={k.issueId} className="flex items-center space-x-2">
+              <Checkbox
+                id={k.issueId}
                 checked={selectedIds.includes(k.issueId)}
-                onChange={() => toggle(k.issueId)}
-                className="cursor-pointer"
+                onCheckedChange={() => toggle(k.issueId)}
               />
-              <span className="text-sm">
+              <Label htmlFor={k.issueId} className="cursor-pointer font-normal">
                 {k.keyLabel}
                 {k.copyNumber} • {k.keyFunction}
-              </span>
-            </label>
+              </Label>
+            </div>
           ))}
         </div>
         {isLastSelectionForBorrower && (
