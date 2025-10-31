@@ -398,13 +398,27 @@ AVAILABLE ──┐
 
 ---
 
+## Completed Enhancements
+
+### Phase 1: Basic Expandable Rows ✅
+- [x] Expandable rows with chevron icon
+- [x] Status badges (Available/In Use/Lost)
+- [x] Mark Lost action for AVAILABLE copies
+- [x] Mark Found action for LOST copies
+
+### Phase 2: View Borrower Link ✅
+- [x] Show borrower name for IN USE copies
+- [x] "View →" link to navigate to Active Loans
+- [x] Smart pagination navigation
+- [x] Smooth scroll with highlight animation
+
 ## Future Enhancements
 
-### Copy Details Enhancement
+### Phase 3: Enhanced IN USE Copy Display (Next Priority)
 
-- [ ] Show borrower name for IN USE copies
 - [ ] Show due date for IN USE copies
-- [ ] Show overdue indicator for IN USE copies
+- [ ] Show overdue indicator for IN USE copies (red badge)
+- [ ] Show days remaining / days overdue
 - [ ] Click copy to see full history
 
 ### Bulk Actions

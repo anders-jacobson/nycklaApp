@@ -26,9 +26,13 @@ Technical implementation details, tasks, and development workflows for the Key M
 
 ### **Features** ✨
 
+- **[Implementation Status](./IMPLEMENTATION-STATUS.md)** - Current feature status and next steps ⭐ START HERE
 - **[Column Customization](./features/column-customization.md)** - Implementation details and testing checklist
 - **[Key Management](./features/key-management.md)** - Key types, copy management, and expandable rows feature
 - **[Key Workflows](./features/key-workflows.md)** - Issue and return key workflows
+- **[Phase 2: View Borrower](./features/phase-2-view-borrower-link.md)** - Smart navigation with highlight
+- **[Active Loans Improvements](./features/active-loans-improvements.md)** - Overdue tracking, tooltips, and UX enhancements
+- **[Session Summary](./SESSION-SUMMARY.md)** - Latest development session overview and next steps
 
 ## 🚀 **Development Status**
 

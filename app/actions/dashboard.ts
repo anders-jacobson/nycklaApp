@@ -251,3 +251,67 @@ export async function updateBorrowerPurpose(
     return { success: false, error: 'Failed to update borrower purpose' };
   }
 }
+
+/**
+ * Get overdue loan summary statistics for horizontal bar chart
+ */
+export async function getOverdueSummary() {
+  const userId = await getCurrentUserId();
+  const now = new Date();
+
+  const activeLoans = await prisma.issueRecord.findMany({
+    where: {
+      userId,
+      returnedDate: null, // Only active loans
+    },
+    select: {
+      dueDate: true,
+    },
+  });
+
+  // Calculate days difference for each loan
+  const categorized = {
+    critical: 0, // 7+ days overdue
+    urgent: 0, // 1-6 days overdue
+    dueSoon: 0, // 0-2 days
+    thisWeek: 0, // 3-7 days
+    later: 0, // 8+ days or no due date
+  };
+
+  activeLoans.forEach((loan) => {
+    if (!loan.dueDate) {
+      categorized.later++;
+      return;
+    }
+
+    const diffMs = loan.dueDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays < -6) {
+      // 7+ days overdue (negative means overdue)
+      categorized.critical++;
+    } else if (diffDays < 0) {
+      // 1-6 days overdue
+      categorized.urgent++;
+    } else if (diffDays <= 2) {
+      // Due today, tomorrow, or day after
+      categorized.dueSoon++;
+    } else if (diffDays <= 7) {
+      // Due in 3-7 days
+      categorized.thisWeek++;
+    } else {
+      // Due in 8+ days
+      categorized.later++;
+    }
+  });
+
+  return {
+    category: 'Active Loans',
+    Critical: categorized.critical,
+    Urgent: categorized.urgent,
+    DueSoon: categorized.dueSoon,
+    ThisWeek: categorized.thisWeek,
+    Later: categorized.later,
+    total: activeLoans.length,
+  };
+}

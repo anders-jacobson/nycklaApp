@@ -3,10 +3,16 @@
 import { useState, useRef } from 'react';
 import { ColumnDef, HeaderContext, CellContext } from '@tanstack/react-table';
 
-import { IconArrowsUpDown, IconInfoCircle, IconLoader } from '@tabler/icons-react';
+import {
+  IconArrowsUpDown,
+  IconInfoCircle,
+  IconLoader,
+  IconInfoCircleFilled,
+} from '@tabler/icons-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogTrigger,
@@ -325,15 +331,39 @@ export function getVisibleColumns(
               new Date(key.dueDate) > new Date() &&
               new Date(key.dueDate).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
 
+            const dueDateText = key.dueDate
+              ? !key.dueDate.startsWith('9999')
+                ? `Due: ${formatDate(key.dueDate)}`
+                : 'No due date'
+              : 'No due date';
+
             return (
-              <Badge
-                key={index}
-                variant={isOverdue ? 'destructive' : isWarning ? 'default' : 'secondary'}
-                className="text-xs"
-              >
-                {key.keyLabel}
-                {key.copyNumber}
-              </Badge>
+              <Tooltip key={index}>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant={isOverdue ? 'destructive' : isWarning ? 'default' : 'secondary'}
+                    className="text-xs cursor-pointer"
+                  >
+                    {key.keyLabel}
+                    {key.copyNumber}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <div className="space-y-1">
+                    <div className="font-medium text-sm">{key.keyFunction}</div>
+                    <div className="text-xs opacity-90">{dueDateText}</div>
+                    {isOverdue && (
+                      <div className="text-xs opacity-75">
+                        {Math.floor(
+                          (new Date().getTime() - new Date(key.dueDate!).getTime()) /
+                            (1000 * 60 * 60 * 24),
+                        )}{' '}
+                        days overdue
+                      </div>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             );
           })}
         </div>
@@ -359,15 +389,60 @@ export function getVisibleColumns(
           </Button>
         );
       },
+      sortingFn: (rowA, rowB) => {
+        // Get the earliest issued date for each borrower
+        const getEarliestDate = (borrower: BorrowerWithKeys) => {
+          if (borrower.borrowedKeys.length === 0) return null;
+          const sorted = [...borrower.borrowedKeys].sort(
+            (a, b) => new Date(a.borrowedAt).getTime() - new Date(b.borrowedAt).getTime(),
+          );
+          return new Date(sorted[0].borrowedAt);
+        };
+
+        const dateA = getEarliestDate(rowA.original);
+        const dateB = getEarliestDate(rowB.original);
+
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+
+        return dateA.getTime() - dateB.getTime();
+      },
       cell: ({ row }: CellContext<BorrowerWithKeys, unknown>) => {
         const borrower = row.original;
+        // Sort by issued date (earliest first)
+        const sortedByIssued = [...borrower.borrowedKeys].sort(
+          (a, b) => new Date(a.borrowedAt).getTime() - new Date(b.borrowedAt).getTime(),
+        );
+        const earliestDate = sortedByIssued[0]?.borrowedAt || '';
+
         return (
-          <div className="space-y-1">
-            {borrower.borrowedKeys.map((key, index) => (
-              <div key={index} className="text-sm text-muted-foreground">
-                {formatDate(key.borrowedAt)}
-              </div>
-            ))}
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            {earliestDate && formatDate(earliestDate)}
+            {sortedByIssued.length > 1 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="inline-flex items-center">
+                    <IconInfoCircleFilled className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1.5">
+                    <div className="font-medium text-xs mb-2 opacity-90">All Issue Dates</div>
+                    {sortedByIssued.map((key, index) => (
+                      <div key={index} className="flex items-center gap-2 text-xs opacity-90">
+                        <span className="font-mono">
+                          {key.keyLabel}
+                          {key.copyNumber}
+                        </span>
+                        <span className="opacity-60">→</span>
+                        <span>{formatDate(key.borrowedAt)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         );
       },
@@ -390,40 +465,99 @@ export function getVisibleColumns(
           </Button>
         );
       },
+      sortingFn: (rowA, rowB) => {
+        // Helper function to get the most urgent (earliest) due date
+        const getMostUrgentDate = (borrower: BorrowerWithKeys) => {
+          const keysWithDates = borrower.borrowedKeys.filter(
+            (k) => k.dueDate && !k.dueDate.startsWith('9999'),
+          );
+          if (keysWithDates.length === 0) return null;
+          
+          // Sort and get earliest date
+          const sorted = keysWithDates.sort(
+            (a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime(),
+          );
+          return new Date(sorted[0].dueDate!);
+        };
+
+        const dateA = getMostUrgentDate(rowA.original);
+        const dateB = getMostUrgentDate(rowB.original);
+
+        // Handle cases where one or both have no due dates
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1; // No date goes to end
+        if (!dateB) return -1; // No date goes to end
+
+        // Compare dates (earlier date = more urgent = sorts first)
+        return dateA.getTime() - dateB.getTime();
+      },
       cell: ({ row }: CellContext<BorrowerWithKeys, unknown>) => {
         const borrower = row.original;
-        return (
-          <div className="space-y-1">
-            {borrower.borrowedKeys.map((key, index) => {
-              const isOverdue =
-                key.dueDate &&
-                new Date(key.dueDate) < new Date() &&
-                !key.dueDate.startsWith('9999');
-              const isWarning =
-                key.dueDate &&
-                new Date(key.dueDate) > new Date() &&
-                new Date(key.dueDate).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
 
-              return (
-                <div key={index} className="text-sm">
-                  {key.dueDate ? (
-                    <span
-                      className={
-                        isOverdue
-                          ? 'text-destructive font-medium'
-                          : isWarning
-                            ? 'text-amber-600 font-medium'
-                            : 'text-muted-foreground'
-                      }
-                    >
-                      {formatDate(key.dueDate)}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">No due date</span>
-                  )}
-                </div>
-              );
-            })}
+        // Find the nearest (most urgent) due date
+        // Priority: overdue > due soon > furthest out
+        const keysWithDates = borrower.borrowedKeys.filter(
+          (k) => k.dueDate && !k.dueDate.startsWith('9999'),
+        );
+
+        if (keysWithDates.length === 0) {
+          return <span className="text-sm text-muted-foreground">No due date</span>;
+        }
+
+        // Sort by date (earliest first = most urgent)
+        const sortedKeys = keysWithDates.sort(
+          (a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime(),
+        );
+
+        const mostUrgent = sortedKeys[0];
+        const isOverdue = new Date(mostUrgent.dueDate!) < new Date();
+        const isWarning =
+          !isOverdue &&
+          new Date(mostUrgent.dueDate!).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
+
+        return (
+          <div className="flex items-center gap-1.5 text-sm">
+            <span
+              className={
+                isOverdue
+                  ? 'text-destructive font-medium'
+                  : isWarning
+                    ? 'text-amber-600 font-medium'
+                    : 'text-muted-foreground'
+              }
+            >
+              {formatDate(mostUrgent.dueDate!)}
+            </span>
+            {sortedKeys.length > 1 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="inline-flex items-center">
+                    <IconInfoCircleFilled className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1.5">
+                    <div className="font-medium text-xs mb-2 opacity-90">All Due Dates</div>
+                    {sortedKeys.map((key, index) => {
+                      const keyIsOverdue = new Date(key.dueDate!) < new Date();
+
+                      return (
+                        <div key={index} className="flex items-center gap-2 text-xs opacity-90">
+                          <span className="font-mono">
+                            {key.keyLabel}
+                            {key.copyNumber}
+                          </span>
+                          <span className="opacity-60">→</span>
+                          <span className={keyIsOverdue ? 'font-medium' : ''}>
+                            {formatDate(key.dueDate!)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         );
       },
