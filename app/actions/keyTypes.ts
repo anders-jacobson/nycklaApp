@@ -238,3 +238,26 @@ export async function markAvailableCopyLost(copyId: string): Promise<ActionResul
     return { success: false, error: message };
   }
 }
+
+export async function markLostCopyFound(copyId: string): Promise<ActionResult<undefined>> {
+  try {
+    const { id: userId } = await getCurrentUser();
+    // Verify ownership and status
+    const copy = await prisma.keyCopy.findFirst({
+      where: { id: copyId, keyType: { userId } },
+      select: { id: true, status: true },
+    });
+    if (!copy) return { success: false, error: 'Key copy not found.' };
+    if (copy.status !== 'LOST') {
+      return { success: false, error: 'Only LOST copies can be marked as found.' };
+    }
+
+    await prisma.keyCopy.update({ where: { id: copyId }, data: { status: 'AVAILABLE' } });
+    revalidatePath('/keys');
+    revalidatePath('/active-loans');
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to mark copy as found.';
+    return { success: false, error: message };
+  }
+}

@@ -1,6 +1,13 @@
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
-import { createKeyType, updateKeyType, deleteKeyType, addKeyCopy } from '@/app/actions/keyTypes';
+import {
+  createKeyType,
+  updateKeyType,
+  deleteKeyType,
+  addKeyCopy,
+  markAvailableCopyLost,
+  markLostCopyFound,
+} from '@/app/actions/keyTypes';
 import { getKeyStatusSummary } from '@/app/actions/dashboard';
 import KeyChart from '@/components/shared/chart-bar';
 import TotalStatusPieChart from '@/components/shared/chart-pie';
@@ -26,7 +33,10 @@ async function getKeyTypes() {
     where: { userId },
     orderBy: [{ label: 'asc' }],
     include: {
-      keyCopies: { select: { id: true } },
+      keyCopies: {
+        select: { id: true, copyNumber: true, status: true },
+        orderBy: { copyNumber: 'asc' },
+      },
     },
   });
   return keyTypes.map((kt) => ({
@@ -34,7 +44,7 @@ async function getKeyTypes() {
     label: kt.label,
     name: kt.function,
     accessArea: kt.accessArea ?? '',
-    copies: kt.keyCopies.length,
+    copies: kt.keyCopies,
   }));
 }
 
@@ -59,6 +69,18 @@ async function addKeyCopyAction(formData: FormData) {
   await addKeyCopy(formData);
 }
 
+async function markLostAction(formData: FormData) {
+  'use server';
+  const copyId = formData.get('copyId') as string;
+  await markAvailableCopyLost(copyId);
+}
+
+async function markFoundAction(formData: FormData) {
+  'use server';
+  const copyId = formData.get('copyId') as string;
+  await markLostCopyFound(copyId);
+}
+
 export default async function Page() {
   // Fetch both key types and key status data
   const [keyTypes, keyChartData] = await Promise.all([getKeyTypes(), getKeyStatusSummary()]);
@@ -80,6 +102,8 @@ export default async function Page() {
               deleteAction={deleteKeyTypeAction}
               createAction={createKeyTypeAction}
               addCopyAction={addKeyCopyAction}
+              markLostAction={markLostAction}
+              markFoundAction={markFoundAction}
             />
           </div>
         </div>

@@ -40,6 +40,7 @@ import {
   KeyTypeRow,
   KeyTypeColumnVisibility,
   defaultKeyTypeColumnVisibility,
+  ExpandedCopiesRow,
 } from './key-type-columns';
 import { IconPlus } from '@tabler/icons-react';
 import Link from 'next/link';
@@ -51,6 +52,8 @@ type KeyTypesTableProps = {
   deleteAction: (formData: FormData) => void | Promise<void>;
   createAction: (formData: FormData) => void | Promise<void>;
   addCopyAction: (formData: FormData) => void | Promise<void>;
+  markLostAction: (formData: FormData) => void | Promise<void>;
+  markFoundAction: (formData: FormData) => void | Promise<void>;
 };
 
 export function KeyTypesTable({
@@ -59,18 +62,52 @@ export function KeyTypesTable({
   deleteAction,
   createAction,
   addCopyAction,
+  markLostAction,
+  markFoundAction,
 }: KeyTypesTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
 
   // Key types column visibility state
   const [columnVisibility, setColumnVisibility] = React.useState<KeyTypeColumnVisibility>(
     defaultKeyTypeColumnVisibility,
   );
 
+  const toggleExpand = React.useCallback((keyTypeId: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(keyTypeId)) {
+        next.delete(keyTypeId);
+      } else {
+        next.add(keyTypeId);
+      }
+      return next;
+    });
+  }, []);
+
   const columns = React.useMemo<ColumnDef<KeyTypeRow>[]>(
-    () => getKeyTypeColumns({ updateAction, deleteAction, addCopyAction, columnVisibility }),
-    [updateAction, deleteAction, addCopyAction, columnVisibility],
+    () =>
+      getKeyTypeColumns({
+        updateAction,
+        deleteAction,
+        addCopyAction,
+        markLostAction,
+        markFoundAction,
+        columnVisibility,
+        expandedRows,
+        onToggleExpand: toggleExpand,
+      }),
+    [
+      updateAction,
+      deleteAction,
+      addCopyAction,
+      markLostAction,
+      markFoundAction,
+      columnVisibility,
+      expandedRows,
+      toggleExpand,
+    ],
   );
 
   const table = useReactTable({
@@ -161,15 +198,29 @@ export function KeyTypesTable({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const keyType = row.original;
+                const isExpanded = expandedRows.has(keyType.id);
+                return (
+                  <React.Fragment key={row.id}>
+                    <TableRow data-state={row.getIsSelected() && 'selected'}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    {isExpanded && (
+                      <ExpandedCopiesRow
+                        copies={keyType.copies}
+                        markLostAction={markLostAction}
+                        markFoundAction={markFoundAction}
+                        colSpan={row.getVisibleCells().length}
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">

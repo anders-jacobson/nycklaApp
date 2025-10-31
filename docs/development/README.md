@@ -27,6 +27,8 @@ Technical implementation details, tasks, and development workflows for the Key M
 ### **Features** ✨
 
 - **[Column Customization](./features/column-customization.md)** - Implementation details and testing checklist
+- **[Key Management](./features/key-management.md)** - Key types, copy management, and expandable rows feature
+- **[Key Workflows](./features/key-workflows.md)** - Issue and return key workflows
 
 ## 🚀 **Development Status**
 
