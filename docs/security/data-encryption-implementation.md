@@ -73,6 +73,145 @@ Based on current schema analysis:
 
 ---
 
+## 👥 **How User Access Works with Encryption**
+
+### **🔐 Encryption Key Management**
+
+**Shared Application Key**: One encryption key used by the entire application
+- All borrowers' PII encrypted with the same key
+- Key stored in `ENCRYPTION_KEY` environment variable
+- Never committed to version control
+- Secure storage required
+
+### **🔒 Multi-Layer Security Model**
+
+Your application uses **DEFENSE IN DEPTH** - multiple security layers:
+
+#### **Layer 1: Row Level Security (RLS)** 🔐
+```
+User A (cooperative: "Storgatan 15") → Can ONLY see:
+  - Borrower records linked to User A
+  - Key types owned by User A
+  - Issue records from User A
+
+User B (cooperative: "Gatan 22") → Can ONLY see:
+  - Borrower records linked to User B
+  - Key types owned by User B
+  - Issue records from User B
+```
+
+**How it works**:
+- RLS policies filter data by `auth_id` before it reaches your application
+- User A physically cannot query User B's data
+- Database enforcement (cannot be bypassed by application code)
+
+#### **Layer 2: Encrypted Storage** 🔐
+```
+Database contains: Encrypted blobs
+  - "U2FsdGVkX1..." (encrypted Gunhild Åberg)
+  - "U2FsdGVkX1..." (encrypted email)
+  - "U2FsdGVkX1..." (encrypted phone)
+```
+
+**How it works**:
+- All PII stored as encrypted blobs
+- Even database admins cannot read plain text
+- Protects against database compromise, backup theft, etc.
+
+#### **Layer 3: Automatic Decryption** 🔓
+```
+Application (with ENCRYPTION_KEY):
+  1. User A queries: "Get my borrowers"
+  2. RLS returns: Encrypted data blobs (only User A's borrowers)
+  3. Middleware decrypts: Plain text data
+  4. User A sees: "Gunhild Åberg" (decrypted)
+```
+
+**How it works**:
+- Prisma middleware automatically decrypts on read
+- Application only sees decrypted data
+- Transparent to application code
+
+---
+
+## ✅ **Answer: "Can users see each other's data?"**
+
+### **NO - Multiple Layers Prevent Cross-User Data Access**
+
+#### **Scenario 1: Normal Operation**
+```
+User A logs in → RLS filters to User A's data only
+  ↓
+Middlelayer decrypts User A's data
+  ↓
+User A sees only User A's borrowers
+```
+
+**Result**: ✅ User A cannot see User B's data (RLS prevents it)
+
+#### **Scenario 2: Database Breach**
+```
+Attacker gains database access (has ENCRYPTION_KEY somehow)
+  ↓
+Tries to read User B's borrower records
+  ↓
+Can decrypt User B's data (has key)
+  ↓
+BUT RLS prevents attacker from querying User B's data!
+```
+
+**Result**: ✅ Still protected (needs User B's auth credentials to bypass RLS)
+
+#### **Scenario 3: Application Compromise**
+```
+Attacker compromises application (hijacks User A's session)
+  ↓
+Tries to query User B's borrowers
+  ↓
+RLS blocks: Can only query User A's data
+  ↓
+Gets encrypted blobs from User A's data only
+  ↓
+Automatically decrypted by middleware
+```
+
+**Result**: ✅ Cannot access User B's data (RLS + encryption)
+
+---
+
+## 🎯 **Key Takeaways**
+
+### **One Key, Multiple Securities**
+
+| Security Layer | Protects Against | Enforcement |
+|----------------|------------------|-------------|
+| **RLS Policies** | Cross-user data access | Database level |
+| **Encryption** | Database compromise, backup theft | Application level |
+| **Authentication** | Unauthorized access | Supabase Auth |
+
+### **Together They Provide:**
+- ✅ **Data Isolation**: RLS ensures users only see their own data
+- ✅ **At-Rest Security**: Encryption protects data even if database is stolen
+- ✅ **Compliance**: GDPR requirements met through layered security
+- ✅ **Transparency**: Application code unchanged, encryption automatic
+
+### **The Encryption Key Does NOT:**
+- ❌ Control which users see which data (that's RLS)
+- ❌ Enable cross-user data access
+- ❌ Bypass authentication
+
+### **The Encryption Key DOES:**
+- ✅ Protect PII if database is compromised
+- ✅ Prevent plain text exposure in backups
+- ✅ Comply with GDPR encryption requirements
+- ✅ Enable secure storage at rest
+
+---
+
+**Summary**: **RLS = WHO can see data**, **Encryption = WHAT they see (protected)** 🔐
+
+---
+
 ### **Option 2: Database-Level Encryption (pgcrypto)**
 
 **How it works**: Use PostgreSQL's `pgcrypto` extension for column-level encryption.

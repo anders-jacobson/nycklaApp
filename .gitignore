@@ -121,3 +121,4 @@ generated/prisma
 # Cursor AI configuration (contains sensitive project IDs)
 .cursor/mcp.json
 .cursor/rules/environment-config.mdc
+encryption-key-storage.txt
