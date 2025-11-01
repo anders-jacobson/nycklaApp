@@ -44,64 +44,66 @@ model KeyCopy {
 }
 
 model Borrower {
-  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  affiliation       BorrowerAffiliation
-  createdAt         DateTime            @default(now())
-  userId            String              @db.Uuid
-  
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  affiliation BorrowerAffiliation
+  createdAt   DateTime            @default(now())
+  userId      String              @db.Uuid
+
   // Polymorphic relations - only one will be populated based on affiliation
-  residentBorrowerId  String?           @unique @db.Uuid
-  externalBorrowerId  String?           @unique @db.Uuid
-  
-  user              User                @relation(fields: [userId], references: [id])
-  residentBorrower  ResidentBorrower?   @relation(fields: [residentBorrowerId], references: [id], onDelete: Cascade)
-  externalBorrower  ExternalBorrower?   @relation(fields: [externalBorrowerId], references: [id], onDelete: Cascade)
-  issueRecords      IssueRecord[]
-  
+  residentBorrowerId String? @unique @db.Uuid
+  externalBorrowerId String? @unique @db.Uuid
+
+  user             User              @relation(fields: [userId], references: [id])
+  residentBorrower ResidentBorrower? @relation(fields: [residentBorrowerId], references: [id], onDelete: Cascade)
+  externalBorrower ExternalBorrower? @relation(fields: [externalBorrowerId], references: [id], onDelete: Cascade)
+  issueRecords     IssueRecord[]
+
   // GDPR Note: Borrower records automatically deleted when no active lending records
   // Placeholder emails (@placeholder.com) indicate missing real email addresses
 }
 
 model ResidentBorrower {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String    @db.VarChar(100)
-  email     String    @db.VarChar(255)
-  phone     String?   @db.VarChar(20)
+  // PII fields use larger sizes to accommodate encrypted data blobs
+  name      String    @db.VarChar(500) // Encrypted: AES-256-GCM
+  email     String    @db.VarChar(500) // Encrypted: AES-256-GCM
+  phone     String?   @db.VarChar(200) // Encrypted: AES-256-GCM
   createdAt DateTime  @default(now())
   borrower  Borrower?
-  
+
   // Ensure email uniqueness for residents within the system
   @@unique([email])
 }
 
 model ExternalBorrower {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String    @db.VarChar(100)
-  email          String    @db.VarChar(255)
-  phone          String?   @db.VarChar(20)
-  address        String?   @db.VarChar(200)
-  company        String?   @db.VarChar(100)
-  borrowerPurpose String?   @db.VarChar(500)  // Description of why they need keys
-  createdAt      DateTime  @default(now())
-  borrower       Borrower?
-  
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // PII fields use larger sizes to accommodate encrypted data blobs
+  name            String    @db.VarChar(500) // Encrypted: AES-256-GCM
+  email           String    @db.VarChar(500) // Encrypted: AES-256-GCM
+  phone           String?   @db.VarChar(200) // Encrypted: AES-256-GCM
+  address         String?   @db.VarChar(500) // Encrypted: AES-256-GCM
+  company         String?   @db.VarChar(500) // Encrypted: AES-256-GCM
+  borrowerPurpose String?   @db.VarChar(2000) // Encrypted: AES-256-GCM
+  createdAt       DateTime  @default(now())
+  borrower        Borrower?
+
   // Ensure email uniqueness for external borrowers within the system
   @@unique([email])
 }
 
 model IssueRecord {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  keyCopyId    String    @db.Uuid
-  borrowerId   String    @db.Uuid
-  issuedDate   DateTime  @default(now())
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  keyCopyId    String            @db.Uuid
+  borrowerId   String            @db.Uuid
+  issuedDate   DateTime          @default(now())
   dueDate      DateTime?
-  idChecked    Boolean   @default(false)
+  idChecked    Boolean           @default(false)
   returnedDate DateTime?
-  createdAt    DateTime  @default(now())
-  userId       String    @db.Uuid
-  borrower     Borrower  @relation(fields: [borrowerId], references: [id], onDelete: Cascade)
-  keyCopy      KeyCopy   @relation(fields: [keyCopyId], references: [id], onDelete: Cascade)
-  user         User      @relation(fields: [userId], references: [id])
+  createdAt    DateTime          @default(now())
+  userId       String            @db.Uuid
+  borrower     Borrower          @relation(fields: [borrowerId], references: [id], onDelete: Cascade)
+  keyCopy      KeyCopy           @relation(fields: [keyCopyId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id])
   notesArchive IssueRecordNote[]
 }
 
@@ -117,10 +119,10 @@ enum BorrowerAffiliation {
 }
 
 model IssueRecordNote {
-  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  issueRecordId String      @db.Uuid
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  issueRecordId String   @db.Uuid
   note          String?
-  archivedAt    DateTime    @default(now())
+  archivedAt    DateTime @default(now())
 
   issueRecord IssueRecord @relation(fields: [issueRecordId], references: [id], onDelete: Cascade)
 
