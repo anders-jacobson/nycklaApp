@@ -103,20 +103,34 @@ function decryptSensitiveFields(result: any, model: string): any {
   return decryptObject(result);
 }
 
+// Track if middleware has been initialized to prevent double initialization
+let middlewareInitialized = false;
+
 /**
  * Initialize Prisma encryption middleware
  * This middleware automatically encrypts on write and decrypts on read
  */
 export function initializeEncryptionMiddleware() {
-  if (!process.env.ENCRYPTION_KEY) {
-    // In development, allow running without encryption key for initial setup
-    if (process.env.NODE_ENV === 'development') {
+  // Prevent double initialization
+  if (middlewareInitialized) {
+    return;
+  }
+  
+  // Check for encryption key - allow graceful fallback for tests/dev
+  const hasEncryptionKey = !!process.env.ENCRYPTION_KEY;
+  
+  if (!hasEncryptionKey) {
+    // In development/test, allow running without encryption key
+    if (process.env.NODE_ENV !== 'production') {
       console.warn('⚠️  ENCRYPTION_KEY not set - encryption middleware disabled');
+      middlewareInitialized = true;
       return;
     }
+    // Production must have encryption key
     throw new Error('ENCRYPTION_KEY is required in production');
   }
   
+  // Register middleware for automatic encryption/decryption
   prisma.$use(async (params, next) => {
     // Encrypt before write operations
     if (['create', 'update', 'upsert', 'createMany'].includes(params.action)) {
@@ -133,5 +147,7 @@ export function initializeEncryptionMiddleware() {
     
     return result;
   });
+  
+  middlewareInitialized = true;
 }
 
