@@ -14,15 +14,23 @@ Technical implementation details, tasks, and development workflows for the Key M
 - Priority ordering for development work
 - Security milestone achievements
 
-### **[Architecture](./architecture.md)** 🏗️
+### **[Architecture Decision Record](./ARCHITECTURE-DECISION-RECORD.md)** 🏗️ ⭐ **NEW**
 
-**Technical architecture and system design** _(Coming Soon)_
+**Multi-tenant entity model architectural decisions**
 
-- System architecture overview
-- Database schema design
-- API design patterns
-- Component architecture
-- Security architecture integration
+- Current vs proposed architecture
+- Migration complexity analysis
+- Implementation recommendations
+- Schema impact assessment
+
+### **[Multi-Tenant Impact Analysis](./schema-multi-tenant-impact-analysis.md)** 📊 ⭐ **NEW**
+
+**Comprehensive schema migration impact analysis**
+
+- Schema change breakdown
+- 6-phase implementation plan
+- User replacement scenarios
+- Security considerations
 
 ### **Features** ✨
 

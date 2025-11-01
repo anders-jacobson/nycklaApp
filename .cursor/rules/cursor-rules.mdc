@@ -6,7 +6,9 @@ alwaysApply: true
 
 # Development Rules - Master Reference
 
-## 🚨 PRIMARY RULE: Use Context7 First
+## 🚨 PRIMARY RULES
+
+### 1. Use Context7 First (External Libraries)
 
 **ALWAYS consult Context7 MCP server for up-to-date library documentation:**
 
@@ -16,6 +18,21 @@ alwaysApply: true
 "use context7 to configure Tailwind CSS v4"
 "use context7 to implement Supabase authentication with @supabase/ssr"
 ```
+
+### 2. Document in Repo (Never Git Loops)
+
+**CRITICAL**: All documentation lives in `docs/` directory, NOT in git commits
+- ✅ Update files directly in `docs/` folder
+- ❌ NEVER create unnecessary commits just for documentation
+- ✅ Keep working branches focused on implementation
+- ✅ Document decisions and progress locally first
+- ✅ Review and commit documentation with feature code
+
+**Documentation Locations**:
+- `docs/security/` - Security and encryption documentation
+- `docs/development/` - Tasks, architecture, features
+- `docs/product/` - Requirements and user guides
+- Always update relevant README.md in each section
 
 ## 🏗️ Quick Architecture Reference
 

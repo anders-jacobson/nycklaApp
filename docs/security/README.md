@@ -33,6 +33,15 @@ Comprehensive security information for the Key Management Application.
 - Authentication provider configuration
 - Security best practices
 
+### **[Data Encryption Overview](./ENCRYPTION-README.md)** 🔐 ⭐ **NEW**
+
+**Complete data encryption implementation guide**
+
+- Two encryption approaches (simple vs advanced)
+- Implementation status and testing
+- Key management and security model
+- Multi-tenant architecture considerations
+
 ## 🚨 **Security Status**
 
 ### **✅ Implemented**
