@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth-utils';
 import {
   createKeyType,
   updateKeyType,
@@ -13,24 +13,10 @@ import KeyChart from '@/components/shared/chart-bar';
 import TotalStatusPieChart from '@/components/shared/chart-pie';
 import { KeyTypesTable } from '@/components/keys/key-types-table';
 
-async function getCurrentUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error('Not authenticated');
-  const dbUser = await prisma.user.findUnique({
-    where: { email: user.email },
-    select: { id: true },
-  });
-  if (!dbUser) throw new Error('User not found');
-  return dbUser.id;
-}
-
 async function getKeyTypes() {
-  const userId = await getCurrentUserId();
+  const { entityId } = await getCurrentUser();
   const keyTypes = await prisma.keyType.findMany({
-    where: { userId },
+    where: { entityId },
     orderBy: [{ label: 'asc' }],
     include: {
       keyCopies: {

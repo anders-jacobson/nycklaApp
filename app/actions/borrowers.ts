@@ -1,35 +1,21 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth-utils';
 import { revalidatePath } from 'next/cache';
 
 type ActionResult<T> = { success: true; data?: T } | { success: false; error: string };
-
-async function getCurrentUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error('Not authenticated');
-  const userRecord = await prisma.user.findUnique({
-    where: { email: user.email },
-    select: { id: true },
-  });
-  if (!userRecord) throw new Error('User not found');
-  return userRecord.id;
-}
 
 export async function checkEmailExists(
   email: string,
   excludeBorrowerId?: string,
 ): Promise<ActionResult<{ exists: boolean }>> {
   try {
-    const userId = await getCurrentUserId();
+    const { entityId } = await getCurrentUser();
 
     const count = await prisma.borrower.count({
       where: {
-        userId,
+        entityId,
         id: excludeBorrowerId ? { not: excludeBorrowerId } : undefined,
         OR: [{ residentBorrower: { email } }, { externalBorrower: { email } }],
       },
@@ -55,11 +41,11 @@ export async function updateBorrowerAffiliation(params: {
   };
 }): Promise<ActionResult<undefined>> {
   try {
-    const userId = await getCurrentUserId();
+    const { entityId } = await getCurrentUser();
 
     await prisma.$transaction(async (tx) => {
       const borrower = await tx.borrower.findFirst({
-        where: { id: params.borrowerId, userId },
+        where: { id: params.borrowerId, entityId },
         include: { residentBorrower: true, externalBorrower: true },
       });
       if (!borrower) throw new Error('Borrower not found');

@@ -131,7 +131,7 @@ export function KeyTypesTable({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Key Types</h2>
-          <p className="text-muted-foreground">Manage key types in your cooperative</p>
+          <p className="text-muted-foreground">Manage key types in your organization</p>
         </div>
       </div>
 

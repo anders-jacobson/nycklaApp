@@ -11,7 +11,7 @@ import CryptoJS from 'crypto-js';
  */
 function getEncryptionKey(): string {
   const key = process.env.ENCRYPTION_KEY;
-  
+
   if (!key) {
     throw new Error(
       'ENCRYPTION_KEY environment variable is required. ' +
@@ -29,7 +29,7 @@ function getEncryptionKey(): string {
  */
 export function encryptField(value: string | null | undefined): string | null {
   if (!value) return null;
-  
+
   try {
     const key = getEncryptionKey();
     const encrypted = CryptoJS.AES.encrypt(value, key).toString();
@@ -47,12 +47,12 @@ export function encryptField(value: string | null | undefined): string | null {
  */
 export function decryptField(encrypted: string | null | undefined): string | null {
   if (!encrypted) return null;
-  
+
   try {
     const key = getEncryptionKey();
     const decrypted = CryptoJS.AES.decrypt(encrypted, key);
     const plaintext = decrypted.toString(CryptoJS.enc.Utf8);
-    
+
     // If decryption fails, plaintext will be empty
     // This handles migration scenario where data might still be plain text
     if (!plaintext) {
@@ -60,7 +60,7 @@ export function decryptField(encrypted: string | null | undefined): string | nul
       console.warn('Decryption returned empty string, treating as plain text');
       return encrypted;
     }
-    
+
     return plaintext;
   } catch (error) {
     console.error('Decryption error:', error);

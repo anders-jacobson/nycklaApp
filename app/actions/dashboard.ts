@@ -1,29 +1,20 @@
 'use server';
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth-utils';
 import { getBorrowerDetails } from '@/lib/borrower-utils';
 
-// Server-side: Get the current user's User.id from Supabase Auth session (for Server Actions)
-async function getCurrentUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error('Not authenticated');
-  const userRecord = await prisma.user.findUnique({
-    where: { email: user.email },
-    select: { id: true },
-  });
-  if (!userRecord) throw new Error('User not found');
-  return userRecord.id;
+// Helper to get entityId for dashboard queries
+async function getEntityId() {
+  const user = await getCurrentUser();
+  return user.entityId;
 }
 
 export async function getKeyStatusSummary() {
-  const userId = await getCurrentUserId();
-  // Get all key types for this user (cooperative)
+  const entityId = await getEntityId();
+  // Get all key types for this entity
   // If you get a type error here, run `npx prisma generate` to update your client types.
   const keyTypes = (await prisma.keyType.findMany({
-    where: { userId },
+    where: { entityId },
     select: {
       id: true,
       label: true,
@@ -56,10 +47,10 @@ export async function getKeyStatusSummary() {
 }
 
 export async function getBorrowedKeysTableData() {
-  const userId = await getCurrentUserId();
-  // Get all issue records for this user (cooperative)
+  const entityId = await getEntityId();
+  // Get all issue records for this entity
   const issueRecords = await prisma.issueRecord.findMany({
-    where: { userId },
+    where: { entityId },
     include: {
       borrower: {
         include: {
@@ -75,30 +66,33 @@ export async function getBorrowedKeysTableData() {
     },
   });
 
-  return issueRecords.map((record) => {
-    const borrowerDetails = getBorrowerDetails(record.borrower);
+  // Map with async decryption
+  return await Promise.all(
+    issueRecords.map(async (record) => {
+      const borrowerDetails = await getBorrowerDetails(record.borrower, entityId);
 
-    return {
-      borrowerName: borrowerDetails.name,
-      company: borrowerDetails.company ?? '',
-      email: borrowerDetails.email ?? '',
-      phone: borrowerDetails.phone ?? '',
-      keyId: record.keyCopyId,
-      keyLabel: record.keyCopy.keyType.label,
-      copyNumber: record.keyCopy.copyNumber,
-      borrowedAt: record.issuedDate?.toISOString() ?? '',
-      returnedAt: record.returnedDate?.toISOString() ?? '',
-    };
-  });
+      return {
+        borrowerName: borrowerDetails.name,
+        company: borrowerDetails.company ?? '',
+        email: borrowerDetails.email ?? '',
+        phone: borrowerDetails.phone ?? '',
+        keyId: record.keyCopyId,
+        keyLabel: record.keyCopy.keyType.label,
+        copyNumber: record.keyCopy.copyNumber,
+        borrowedAt: record.issuedDate?.toISOString() ?? '',
+        returnedAt: record.returnedDate?.toISOString() ?? '',
+      };
+    }),
+  );
 }
 
 export async function getBorrowersWithKeysGrouped() {
-  const userId = await getCurrentUserId();
+  const entityId = await getEntityId();
 
   // Get all active issue records (not returned) grouped by borrower
   const issueRecords = await prisma.issueRecord.findMany({
     where: {
-      userId,
+      entityId,
       returnedDate: null, // Only active loans
     },
     include: {
@@ -119,11 +113,11 @@ export async function getBorrowersWithKeysGrouped() {
   // Group by borrower
   const borrowerMap = new Map();
 
-  issueRecords.forEach((record) => {
+  for (const record of issueRecords) {
     const borrowerId = record.borrower.id;
 
     if (!borrowerMap.has(borrowerId)) {
-      const borrowerDetails = getBorrowerDetails(record.borrower);
+      const borrowerDetails = await getBorrowerDetails(record.borrower, entityId);
       borrowerMap.set(borrowerId, {
         borrowerId: record.borrower.id,
         borrowerName: borrowerDetails.name,
@@ -153,60 +147,54 @@ export async function getBorrowersWithKeysGrouped() {
     if (record.dueDate && record.dueDate < new Date()) {
       borrower.hasOverdue = true;
     }
-  });
+  }
 
   return Array.from(borrowerMap.values());
 }
 
 /**
  * Search for borrowers by name or email (for borrower search component)
+ * Note: Can't search encrypted data directly, so we fetch all and filter in memory
  */
 export async function searchBorrowers(searchTerm: string) {
-  const userId = await getCurrentUserId();
+  const entityId = await getEntityId();
 
   if (!searchTerm || searchTerm.length < 2) {
     return [];
   }
 
+  const searchLower = searchTerm.toLowerCase();
+
+  // Fetch all borrowers (can't search encrypted data in DB)
   const borrowers = await prisma.borrower.findMany({
-    where: {
-      userId,
-      OR: [
-        {
-          residentBorrower: {
-            OR: [
-              { name: { contains: searchTerm, mode: 'insensitive' } },
-              { email: { contains: searchTerm, mode: 'insensitive' } },
-            ],
-          },
-        },
-        {
-          externalBorrower: {
-            OR: [
-              { name: { contains: searchTerm, mode: 'insensitive' } },
-              { email: { contains: searchTerm, mode: 'insensitive' } },
-            ],
-          },
-        },
-      ],
-    },
+    where: { entityId },
     include: {
       residentBorrower: true,
       externalBorrower: true,
     },
-    take: 10, // Limit results
   });
 
-  return borrowers.map((borrower) => {
-    const details = getBorrowerDetails(borrower);
-    return {
+  // Decrypt and filter in memory
+  const decryptedBorrowers = await Promise.all(
+    borrowers.map(async (borrower) => {
+      const details = await getBorrowerDetails(borrower, entityId);
+      const nameMatch = details.name.toLowerCase().includes(searchLower);
+      const emailMatch = details.email.toLowerCase().includes(searchLower);
+      return { details, matches: nameMatch || emailMatch };
+    })
+  );
+
+  // Filter and limit results
+  return decryptedBorrowers
+    .filter(b => b.matches)
+    .slice(0, 10)
+    .map(({ details }) => ({
       id: details.id,
       name: details.name,
       email: details.email,
       phone: details.phone,
       company: details.company,
-    };
-  });
+    }));
 }
 
 /**
@@ -217,13 +205,13 @@ export async function updateBorrowerPurpose(
   purpose: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const userId = await getCurrentUserId();
+    const entityId = await getEntityId();
 
-    // Find the borrower and ensure it belongs to the current user
+    // Find the borrower and ensure it belongs to the current entity
     const borrower = await prisma.borrower.findFirst({
       where: {
         id: borrowerId,
-        userId,
+        entityId,
         affiliation: 'EXTERNAL', // Only allow updating external borrowers
       },
       include: {
@@ -256,12 +244,12 @@ export async function updateBorrowerPurpose(
  * Get overdue loan summary statistics for horizontal bar chart
  */
 export async function getOverdueSummary() {
-  const userId = await getCurrentUserId();
+  const entityId = await getEntityId();
   const now = new Date();
 
   const activeLoans = await prisma.issueRecord.findMany({
     where: {
-      userId,
+      entityId,
       returnedDate: null, // Only active loans
     },
     select: {

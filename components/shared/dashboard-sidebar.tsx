@@ -10,22 +10,23 @@ import {
   IconListDetails,
   IconSearch,
   IconSettings,
+  IconUsers,
 } from '@tabler/icons-react';
 
 import { NavMain } from './nav-main';
 import { NavSecondary } from './nav-secondary';
 import { NavUser } from './nav-user';
+import { TeamSwitcher } from './team-switcher';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
 interface DashboardSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  cooperative?: string;
+  entityName?: string;
+  userRole?: string;
   user?: {
     name: string;
     email: string;
@@ -49,6 +50,16 @@ const data = {
       title: 'Keys',
       url: '/keys',
       icon: IconListDetails,
+    },
+    {
+      title: 'Settings',
+      url: '/settings/team',
+      icon: IconSettings,
+    },
+    {
+      title: 'Support',
+      url: '#',
+      icon: IconHelp,
     },
   ],
   navClouds: [
@@ -99,26 +110,10 @@ const data = {
       ],
     },
   ],
-  navSecondary: [
-    {
-      title: 'Settings',
-      url: '#',
-      icon: IconSettings,
-    },
-    {
-      title: 'Get Help',
-      url: '#',
-      icon: IconHelp,
-    },
-    {
-      title: 'Search',
-      url: '#',
-      icon: IconSearch,
-    },
-  ],
+  navSecondary: [],
 };
 
-export function DashboardSidebar({ cooperative, user, ...props }: DashboardSidebarProps) {
+export function DashboardSidebar({ entityName, userRole, user, ...props }: DashboardSidebarProps) {
   const userData = {
     name: user?.name || 'Loading...',
     email: user?.email || '',
@@ -128,11 +123,7 @@ export function DashboardSidebar({ cooperative, user, ...props }: DashboardSideb
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <span className="text-base font-semibold">{cooperative || 'Loading...'}</span>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <TeamSwitcher entityName={entityName} userRole={userRole} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

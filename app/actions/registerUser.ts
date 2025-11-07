@@ -1,15 +1,18 @@
 'use server';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
+import { generateEntityKey, encryptEntityKey } from '@/lib/entity-encryption';
 import bcrypt from 'bcrypt';
 
 export async function registerUser(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const cooperative = formData.get('cooperative') as string;
+  const entityName = formData.get('entityName') as string;
+  const inviteToken = formData.get('inviteToken') as string;
 
-  if (!email || !password || !cooperative) {
-    return { error: 'All fields are required.' };
+  // Validate required fields
+  if (!email || !password) {
+    return { error: 'Email and password are required.' };
   }
 
   if (password.length < 8) {
@@ -43,13 +46,88 @@ export async function registerUser(formData: FormData) {
       return { error: 'Failed to get user ID from Supabase.' };
     }
 
-    // Create user in the database with auth_id
-    await prisma.user.create({
-      data: {
-        email,
-        cooperative,
-        auth_id: authUserId,
-      },
+    // Check if user is joining via invitation
+    if (inviteToken) {
+      const invitation = await prisma.invitation.findUnique({
+        where: { token: inviteToken },
+        include: { entity: true },
+      });
+
+      if (!invitation) {
+        return { error: 'Invalid invitation link.' };
+      }
+
+      if (invitation.accepted) {
+        return { error: 'This invitation has already been used.' };
+      }
+
+      if (invitation.expiresAt < new Date()) {
+        return { error: 'This invitation has expired. Please request a new invitation.' };
+      }
+
+      if (invitation.email.toLowerCase() !== email.toLowerCase()) {
+        return { error: 'This invitation was sent to a different email address.' };
+      }
+
+      // Join existing organization
+      await prisma.$transaction(async (tx) => {
+        // Create user with invited role
+        await tx.user.create({
+          data: {
+            email,
+            entityId: invitation.entityId,
+            role: invitation.role,
+          },
+        });
+
+        // Mark invitation as accepted
+        await tx.invitation.update({
+          where: { id: invitation.id },
+          data: { accepted: true },
+        });
+      });
+
+      return { success: true, joined: true, organizationName: invitation.entity.name };
+    }
+
+    // No invite token - creating new organization
+    if (!entityName) {
+      return { error: 'Organization name is required.' };
+    }
+
+    // Check if entity already exists
+    const existingEntity = await prisma.entity.findUnique({
+      where: { name: entityName },
+    });
+
+    if (existingEntity) {
+      return { 
+        error: 'This organization name is already taken. If you were invited to join, please use your invitation link. Otherwise, choose a different name.',
+      };
+    }
+
+    // Create entity with encryption key and user in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Generate and encrypt entity key
+      const entityKey = generateEntityKey();
+      const encryptedKey = encryptEntityKey(entityKey);
+
+      // Create entity
+      const entity = await tx.entity.create({
+        data: {
+          name: entityName,
+          encryptionKey: encryptedKey,
+        },
+      });
+
+      // Create user linked to entity as OWNER
+      await tx.user.create({
+        data: {
+          email,
+          entityId: entity.id,
+          role: 'OWNER',
+        },
+      });
     });
 
     return { success: true };

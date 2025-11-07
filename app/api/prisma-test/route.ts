@@ -10,7 +10,7 @@ export async function GET() {
       update: {},
       create: {
         email,
-        cooperative: 'Test Cooperative',
+        // cooperative field removed - now using Entity model
         name: 'Initial Name',
       },
     });

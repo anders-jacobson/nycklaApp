@@ -42,10 +42,11 @@ export async function GET(req: NextRequest) {
     // Query User table for user
     const userRecord = await prisma.user.findUnique({
       where: { email },
+      select: { entityId: true },
     });
 
-    if (!userRecord || !userRecord.cooperative) {
-      // No user or missing cooperative, redirect to complete profile
+    if (!userRecord || !userRecord.entityId) {
+      // No user or missing entity, redirect to complete profile
       return NextResponse.redirect(new URL('/auth/complete-profile', req.url));
     }
 

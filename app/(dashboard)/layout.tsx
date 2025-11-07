@@ -16,23 +16,30 @@ async function Layout({ children }: { children: React.ReactNode }) {
   } = await supabase.auth.getUser();
 
   // If there's an authenticated user, try to get their profile data
-  let cooperative: string | undefined;
+  let entityName: string | undefined;
+  let userRole: string | undefined;
   let user: { name: string; email: string } | undefined;
 
   if (authUser) {
     try {
-      // Use Prisma to find user by email (matching dashboard actions pattern)
+      // Use Prisma to find user by email with entity information
       const profile = await prisma.user.findUnique({
         where: { email: authUser.email! },
         select: {
-          cooperative: true,
           name: true,
           email: true,
+          role: true,
+          entity: {
+            select: {
+              name: true,
+            },
+          },
         },
       });
 
       if (profile) {
-        cooperative = profile.cooperative;
+        entityName = profile.entity?.name;
+        userRole = profile.role;
         user = {
           name: profile.name || '',
           email: profile.email,
@@ -52,7 +59,7 @@ async function Layout({ children }: { children: React.ReactNode }) {
         } as React.CSSProperties
       }
     >
-      <DashboardSidebar cooperative={cooperative} user={user} />
+      <DashboardSidebar entityName={entityName} userRole={userRole} user={user} />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>

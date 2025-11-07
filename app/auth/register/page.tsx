@@ -114,17 +114,20 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="cooperative" className="block text-sm font-medium mb-1">
-                    Cooperative Name
-                  </label>
-                  <input
-                    id="cooperative"
-                    name="cooperative"
-                    type="text"
-                    required
-                    className="block w-full rounded-md border border-border bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Your cooperative's name"
-                  />
+                <label htmlFor="entityName" className="block text-sm font-medium mb-1">
+                  Organization Name
+                </label>
+                <input
+                  id="entityName"
+                  name="entityName"
+                  type="text"
+                  required
+                  className="block w-full rounded-md border border-border bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="e.g. Brf Solrosen"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  This will be your organization (housing cooperative) where you manage keys
+                </p>
                 </div>
                 {message && (
                   <div className={success ? 'text-green-600 text-sm' : 'text-red-600 text-sm'}>

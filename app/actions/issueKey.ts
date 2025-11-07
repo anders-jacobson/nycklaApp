@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth-utils';
 import { revalidatePath } from 'next/cache';
 import {
   validateBorrowerData,
@@ -11,22 +11,6 @@ import {
 } from '@/lib/borrower-utils';
 
 type ActionResult<T> = { success: true; data?: T } | { success: false; error: string };
-
-async function getCurrentUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  if (error || !user?.email) throw new Error('Not authenticated');
-
-  const dbUser = await prisma.user.findUnique({
-    where: { email: user.email },
-    select: { id: true, cooperative: true },
-  });
-  if (!dbUser) throw new Error('User not found');
-  return dbUser;
-}
 
 /**
  * Get available key types with their available copy counts
@@ -45,10 +29,10 @@ export async function getAvailableKeyTypes(): Promise<
   >
 > {
   try {
-    const { id: userId } = await getCurrentUser();
+    const { entityId } = await getCurrentUser();
 
     const keyTypes = await prisma.keyType.findMany({
-      where: { userId },
+      where: { entityId },
       orderBy: { label: 'asc' },
       include: {
         keyCopies: {
@@ -90,10 +74,10 @@ export async function checkKeyAvailability(keyTypeId: string): Promise<
   }>
 > {
   try {
-    const { id: userId } = await getCurrentUser();
+    const { entityId } = await getCurrentUser();
 
     const keyType = await prisma.keyType.findFirst({
-      where: { id: keyTypeId, userId },
+      where: { id: keyTypeId, entityId },
       select: {
         label: true,
         function: true,
@@ -213,7 +197,7 @@ export async function issueKey(formData: FormData): Promise<
         borrower = await tx.borrower.findFirst({
           where: {
             id: borrowerId,
-            userId, // Ensure borrower belongs to current user
+            entityId, // Ensure borrower belongs to current entity
           },
           include: {
             residentBorrower: true,
@@ -225,7 +209,7 @@ export async function issueKey(formData: FormData): Promise<
         }
       } else {
         // Find existing borrower by email or create new one
-        borrower = await findBorrowerByEmail(validation.sanitized.email, userId);
+        borrower = await findBorrowerByEmail(validation.sanitized.email, entityId);
 
         if (!borrower) {
           // Create new borrower with affiliation structure
@@ -238,7 +222,7 @@ export async function issueKey(formData: FormData): Promise<
               address: validation.sanitized.address,
               borrowerPurpose: validation.sanitized.borrowerPurpose,
             },
-            userId,
+            entityId,
             tx, // Pass transaction
           );
         }
@@ -255,14 +239,15 @@ export async function issueKey(formData: FormData): Promise<
         data: {
           keyCopyId: availableCopy.id,
           borrowerId: borrower.id,
-          userId,
+          entityId,
+          userId, // Keep for audit trail
           dueDate: dueDate ? new Date(dueDate) : null,
           idChecked,
         },
         select: { id: true },
       });
 
-      const borrowerDetails = getBorrowerDetails(borrower);
+      const borrowerDetails = await getBorrowerDetails(borrower, entityId);
 
       return {
         issueId: issueRecord.id,
@@ -293,13 +278,13 @@ export async function getAvailableKeyCopy(keyTypeId: string): Promise<
   }>
 > {
   try {
-    const { id: userId } = await getCurrentUser();
+    const { entityId } = await getCurrentUser();
 
     const keyCopy = await prisma.keyCopy.findFirst({
       where: {
         keyTypeId,
         status: 'AVAILABLE',
-        keyType: { userId },
+        keyType: { entityId },
       },
       include: {
         keyType: {
@@ -333,12 +318,12 @@ export async function getAvailableKeyCopy(keyTypeId: string): Promise<
  */
 export async function returnKey(issueRecordId: string): Promise<ActionResult<undefined>> {
   try {
-    const { id: userId } = await getCurrentUser();
+    const { entityId } = await getCurrentUser();
 
     await prisma.$transaction(async (tx) => {
-      // 1. Fetch and validate the issue record for the current user
+      // 1. Fetch and validate the issue record for the current entity
       const issueRecord = await tx.issueRecord.findFirst({
-        where: { id: issueRecordId, userId },
+        where: { id: issueRecordId, entityId },
         include: { keyCopy: true },
       });
 
@@ -401,12 +386,12 @@ export async function markKeyLost(params: {
   }>
 > {
   try {
-    const { id: userId } = await getCurrentUser();
+    const { entityId, id: userId } = await getCurrentUser();
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Load current issue record with key info and borrower
       const issueRecord = await tx.issueRecord.findFirst({
-        where: { id: params.issueRecordId, userId },
+        where: { id: params.issueRecordId, entityId },
         include: {
           keyCopy: {
             include: { keyType: { select: { id: true } } },
@@ -462,7 +447,8 @@ export async function markKeyLost(params: {
             data: {
               keyCopyId: replacement.id,
               borrowerId: issueRecord.borrowerId,
-              userId,
+              entityId,
+              userId, // Keep for audit trail
               dueDate: params.dueDate ? new Date(params.dueDate) : null,
               idChecked: !!params.idChecked,
             },

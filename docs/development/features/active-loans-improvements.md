@@ -187,3 +187,7 @@ sortingFn: (rowA, rowB) => {
 - All changes maintain TypeScript type safety
 - No breaking changes to existing functionality
 
+
+
+
+

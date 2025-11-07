@@ -2,9 +2,9 @@
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 
-export async function updateUser({ email, cooperative }: { email: string; cooperative: string }) {
-  if (!email || !cooperative) {
-    return { error: 'Email and cooperative name are required.' };
+export async function updateUser({ email, name }: { email: string; name?: string }) {
+  if (!email) {
+    return { error: 'Email is required.' };
   }
 
   try {
@@ -19,12 +19,11 @@ export async function updateUser({ email, cooperative }: { email: string; cooper
       return { error: 'Not authenticated.' };
     }
 
-    // Update user profile and ensure auth_id is populated
+    // Update user profile - entity cannot be changed after registration
     await prisma.user.update({
       where: { email },
       data: {
-        cooperative,
-        auth_id: user.id, // Ensure auth_id is set for OAuth users
+        name: name || undefined,
       },
     });
 
