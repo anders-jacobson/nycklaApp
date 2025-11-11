@@ -1,9 +1,22 @@
 'use client';
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { IconTrash, IconShieldCheck, IconShield, IconUser } from '@tabler/icons-react';
 import { changeUserRole, removeUser } from '@/app/actions/team';
 import { useState } from 'react';
@@ -19,7 +32,7 @@ interface TeamMember {
 
 interface CurrentUser {
   id: string;
-  role: UserRole;
+  roleInActiveOrg: UserRole;
 }
 
 const roleIcons = {
@@ -34,12 +47,15 @@ const roleColors = {
   MEMBER: 'bg-gray-100 text-gray-800',
 };
 
-export function TeamMembersTable({ members, currentUser }: { 
-  members: TeamMember[]; 
+export function TeamMembersTable({
+  members,
+  currentUser,
+}: {
+  members: TeamMember[];
   currentUser: CurrentUser;
 }) {
   const [loading, setLoading] = useState<string | null>(null);
-  const isOwner = currentUser.role === 'OWNER';
+  const isOwner = currentUser.roleInActiveOrg === 'OWNER';
 
   async function handleRoleChange(userId: string, newRole: UserRole) {
     setLoading(userId);
@@ -77,14 +93,18 @@ export function TeamMembersTable({ members, currentUser }: {
           {members.map((member) => {
             const Icon = roleIcons[member.role];
             const isSelf = member.id === currentUser.id;
-            
+
             return (
               <TableRow key={member.id}>
                 <TableCell>
                   <div>
                     <p className="font-medium">{member.name || member.email}</p>
                     {member.name && <p className="text-sm text-muted-foreground">{member.email}</p>}
-                    {isSelf && <Badge variant="outline" className="mt-1">You</Badge>}
+                    {isSelf && (
+                      <Badge variant="outline" className="mt-1">
+                        You
+                      </Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -135,7 +155,3 @@ export function TeamMembersTable({ members, currentUser }: {
     </div>
   );
 }
-
-
-
-

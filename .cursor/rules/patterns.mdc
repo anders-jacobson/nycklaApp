@@ -1,0 +1,117 @@
+---
+description: Project-specific integration patterns (not generic library usage)
+globs: ['**/actions/**/*', '**/components/**/*']
+alwaysApply: false
+---
+
+# Project-Specific Patterns
+
+## What This File Is For
+
+This contains **your project's unique patterns**, not generic library usage.
+For generic Next.js/Prisma/React patterns, Claude Sonnet 4 already knows them.
+
+## Unique to This Project
+
+### 1. Multi-Tenant Data Access with Entity Model
+
+```typescript
+// Always get entityId from user
+async function getCurrentUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) throw new Error('Not authenticated');
+
+  const userRecord = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { id: true, entityId: true, role: true },
+  });
+  if (!userRecord) throw new Error('User not found');
+  return userRecord; // Returns { id, entityId, role }
+}
+
+// All queries filtered by entityId (not userId)
+const data = await prisma.keyType.findMany({
+  where: { entityId: user.entityId }, // Entity-level isolation
+});
+```
+
+### 2. Supabase for Auth, Prisma for Data
+
+```typescript
+// ✅ This is the ONLY valid Supabase usage
+const supabase = await createClient();
+const { data: { user } } = await supabase.auth.getUser();
+
+// Then immediately switch to Prisma
+const userRecord = await prisma.user.findUnique({
+  where: { email: user.email }
+});
+
+// ❌ NEVER do this
+const { data } = await supabase.from('User')... // FORBIDDEN
+```
+
+### 3. Placeholder Email System (Unique Feature)
+
+```typescript
+// For paper-based system transitions
+function isPlaceholderEmail(email: string): boolean {
+  return email.endsWith('@placeholder.com');
+}
+
+// Auto-generate from name
+function generatePlaceholderEmail(name: string): string {
+  return `${name
+    .toLowerCase()
+    .replace(/\s+/g, '.')
+    .replace(/å/g, 'a')
+    .replace(/ä/g, 'a')
+    .replace(/ö/g, 'o')}@placeholder.com`;
+}
+```
+
+### 4. Import Paths (Project-Specific Locations)
+
+```typescript
+// Database
+import { prisma } from '@/lib/prisma';
+
+// Auth clients (note: in lib/supabase/, not lib/utils/)
+import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/client';
+
+// Encryption (unique to project)
+import { encryptPII, decryptPII } from '@/lib/encryption';
+import { prismaEncryptionMiddleware } from '@/lib/prisma-encryption';
+```
+
+### 5. File Structure (Where Things Live)
+
+```
+app/
+├── (root)/              # Landing + auth (not "public")
+├── (dashboard)/         # Protected routes (grouped layout)
+├── actions/             # Server actions (not /api/actions)
+└── auth/
+
+lib/
+├── supabase/           # Client factories (not in lib/ root)
+│   ├── server.ts
+│   ├── client.ts
+│   └── middleware.ts
+├── prisma.ts           # Singleton client
+└── encryption.ts       # PII encryption
+```
+
+## Tech Stack (For Reference)
+
+- Next.js 15 App Router + React 19 + TypeScript
+- Prisma ORM (data) + Supabase (auth only)
+- shadcn/ui + Tabler Icons
+- Tailwind v4 (CSS-first: `@theme` in globals.css)
+
+For **generic patterns** (how to use these libraries), rely on Claude Sonnet 4's built-in knowledge.
+This file only documents **your project's unique conventions**.

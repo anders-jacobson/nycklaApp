@@ -8,7 +8,7 @@ type ActionResult<T> = { success: true; data?: T } | { success: false; error: st
 
 export async function createKeyType(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { entityId } = await getCurrentUser();
+    const { activeOrganisationId: entityId } = await getCurrentUser();
 
     // Inputs (do NOT accept any entity identifiers from client)
     const name = (formData.get('name') as string | null)?.trim() ?? '';
@@ -66,10 +66,10 @@ export async function createKeyType(formData: FormData): Promise<ActionResult<{ 
 export async function updateKeyType(formData: FormData): Promise<ActionResult<undefined>> {
   try {
     const user = await getCurrentUser();
-    if (!['OWNER', 'ADMIN'].includes(user.role)) {
+    if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
       return { success: false, error: 'Only owners and admins can update key types.' };
     }
-    const { entityId } = user;
+    const { activeOrganisationId: entityId } = user;
 
     const keyTypeId = (formData.get('id') as string | null) ?? '';
     const name = (formData.get('name') as string | null)?.trim() ?? undefined;
@@ -107,10 +107,10 @@ export async function updateKeyType(formData: FormData): Promise<ActionResult<un
 export async function deleteKeyType(formData: FormData): Promise<ActionResult<undefined>> {
   try {
     const user = await getCurrentUser();
-    if (!['OWNER', 'ADMIN'].includes(user.role)) {
+    if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
       return { success: false, error: 'Only owners and admins can delete key types.' };
     }
-    const { entityId } = user;
+    const { activeOrganisationId: entityId } = user;
     const keyTypeId = (formData.get('id') as string | null) ?? '';
     if (!keyTypeId) return { success: false, error: 'Missing key type id.' };
 
@@ -135,10 +135,10 @@ export async function deleteKeyType(formData: FormData): Promise<ActionResult<un
 export async function addKeyCopy(formData: FormData): Promise<ActionResult<undefined>> {
   try {
     const user = await getCurrentUser();
-    if (!['OWNER', 'ADMIN'].includes(user.role)) {
+    if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
       return { success: false, error: 'Only owners and admins can add key copies.' };
     }
-    const { entityId } = user;
+    const { activeOrganisationId: entityId } = user;
     const keyTypeId = (formData.get('id') as string | null) ?? '';
     if (!keyTypeId) return { success: false, error: 'Missing key type id.' };
 
@@ -187,7 +187,7 @@ export async function getKeyCopies(keyTypeId: string): Promise<
   >
 > {
   try {
-    const { entityId } = await getCurrentUser();
+    const { activeOrganisationId: entityId } = await getCurrentUser();
     const keyType = await prisma.keyType.findFirst({
       where: { id: keyTypeId, entityId },
       select: {
@@ -214,7 +214,7 @@ export async function getKeyCopies(keyTypeId: string): Promise<
 
 export async function markAvailableCopyLost(copyId: string): Promise<ActionResult<undefined>> {
   try {
-    const { entityId } = await getCurrentUser();
+    const { activeOrganisationId: entityId } = await getCurrentUser();
     // Verify ownership and status
     const copy = await prisma.keyCopy.findFirst({
       where: { id: copyId, keyType: { entityId } },
@@ -237,7 +237,7 @@ export async function markAvailableCopyLost(copyId: string): Promise<ActionResul
 
 export async function markLostCopyFound(copyId: string): Promise<ActionResult<undefined>> {
   try {
-    const { entityId } = await getCurrentUser();
+    const { activeOrganisationId: entityId } = await getCurrentUser();
     // Verify ownership and status
     const copy = await prisma.keyCopy.findFirst({
       where: { id: copyId, keyType: { entityId } },

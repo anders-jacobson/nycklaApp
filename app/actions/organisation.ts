@@ -1,0 +1,214 @@
+'use server';
+
+import { prisma } from '@/lib/prisma';
+import { getCurrentUser } from '@/lib/auth-utils';
+import { revalidatePath } from 'next/cache';
+import type { UserRole } from '@prisma/client';
+import { generateEntityKey, encryptEntityKey } from '@/lib/entity-encryption';
+
+type ActionResult<T = void> = { success: true; data?: T } | { success: false; error: string };
+
+/**
+ * Switch the user's active organisation
+ * User must be a member of the organisation they're switching to
+ */
+export async function switchOrganisation(organisationId: string): Promise<ActionResult> {
+  try {
+    const user = await getCurrentUser();
+
+    // Verify user belongs to this organisation
+    const membership = await prisma.userOrganisation.findUnique({
+      where: {
+        userId_organisationId: {
+          userId: user.id,
+          organisationId,
+        },
+      },
+    });
+
+    if (!membership) {
+      return { success: false, error: 'You are not a member of this organisation.' };
+    }
+
+    // Update active organisation
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { activeOrganisationId: organisationId },
+    });
+
+    // Revalidate all pages to reflect the organisation switch
+    revalidatePath('/', 'layout');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error switching organisation:', error);
+    return { success: false, error: 'Failed to switch organisation.' };
+  }
+}
+
+/**
+ * List all organisations the current user belongs to
+ */
+export async function listUserOrganisations(): Promise<
+  ActionResult<
+    Array<{
+      id: string;
+      name: string;
+      role: UserRole;
+      memberCount: number;
+      isActive: boolean;
+      createdAt: Date;
+    }>
+  >
+> {
+  try {
+    const user = await getCurrentUser();
+
+    const memberships = await prisma.userOrganisation.findMany({
+      where: { userId: user.id },
+      include: {
+        organisation: {
+          select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            _count: {
+              select: { members: true },
+            },
+          },
+        },
+      },
+      orderBy: { joinedAt: 'asc' },
+    });
+
+    const organisations = memberships.map((m) => ({
+      id: m.organisation.id,
+      name: m.organisation.name,
+      role: m.role,
+      memberCount: m.organisation._count.members,
+      isActive: m.organisation.id === user.activeOrganisationId,
+      createdAt: m.organisation.createdAt,
+    }));
+
+    return { success: true, data: organisations };
+  } catch (error) {
+    console.error('Error listing organisations:', error);
+    return { success: false, error: 'Failed to load organisations.' };
+  }
+}
+
+/**
+ * Get details about the current active organisation
+ */
+export async function getActiveOrganisation(): Promise<
+  ActionResult<{
+    id: string;
+    name: string;
+    role: UserRole;
+    memberCount: number;
+    createdAt: Date;
+  }>
+> {
+  try {
+    const user = await getCurrentUser();
+
+    const organisation = await prisma.entity.findUnique({
+      where: { id: user.activeOrganisationId },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        _count: {
+          select: { members: true },
+        },
+      },
+    });
+
+    if (!organisation) {
+      return { success: false, error: 'Active organisation not found.' };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: organisation.id,
+        name: organisation.name,
+        role: user.roleInActiveOrg,
+        memberCount: organisation._count.members,
+        createdAt: organisation.createdAt,
+      },
+    };
+  } catch (error) {
+    console.error('Error getting active organisation:', error);
+    return { success: false, error: 'Failed to load organisation details.' };
+  }
+}
+
+/**
+ * Create a new organisation
+ * User becomes OWNER of the new organisation
+ */
+export async function createOrganisation(
+  name: string,
+): Promise<ActionResult<{ organisationId: string }>> {
+  try {
+    const user = await getCurrentUser();
+
+    // Validate name
+    if (!name || name.trim().length < 2) {
+      return { success: false, error: 'Organisation name must be at least 2 characters.' };
+    }
+
+    if (name.trim().length > 200) {
+      return { success: false, error: 'Organisation name must be less than 200 characters.' };
+    }
+
+    // Check if organisation name already exists
+    const existing = await prisma.entity.findUnique({
+      where: { name: name.trim() },
+    });
+
+    if (existing) {
+      return { success: false, error: 'An organisation with this name already exists.' };
+    }
+
+    // Create organisation in transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Generate and encrypt entity key
+      const entityKey = generateEntityKey();
+      const encryptedKey = encryptEntityKey(entityKey);
+
+      // Create organisation
+      const organisation = await tx.entity.create({
+        data: {
+          name: name.trim(),
+          encryptionKey: encryptedKey,
+        },
+      });
+
+      // Create membership as OWNER
+      await tx.userOrganisation.create({
+        data: {
+          userId: user.id,
+          organisationId: organisation.id,
+          role: 'OWNER',
+        },
+      });
+
+      // Set as active organisation
+      await tx.user.update({
+        where: { id: user.id },
+        data: { activeOrganisationId: organisation.id },
+      });
+
+      return organisation;
+    });
+
+    revalidatePath('/', 'layout');
+
+    return { success: true, data: { organisationId: result.id } };
+  } catch (error) {
+    console.error('Error creating organisation:', error);
+    return { success: false, error: 'Failed to create organisation.' };
+  }
+}

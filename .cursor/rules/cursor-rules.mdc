@@ -1,114 +1,65 @@
 ---
-description: Master development rules reference for Swedish key management app
+description: Master development rules - Project-specific patterns only
 globs: ['**/*.tsx', '**/*.ts']
 alwaysApply: true
 ---
 
-# Development Rules - Master Reference
+# Master Development Rules
 
-## 🚨 PRIMARY RULES
+## 🚨 Critical Project-Specific Rules
 
-### 1. Use Context7 First (External Libraries)
-
-**ALWAYS consult Context7 MCP server for up-to-date library documentation:**
-
-```bash
-"use context7 to get Next.js 15 App Router patterns"
-"use context7 to implement shadcn/ui components"
-"use context7 to configure Tailwind CSS v4"
-"use context7 to implement Supabase authentication with @supabase/ssr"
-```
-
-### 2. Document in Repo (Never Git Loops)
-
-**CRITICAL**: All documentation lives in `docs/` directory, NOT in git commits
-- ✅ Update files directly in `docs/` folder
-- ❌ NEVER create unnecessary commits just for documentation
-- ✅ Keep working branches focused on implementation
-- ✅ Document decisions and progress locally first
-- ✅ Review and commit documentation with feature code
-
-**Documentation Locations**:
-- `docs/security/` - Security and encryption documentation
-- `docs/development/` - Tasks, architecture, features
-- `docs/product/` - Requirements and user guides
-- Always update relevant README.md in each section
-
-## 🏗️ Quick Architecture Reference
-
-- **Next.js 15** + App Router + TypeScript + React 19
-- **Prisma** (data) + **Supabase** (auth only)
-- **shadcn/ui** (mandatory) + **Tabler Icons** (mandatory)
-- **Tailwind CSS v4** (CSS-first config)
-
-## 🚨 Critical UI Rules
+### 1. Database → Prisma Only (Never Supabase .from())
 
 ```typescript
-// ❌ NEVER use plain HTML
-<button>Click</button>
-<input type="text" />
+// ✅ ALWAYS
+const data = await prisma.keyType.findMany({ where: { userId } });
 
-// ✅ ALWAYS use shadcn/ui + Tabler Icons
-import { Button } from '@/components/ui/button';
-import { IconPlus } from '@tabler/icons-react';
-
-<Button className="gap-1">
-  <IconPlus className="h-3.5 w-3.5" />
-  Add
-</Button>
+// ❌ NEVER
+const { data } = await supabase.from('KeyType')...
 ```
 
-## 📊 Database Pattern (Standard)
+### 2. Auth → getCurrentUser() with Multi-Organisation Support
 
 ```typescript
-// Standard user lookup pattern
-async function getCurrentUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error('Not authenticated');
+// Standard pattern used in ALL server actions
+import { getCurrentUser } from '@/lib/auth-utils';
 
-  const userRecord = await prisma.user.findUnique({
-    where: { email: user.email }, // ALWAYS lookup by email
-    select: { id: true },
-  });
-  if (!userRecord) throw new Error('User not found');
-  return userRecord.id;
-}
+// Returns: { id, email, activeOrganisationId, roleInActiveOrg, allOrganisations[] }
+const user = await getCurrentUser();
 
-// ✅ ALWAYS use Prisma for data (never Supabase .from())
-const data = await prisma.keyType.findMany({
-  where: { userId }, // Always filter by user
+// Use activeOrganisationId for data filtering
+const keys = await prisma.keyType.findMany({
+  where: { entityId: user.activeOrganisationId },
 });
 ```
 
-## 🔄 Server Action Pattern (Essential)
+### 3. UI → shadcn/ui + Tabler Icons Only
+
+```typescript
+// ❌ NEVER plain HTML
+<button>Click</button>
+
+// ✅ ALWAYS
+import { Button } from '@/components/ui/button';
+import { IconPlus } from '@tabler/icons-react';
+
+<Button><IconPlus className="h-4 w-4" />Add</Button>
+```
+
+### 4. Server Actions → Standard Result Type
 
 ```typescript
 'use server';
-import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
-
 type ActionResult<T> = { success: true; data?: T } | { success: false; error: string };
 
-export async function serverAction(formData: FormData): Promise<ActionResult<any>> {
+export async function action(formData: FormData): Promise<ActionResult<any>> {
   try {
-    // 1. Get current user ID
     const userId = await getCurrentUserId();
-
-    // 2. Validate inputs
-    const input = formData.get('input') as string;
-    if (!input) return { success: false, error: 'Input required' };
-
-    // 3. Database operation with transaction if needed
+    // Always filter by userId for data isolation
     const result = await prisma.$transaction(async (tx) => {
-      return await tx.model.create({ data: { input, userId } });
+      // Multi-step operations in transactions
     });
-
-    // 4. Revalidate affected pages
-    revalidatePath('/dashboard');
+    revalidatePath('/path');
     return { success: true, data: result };
   } catch (error) {
     return { success: false, error: 'Operation failed' };
@@ -116,59 +67,59 @@ export async function serverAction(formData: FormData): Promise<ActionResult<any
 }
 ```
 
-## 🎨 Component Pattern (Essential)
+### 5. Data Isolation → Always Filter by activeOrganisationId
 
 ```typescript
-'use client';
-import { useFormState } from 'react-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { IconPlus } from '@tabler/icons-react';
+const user = await getCurrentUser();
 
-export default function MyComponent() {
-  const [state, formAction] = useFormState(serverAction, { success: false, error: '' });
+// ✅ ALWAYS filter by activeOrganisationId for multi-tenant isolation
+where: { entityId: user.activeOrganisationId, ...otherConditions }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Component Title</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form action={formAction} className="space-y-4">
-          <Input name="input" required />
-          {state.error && <p className="text-destructive text-sm">{state.error}</p>}
-          <Button type="submit" className="gap-1">
-            <IconPlus className="h-3.5 w-3.5" />
-            Submit
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
-}
+// ❌ NEVER query without organisation filter (security risk)
+where: { id } // Missing entityId filter!
 ```
 
-## 📋 Essential References
+### 6. Documentation → Only in docs/ Directory
 
-### Context-Sensitive Rules (Auto-Applied by File Type)
+- ✅ `docs/security/`, `docs/development/`, `docs/product/`
+- ❌ NEVER create `.md` files in project root (except README.md)
 
-- **Database files** (`**/actions/**/*`, `**/prisma/**/*`): schema-reference.mdc
-- **UI Components** (`**/components/**/*`): development-standards.mdc
-- **Auth/Dashboard** (`**/auth/**/*`, `**/dashboard/**/*`): project-context.mdc
-- **Feature files** (`**/keys/**/*`, `**/borrower*`): key-features.mdc
+## 📊 Project Schema (Quick Reference)
 
-### External Documentation (Mandatory)
+```typescript
+User { id, email (unique), activeOrganisationId? }
+UserOrganisation { userId, organisationId, role, joinedAt }
+Entity { id, name, encryptionKey } // "Organisation" in UI
+KeyType { label, function, entityId }
+KeyCopy { copyNumber, status, keyTypeId }
+Borrower { name, email, entityId }
+IssueRecord { issuedDate, returnedDate?, keyCopyId, borrowerId, userId }
 
-- **Always check Context7 MCP first** for library documentation
-- **Use latest patterns** for Next.js 15, shadcn/ui, Prisma, Supabase
+// User can belong to multiple organisations (via UserOrganisation)
+// activeOrganisationId tracks which org user is currently working in
+```
 
-### Quick Validation Checklist
+## 🔧 Standard Imports
 
-- [ ] Used Context7 for external library patterns?
-- [ ] Used shadcn/ui components (never plain HTML)?
-- [ ] Used Tabler Icons only?
-- [ ] Followed user lookup pattern (by email)?
-- [ ] Added userId filter for data isolation?
-- [ ] Used transactions for multi-step operations?
+```typescript
+import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server'; // Server only for auth
+import { Button } from '@/components/ui/button';
+import { IconPlus } from '@tabler/icons-react';
+```
 
-Remember: Context7 for external libraries, these rules for internal patterns.
+## 📚 Reference
+
+- **More patterns**: `.cursor/rules/patterns.mdc` (context-based)
+- **Project context**: `.cursor/rules/project-context.mdc`
+- **Features**: `.cursor/rules/key-features.mdc`
+- **Actual schema**: `prisma/schema.prisma`
+
+## ✅ Checklist
+
+- [ ] Used Prisma (not Supabase .from())?
+- [ ] Used getCurrentUser() pattern (returns activeOrganisationId)?
+- [ ] Used shadcn/ui + Tabler Icons?
+- [ ] Filtered by activeOrganisationId for data isolation?
+- [ ] Used transactions for multi-step ops?
+- [ ] Used ActionResult<T> type?

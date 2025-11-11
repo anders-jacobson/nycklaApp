@@ -1,6 +1,13 @@
 'use client';
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -24,7 +31,7 @@ interface TeamMember {
 
 interface CurrentUser {
   id: string;
-  role: UserRole;
+  roleInActiveOrg: UserRole;
 }
 
 const roleIcons = {
@@ -39,17 +46,17 @@ const roleColors = {
   MEMBER: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
 };
 
-export function TeamMembersSection({ 
-  members, 
+export function TeamMembersSection({
+  members,
   currentUser,
   canInvite,
-}: { 
-  members: TeamMember[]; 
+}: {
+  members: TeamMember[];
   currentUser: CurrentUser;
   canInvite: boolean;
 }) {
   const [loading, setLoading] = useState<string | null>(null);
-  const isOwner = currentUser.role === 'OWNER';
+  const isOwner = currentUser.roleInActiveOrg === 'OWNER';
 
   async function handleRoleChange(userId: string, newRole: UserRole) {
     setLoading(userId);
@@ -73,9 +80,7 @@ export function TeamMembersSection({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Members</h2>
-          <p className="text-sm text-muted-foreground">
-            People in your organization
-          </p>
+          <p className="text-sm text-muted-foreground">People in your organization</p>
         </div>
       </div>
 
@@ -96,7 +101,7 @@ export function TeamMembersSection({
               {members.map((member) => {
                 const Icon = roleIcons[member.role];
                 const isSelf = member.id === currentUser.id;
-                
+
                 return (
                   <TableRow key={member.id}>
                     <TableCell>
@@ -141,10 +146,12 @@ export function TeamMembersSection({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() => handleRoleChange(
-                                  member.id,
-                                  member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN'
-                                )}
+                                onClick={() =>
+                                  handleRoleChange(
+                                    member.id,
+                                    member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN',
+                                  )
+                                }
                               >
                                 Change to {member.role === 'ADMIN' ? 'Member' : 'Admin'}
                               </DropdownMenuItem>
@@ -169,5 +176,3 @@ export function TeamMembersSection({
     </div>
   );
 }
-
-

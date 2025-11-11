@@ -6,9 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { UserRole } from '@prisma/client';
 import crypto from 'crypto';
 
-type ActionResult<T = void> = 
-  | { success: true; data?: T }
-  | { success: false; error: string };
+type ActionResult<T = void> = { success: true; data?: T } | { success: false; error: string };
 
 /**
  * Generate a secure random token for invitations
@@ -31,18 +29,18 @@ function getExpirationDate(): Date {
  * TODO: Implement actual email sending (Resend, SendGrid, etc.)
  */
 async function sendInvitationEmail(
-  email: string, 
-  token: string, 
+  email: string,
+  token: string,
   organizationName: string,
   inviterName: string,
-  role: UserRole
+  role: UserRole,
 ): Promise<void> {
   const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/register?token=${token}`;
-  
+
   // TODO: Replace with actual email service
   console.log('📧 INVITATION EMAIL');
   console.log('To:', email);
-  console.log('Subject: You\'ve been invited to join', organizationName);
+  console.log("Subject: You've been invited to join", organizationName);
   console.log('Body:');
   console.log(`
 ${inviterName} has invited you to join ${organizationName} as a ${role}.
@@ -52,7 +50,7 @@ ${inviteUrl}
 
 This invitation will expire in 7 days.
   `);
-  
+
   // For now, just log. In production, use:
   // await sendEmail({ to: email, subject, html });
 }
@@ -64,60 +62,65 @@ This invitation will expire in 7 days.
  */
 export async function inviteUser(
   email: string,
-  role: UserRole
+  role: UserRole,
 ): Promise<ActionResult<{ inviteId: string; token: string }>> {
   try {
     const currentUser = await getCurrentUser();
-    
+
     // Permission check: OWNER can invite anyone, ADMIN can only invite MEMBER
-    if (currentUser.role === 'MEMBER') {
+    if (currentUser.roleInActiveOrg === 'MEMBER') {
       return { success: false, error: 'You do not have permission to invite users.' };
     }
-    
-    if (currentUser.role === 'ADMIN' && role !== 'MEMBER') {
-      return { success: false, error: 'Admins can only invite members. Contact the owner to invite admins.' };
+
+    if (currentUser.roleInActiveOrg === 'ADMIN' && role !== 'MEMBER') {
+      return {
+        success: false,
+        error: 'Admins can only invite members. Contact the owner to invite admins.',
+      };
     }
-    
+
     // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return { success: false, error: 'Invalid email address.' };
     }
-    
+
     // Check if user already exists in this organization
-    const existingUser = await prisma.user.findFirst({
+    const existingMembership = await prisma.userOrganisation.findFirst({
       where: {
-        email,
-        entityId: currentUser.entityId,
+        organisationId: currentUser.activeOrganisationId,
+        user: {
+          email,
+        },
       },
     });
-    
-    if (existingUser) {
+
+    if (existingMembership) {
       return { success: false, error: 'A user with this email is already in your organization.' };
     }
-    
+
     // Check if there's already a pending invitation
     const existingInvitation = await prisma.invitation.findFirst({
       where: {
         email,
-        entityId: currentUser.entityId,
+        entityId: currentUser.activeOrganisationId,
         accepted: false,
         expiresAt: { gt: new Date() },
       },
     });
-    
+
     if (existingInvitation) {
       return { success: false, error: 'An invitation has already been sent to this email.' };
     }
-    
+
     // Generate invitation token
     const token = generateInviteToken();
     const expiresAt = getExpirationDate();
-    
+
     // Create invitation
     const invitation = await prisma.invitation.create({
       data: {
-        entityId: currentUser.entityId,
+        entityId: currentUser.activeOrganisationId,
         email,
         role,
         token,
@@ -130,18 +133,18 @@ export async function inviteUser(
         },
       },
     });
-    
+
     // Send invitation email
     await sendInvitationEmail(
       email,
       token,
       invitation.entity.name,
       currentUser.name || currentUser.email,
-      role
+      role,
     );
-    
+
     revalidatePath('/settings/team');
-    
+
     return {
       success: true,
       data: {
@@ -158,31 +161,45 @@ export async function inviteUser(
 /**
  * List all team members in the organization
  */
-export async function listTeamMembers(): Promise<ActionResult<Array<{
-  id: string;
-  email: string;
-  name: string | null;
-  role: UserRole;
-  createdAt: Date;
-}>>> {
+export async function listTeamMembers(): Promise<
+  ActionResult<
+    Array<{
+      id: string;
+      email: string;
+      name: string | null;
+      role: UserRole;
+      joinedAt: Date;
+    }>
+  >
+> {
   try {
     const currentUser = await getCurrentUser();
-    
-    const members = await prisma.user.findMany({
-      where: { entityId: currentUser.entityId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
+
+    const memberships = await prisma.userOrganisation.findMany({
+      where: { organisationId: currentUser.activeOrganisationId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
       },
       orderBy: [
         { role: 'asc' }, // OWNER first, then ADMIN, then MEMBER
-        { createdAt: 'asc' },
+        { joinedAt: 'asc' },
       ],
     });
-    
+
+    const members = memberships.map((m) => ({
+      id: m.user.id,
+      email: m.user.email,
+      name: m.user.name,
+      role: m.role,
+      joinedAt: m.joinedAt,
+    }));
+
     return { success: true, data: members };
   } catch (error) {
     console.error('Error listing team members:', error);
@@ -194,25 +211,29 @@ export async function listTeamMembers(): Promise<ActionResult<Array<{
  * List pending invitations
  * Only OWNER and ADMIN can see invitations
  */
-export async function listPendingInvitations(): Promise<ActionResult<Array<{
-  id: string;
-  email: string;
-  role: UserRole;
-  expiresAt: Date;
-  createdAt: Date;
-  inviterName: string;
-}>>> {
+export async function listPendingInvitations(): Promise<
+  ActionResult<
+    Array<{
+      id: string;
+      email: string;
+      role: UserRole;
+      expiresAt: Date;
+      createdAt: Date;
+      inviterName: string;
+    }>
+  >
+> {
   try {
     const currentUser = await getCurrentUser();
-    
+
     // Permission check
-    if (currentUser.role === 'MEMBER') {
+    if (currentUser.roleInActiveOrg === 'MEMBER') {
       return { success: false, error: 'You do not have permission to view invitations.' };
     }
-    
+
     const invitations = await prisma.invitation.findMany({
       where: {
-        entityId: currentUser.entityId,
+        entityId: currentUser.activeOrganisationId,
         accepted: false,
         expiresAt: { gt: new Date() },
       },
@@ -231,10 +252,10 @@ export async function listPendingInvitations(): Promise<ActionResult<Array<{
       },
       orderBy: { createdAt: 'desc' },
     });
-    
+
     return {
       success: true,
-      data: invitations.map(inv => ({
+      data: invitations.map((inv) => ({
         id: inv.id,
         email: inv.email,
         role: inv.role,
@@ -256,34 +277,34 @@ export async function listPendingInvitations(): Promise<ActionResult<Array<{
 export async function cancelInvitation(invitationId: string): Promise<ActionResult> {
   try {
     const currentUser = await getCurrentUser();
-    
+
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
       select: { entityId: true, createdBy: true, accepted: true },
     });
-    
+
     if (!invitation) {
       return { success: false, error: 'Invitation not found.' };
     }
-    
-    // Check permission: must be owner, admin, or the person who sent it
+
+    // Check permission: must be in same org and either owner/admin or the person who sent it
     if (
-      invitation.entityId !== currentUser.entityId ||
-      (currentUser.role === 'MEMBER' && invitation.createdBy !== currentUser.id)
+      invitation.entityId !== currentUser.activeOrganisationId ||
+      (currentUser.roleInActiveOrg === 'MEMBER' && invitation.createdBy !== currentUser.id)
     ) {
       return { success: false, error: 'You do not have permission to cancel this invitation.' };
     }
-    
+
     if (invitation.accepted) {
       return { success: false, error: 'This invitation has already been accepted.' };
     }
-    
+
     await prisma.invitation.delete({
       where: { id: invitationId },
     });
-    
+
     revalidatePath('/settings/team');
-    
+
     return { success: true };
   } catch (error) {
     console.error('Error canceling invitation:', error);
@@ -292,44 +313,43 @@ export async function cancelInvitation(invitationId: string): Promise<ActionResu
 }
 
 /**
- * Change a user's role
+ * Change a user's role in the organization
  * Only OWNER can change roles
  */
-export async function changeUserRole(
-  userId: string,
-  newRole: UserRole
-): Promise<ActionResult> {
+export async function changeUserRole(userId: string, newRole: UserRole): Promise<ActionResult> {
   try {
     const currentUser = await getCurrentUser();
     await requireRole('OWNER');
-    
+
     // Can't change your own role
     if (userId === currentUser.id) {
       return { success: false, error: 'You cannot change your own role.' };
     }
-    
-    // Verify user is in same organization
-    const targetUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { entityId: true, role: true },
+
+    // Find the membership
+    const membership = await prisma.userOrganisation.findUnique({
+      where: {
+        userId_organisationId: {
+          userId,
+          organisationId: currentUser.activeOrganisationId,
+        },
+      },
     });
-    
-    if (!targetUser) {
-      return { success: false, error: 'User not found.' };
+
+    if (!membership) {
+      return { success: false, error: 'User not found in your organization.' };
     }
-    
-    if (targetUser.entityId !== currentUser.entityId) {
-      return { success: false, error: 'User not in your organization.' };
-    }
-    
+
     // Update role
-    await prisma.user.update({
-      where: { id: userId },
+    await prisma.userOrganisation.update({
+      where: {
+        id: membership.id,
+      },
       data: { role: newRole },
     });
-    
+
     revalidatePath('/settings/team');
-    
+
     return { success: true };
   } catch (error) {
     console.error('Error changing user role:', error);
@@ -340,38 +360,60 @@ export async function changeUserRole(
 /**
  * Remove a user from the organization
  * Only OWNER can remove users
+ * Cannot remove if they're the last owner
  */
 export async function removeUser(userId: string): Promise<ActionResult> {
   try {
     const currentUser = await getCurrentUser();
     await requireRole('OWNER');
-    
+
     // Can't remove yourself
     if (userId === currentUser.id) {
-      return { success: false, error: 'You cannot remove yourself from the organization.' };
+      return {
+        success: false,
+        error:
+          'You cannot remove yourself from the organization. Use "Leave Organization" instead.',
+      };
     }
-    
-    // Verify user is in same organization
-    const targetUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { entityId: true },
+
+    // Get the membership to check role
+    const membership = await prisma.userOrganisation.findUnique({
+      where: {
+        userId_organisationId: {
+          userId,
+          organisationId: currentUser.activeOrganisationId,
+        },
+      },
     });
-    
-    if (!targetUser) {
-      return { success: false, error: 'User not found.' };
+
+    if (!membership) {
+      return { success: false, error: 'User not found in your organization.' };
     }
-    
-    if (targetUser.entityId !== currentUser.entityId) {
-      return { success: false, error: 'User not in your organization.' };
+
+    // If removing an owner, check if they're the last one
+    if (membership.role === 'OWNER') {
+      const ownerCount = await prisma.userOrganisation.count({
+        where: {
+          organisationId: currentUser.activeOrganisationId,
+          role: 'OWNER',
+        },
+      });
+
+      if (ownerCount === 1) {
+        return {
+          success: false,
+          error: 'Cannot remove the last owner. Promote another member to owner first.',
+        };
+      }
     }
-    
-    // Delete user (IssueRecord.userId will be set to null due to onDelete: SetNull)
-    await prisma.user.delete({
-      where: { id: userId },
+
+    // Delete membership (not the user, just the membership)
+    await prisma.userOrganisation.delete({
+      where: { id: membership.id },
     });
-    
+
     revalidatePath('/settings/team');
-    
+
     return { success: true };
   } catch (error) {
     console.error('Error removing user:', error);
@@ -380,16 +422,93 @@ export async function removeUser(userId: string): Promise<ActionResult> {
 }
 
 /**
+ * Leave the current organization
+ * User must not be the last owner
+ */
+export async function leaveOrganisation(): Promise<ActionResult> {
+  try {
+    const currentUser = await getCurrentUser();
+
+    // Get current membership
+    const membership = await prisma.userOrganisation.findUnique({
+      where: {
+        userId_organisationId: {
+          userId: currentUser.id,
+          organisationId: currentUser.activeOrganisationId,
+        },
+      },
+    });
+
+    if (!membership) {
+      return { success: false, error: 'You are not a member of this organization.' };
+    }
+
+    // If user is an owner, check if they're the last one
+    if (membership.role === 'OWNER') {
+      const ownerCount = await prisma.userOrganisation.count({
+        where: {
+          organisationId: currentUser.activeOrganisationId,
+          role: 'OWNER',
+        },
+      });
+
+      if (ownerCount === 1) {
+        return {
+          success: false,
+          error: 'You are the last owner. Promote another member to owner before leaving.',
+        };
+      }
+    }
+
+    // Remove membership
+    await prisma.userOrganisation.delete({
+      where: { id: membership.id },
+    });
+
+    // Switch to another organization if user has any
+    const otherMembership = await prisma.userOrganisation.findFirst({
+      where: { userId: currentUser.id },
+      select: { organisationId: true },
+    });
+
+    if (otherMembership) {
+      // Switch to another organization
+      await prisma.user.update({
+        where: { id: currentUser.id },
+        data: { activeOrganisationId: otherMembership.organisationId },
+      });
+
+      revalidatePath('/', 'layout');
+
+      return { success: true };
+    } else {
+      // No other organizations, set active to null
+      await prisma.user.update({
+        where: { id: currentUser.id },
+        data: { activeOrganisationId: null },
+      });
+
+      revalidatePath('/', 'layout');
+
+      return { success: true, data: { needsOrganization: true } };
+    }
+  } catch (error) {
+    console.error('Error leaving organization:', error);
+    return { success: false, error: 'Failed to leave organization.' };
+  }
+}
+
+/**
  * Check if an invitation token is valid
  * Public endpoint (no auth required)
  */
-export async function validateInvitationToken(
-  token: string
-): Promise<ActionResult<{
-  email: string;
-  organizationName: string;
-  role: UserRole;
-}>> {
+export async function validateInvitationToken(token: string): Promise<
+  ActionResult<{
+    email: string;
+    organizationName: string;
+    role: UserRole;
+  }>
+> {
   try {
     const invitation = await prisma.invitation.findUnique({
       where: { token },
@@ -399,19 +518,19 @@ export async function validateInvitationToken(
         },
       },
     });
-    
+
     if (!invitation) {
       return { success: false, error: 'Invalid invitation link.' };
     }
-    
+
     if (invitation.accepted) {
       return { success: false, error: 'This invitation has already been used.' };
     }
-    
+
     if (invitation.expiresAt < new Date()) {
       return { success: false, error: 'This invitation has expired.' };
     }
-    
+
     return {
       success: true,
       data: {
@@ -425,7 +544,3 @@ export async function validateInvitationToken(
     return { success: false, error: 'Failed to validate invitation.' };
   }
 }
-
-
-
-

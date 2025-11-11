@@ -11,7 +11,7 @@ export async function checkEmailExists(
   excludeBorrowerId?: string,
 ): Promise<ActionResult<{ exists: boolean }>> {
   try {
-    const { entityId } = await getCurrentUser();
+    const { activeOrganisationId: entityId } = await getCurrentUser();
 
     const count = await prisma.borrower.count({
       where: {
@@ -41,7 +41,7 @@ export async function updateBorrowerAffiliation(params: {
   };
 }): Promise<ActionResult<undefined>> {
   try {
-    const { entityId } = await getCurrentUser();
+    const { activeOrganisationId: entityId } = await getCurrentUser();
 
     await prisma.$transaction(async (tx) => {
       const borrower = await tx.borrower.findFirst({

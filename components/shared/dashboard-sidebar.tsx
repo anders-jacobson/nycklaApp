@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import {
+  IconBuilding,
   IconCamera,
   IconDashboard,
   IconFileAi,
@@ -17,16 +18,11 @@ import { NavMain } from './nav-main';
 import { NavSecondary } from './nav-secondary';
 import { NavUser } from './nav-user';
 import { TeamSwitcher } from './team-switcher';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-} from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 
 interface DashboardSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  entityName?: string;
-  userRole?: string;
+  organisations: Array<{ id: string; name: string; role: string }>;
+  activeOrganisationId?: string;
   user?: {
     name: string;
     email: string;
@@ -50,6 +46,11 @@ const data = {
       title: 'Keys',
       url: '/keys',
       icon: IconListDetails,
+    },
+    {
+      title: 'Organisations',
+      url: '/organisations',
+      icon: IconBuilding,
     },
     {
       title: 'Settings',
@@ -113,7 +114,12 @@ const data = {
   navSecondary: [],
 };
 
-export function DashboardSidebar({ entityName, userRole, user, ...props }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  organisations,
+  activeOrganisationId,
+  user,
+  ...props
+}: DashboardSidebarProps) {
   const userData = {
     name: user?.name || 'Loading...',
     email: user?.email || '',
@@ -123,7 +129,9 @@ export function DashboardSidebar({ entityName, userRole, user, ...props }: Dashb
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
-        <TeamSwitcher entityName={entityName} userRole={userRole} />
+        {activeOrganisationId && (
+          <TeamSwitcher organisations={organisations} activeOrganisationId={activeOrganisationId} />
+        )}
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

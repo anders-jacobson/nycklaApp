@@ -71,11 +71,19 @@ export async function registerUser(formData: FormData) {
 
       // Join existing organization
       await prisma.$transaction(async (tx) => {
-        // Create user with invited role
-        await tx.user.create({
+        // Create user with active organisation set
+        const user = await tx.user.create({
           data: {
             email,
-            entityId: invitation.entityId,
+            activeOrganisationId: invitation.entityId,
+          },
+        });
+
+        // Create membership with invited role
+        await tx.userOrganisation.create({
+          data: {
+            userId: user.id,
+            organisationId: invitation.entityId,
             role: invitation.role,
           },
         });
@@ -101,8 +109,9 @@ export async function registerUser(formData: FormData) {
     });
 
     if (existingEntity) {
-      return { 
-        error: 'This organization name is already taken. If you were invited to join, please use your invitation link. Otherwise, choose a different name.',
+      return {
+        error:
+          'This organization name is already taken. If you were invited to join, please use your invitation link. Otherwise, choose a different name.',
       };
     }
 
@@ -120,11 +129,19 @@ export async function registerUser(formData: FormData) {
         },
       });
 
-      // Create user linked to entity as OWNER
-      await tx.user.create({
+      // Create user with active organisation set
+      const user = await tx.user.create({
         data: {
           email,
-          entityId: entity.id,
+          activeOrganisationId: entity.id,
+        },
+      });
+
+      // Create membership as OWNER
+      await tx.userOrganisation.create({
+        data: {
+          userId: user.id,
+          organisationId: entity.id,
           role: 'OWNER',
         },
       });

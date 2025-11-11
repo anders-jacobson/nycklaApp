@@ -15,6 +15,16 @@ Business requirements, user stories, and product specifications for the Key Mana
 - Success metrics and acceptance criteria
 - Feature prioritization and MVP definition
 
+### **[User Flows](./user-flows.md)** 🔄
+
+**User experience flows and interaction patterns**
+
+- Initial setup and onboarding flows
+- Key lending and return workflows
+- Borrower management patterns
+- Mobile-optimized interactions
+- Accessibility guidelines
+
 ### **[User Guide](./user-guide.md)** 📖
 
 **End-user documentation and help** _(Coming Soon)_

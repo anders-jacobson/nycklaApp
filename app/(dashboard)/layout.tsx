@@ -16,30 +16,39 @@ async function Layout({ children }: { children: React.ReactNode }) {
   } = await supabase.auth.getUser();
 
   // If there's an authenticated user, try to get their profile data
-  let entityName: string | undefined;
-  let userRole: string | undefined;
+  let organisations: Array<{ id: string; name: string; role: string }> = [];
+  let activeOrganisationId: string | undefined;
   let user: { name: string; email: string } | undefined;
 
   if (authUser) {
     try {
-      // Use Prisma to find user by email with entity information
+      // Use Prisma to find user with organisations
       const profile = await prisma.user.findUnique({
         where: { email: authUser.email! },
         select: {
           name: true,
           email: true,
-          role: true,
-          entity: {
-            select: {
-              name: true,
+          activeOrganisationId: true,
+          organisations: {
+            include: {
+              organisation: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },
       });
 
       if (profile) {
-        entityName = profile.entity?.name;
-        userRole = profile.role;
+        activeOrganisationId = profile.activeOrganisationId || undefined;
+        organisations = profile.organisations.map((o) => ({
+          id: o.organisation.id,
+          name: o.organisation.name,
+          role: o.role,
+        }));
         user = {
           name: profile.name || '',
           email: profile.email,
@@ -59,7 +68,11 @@ async function Layout({ children }: { children: React.ReactNode }) {
         } as React.CSSProperties
       }
     >
-      <DashboardSidebar entityName={entityName} userRole={userRole} user={user} />
+      <DashboardSidebar
+        organisations={organisations}
+        activeOrganisationId={activeOrganisationId}
+        user={user}
+      />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>

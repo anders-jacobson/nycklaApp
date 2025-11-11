@@ -20,10 +20,10 @@ async function fixExistingUsers() {
 
     for (const user of usersWithoutEntity) {
       console.log(`📧 User: ${user.email}`);
-      
+
       // Create a default entity name from email
       const defaultEntityName = user.email.split('@')[0] + "'s Organization";
-      
+
       // Generate and encrypt entity key
       const entityKey = generateEntityKey();
       const encryptedKey = encryptEntityKey(entityKey);
@@ -59,7 +59,6 @@ async function fixExistingUsers() {
 }
 
 fixExistingUsers();
-
 
 
 

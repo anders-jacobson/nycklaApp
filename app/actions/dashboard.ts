@@ -6,7 +6,7 @@ import { getBorrowerDetails } from '@/lib/borrower-utils';
 // Helper to get entityId for dashboard queries
 async function getEntityId() {
   const user = await getCurrentUser();
-  return user.entityId;
+  return user.activeOrganisationId;
 }
 
 export async function getKeyStatusSummary() {
@@ -181,12 +181,12 @@ export async function searchBorrowers(searchTerm: string) {
       const nameMatch = details.name.toLowerCase().includes(searchLower);
       const emailMatch = details.email.toLowerCase().includes(searchLower);
       return { details, matches: nameMatch || emailMatch };
-    })
+    }),
   );
 
   // Filter and limit results
   return decryptedBorrowers
-    .filter(b => b.matches)
+    .filter((b) => b.matches)
     .slice(0, 10)
     .map(({ details }) => ({
       id: details.id,

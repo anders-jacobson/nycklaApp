@@ -29,7 +29,7 @@ export async function getAvailableKeyTypes(): Promise<
   >
 > {
   try {
-    const { entityId } = await getCurrentUser();
+    const { activeOrganisationId: entityId } = await getCurrentUser();
 
     const keyTypes = await prisma.keyType.findMany({
       where: { entityId },
@@ -74,7 +74,7 @@ export async function checkKeyAvailability(keyTypeId: string): Promise<
   }>
 > {
   try {
-    const { entityId } = await getCurrentUser();
+    const { activeOrganisationId: entityId } = await getCurrentUser();
 
     const keyType = await prisma.keyType.findFirst({
       where: { id: keyTypeId, entityId },
@@ -278,7 +278,7 @@ export async function getAvailableKeyCopy(keyTypeId: string): Promise<
   }>
 > {
   try {
-    const { entityId } = await getCurrentUser();
+    const { activeOrganisationId: entityId } = await getCurrentUser();
 
     const keyCopy = await prisma.keyCopy.findFirst({
       where: {
@@ -318,7 +318,7 @@ export async function getAvailableKeyCopy(keyTypeId: string): Promise<
  */
 export async function returnKey(issueRecordId: string): Promise<ActionResult<undefined>> {
   try {
-    const { entityId } = await getCurrentUser();
+    const { activeOrganisationId: entityId } = await getCurrentUser();
 
     await prisma.$transaction(async (tx) => {
       // 1. Fetch and validate the issue record for the current entity
@@ -386,7 +386,7 @@ export async function markKeyLost(params: {
   }>
 > {
   try {
-    const { entityId, id: userId } = await getCurrentUser();
+    const { activeOrganisationId: entityId, id: userId } = await getCurrentUser();
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Load current issue record with key info and borrower

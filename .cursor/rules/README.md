@@ -1,175 +1,174 @@
-# Cursor Rules Inventory - Swedish Key Management App
+# Cursor Rules - Ultra-Minimal Structure
 
-## 📋 Rules Structure Overview
+## Philosophy: Trust Claude Sonnet 4, Document Only Project-Specific Patterns
 
-The rules have been streamlined into a minimal, focused structure with a master reference file that points to specific patterns and Context7 for up-to-date documentation.
+**Claude Sonnet 4 already knows:**
 
-## 🎯 Core Rules (Always Applied)
+- How to use Next.js 15, Prisma, React, Tailwind, etc.
+- Current best practices and patterns
+- Latest library APIs
 
-### 1. `cursor-rules.mdc` - **MASTER REFERENCE**
+**These rules document ONLY:**
 
-- **Purpose**: Single entry point for all development standards
-- **Status**: `alwaysApply: true`
-- **Content**: Quick reference with pointers to detailed documentation
-- **Key Sections**:
-  - Context7 MCP usage (mandatory)
-  - Architecture overview
-  - Critical UI rules
-  - Standard database patterns
-  - References to detailed files
+- Your project's unique conventions
+- Your specific architecture decisions
+- Your custom patterns
 
-### 2. `context7-mcp-usage.mdc` - **CRITICAL EXTERNAL DOCUMENTATION**
+## 📊 Structure (5 Files, ~300 Lines Total)
 
-- **Purpose**: Mandatory Context7 MCP server usage for up-to-date library docs
-- **Status**: `alwaysApply: true`
-- **Content**: Complete Context7 integration patterns
-- **Usage**: ALWAYS consult before implementing external libraries
+### Always Applied (2 files, 145 lines)
 
-## 📚 Detailed Reference Files
+**1. `cursor-rules.mdc` (100 lines)** - Master rules
 
-### 3. `development-standards.mdc` - **COMPREHENSIVE INTERNAL PATTERNS**
+- 6 critical project-specific patterns
+- Quick schema reference
+- Standard imports for this project
+- Validation checklist
 
-- **Purpose**: Complete development standards and patterns
-- **Status**: `alwaysApply: true`
-- **Content**:
-  - UI component usage (shadcn/ui + Tabler Icons)
-  - Server action patterns
-  - Component architecture
-  - Import conventions
-  - File structure guidelines
+**2. `file-organization.mdc` (45 lines)** - File structure enforcement
 
-### 4. `schema-reference.mdc` - **DATABASE PATTERNS**
+- Documentation must live in docs/
+- Prevents misplaced files
 
-- **Purpose**: Internal database schema and query patterns
-- **Status**: `alwaysApply: false` (reference only)
-- **Content**:
-  - Current Prisma schema models
-  - Standard query patterns
-  - Authentication patterns
-  - Transaction examples
-  - Anti-patterns to avoid
+### Context-Based (3 files, 155 lines)
 
-## 🏗️ Context Files (Project-Specific)
+**3. `patterns.mdc` (75 lines)** - Unique patterns only
 
-### 5. `project-context.mdc` - **APP CONTEXT**
+- Multi-tenant entity model (unique to project)
+- Placeholder email system (unique feature)
+- Supabase+Prisma integration (your specific way)
+- Applied to: `**/actions/**`, `**/components/**`
 
-- **Purpose**: Swedish housing cooperative app context
-- **Status**: `alwaysApply: false`
-- **Content**:
-  - Business requirements
-  - Swedish terminology
-  - Technical constraints
-  - Supabase configuration
+**4. `project-context.mdc` (60 lines)** - Business context
 
-### 6. `key-features.mdc` - **FEATURE SPECIFICATIONS**
+- Swedish housing cooperative domain
+- GDPR compliance requirements
+- Applied to: `**/auth/**`, `**/dashboard/**`, `**/key*`
 
-- **Purpose**: Core feature requirements and workflows
-- **Status**: `alwaysApply: false`
-- **Content**:
-  - Dashboard requirements
-  - Lending/return workflows
-  - Key management features
-  - Mobile-first UI requirements
+**5. `key-features.mdc` (60 lines)** - Feature requirements
 
-### 7. `user-flows.mdc` - **UX PATTERNS**
+- Dashboard, lending, return workflows
+- Applied to: `**/dashboard/**`, `**/keys/**`, `**/borrower*`
 
-- **Purpose**: User experience flows and patterns
-- **Status**: `alwaysApply: false`
-- **Content**:
-  - User registration flows
-  - Key lending processes
-  - Error recovery patterns
-  - Accessibility guidelines
-
-### 8. `task-list.mdc` - **WORKFLOW MANAGEMENT**
-
-- **Purpose**: Task management guidelines
-- **Status**: `alwaysApply: false`
-- **Content**:
-  - Task list creation
-  - Progress tracking
-  - AI workflow instructions
-
-## 🔄 Development Workflow
-
-### Automatic Rule Application
-
-Cursor now automatically applies relevant rules based on the files you're working with:
-
-1. **All TypeScript/React files**: `cursor-rules.mdc` + `development-standards.mdc`
-2. **Database files** (`actions/`, `prisma/`): `schema-reference.mdc`
-3. **Auth/Dashboard files**: `project-context.mdc`
-4. **Feature files** (`keys/`, `borrower*`): `key-features.mdc`
-5. **Workflow files**: `user-flows.mdc`
-
-### Manual Workflow (When Needed)
-
-1. **Always use Context7 MCP first** - Get latest external library docs
-2. **Check validation checklist** in `cursor-rules.mdc`
-3. **Reference specific patterns** as needed
-
-### File Priority Order
-
-1. **CRITICAL**: `cursor-rules.mdc` + `context7-mcp-usage.mdc`
-2. **ESSENTIAL**: `development-standards.mdc`
-3. **REFERENCE**: `schema-reference.mdc`
-4. **CONTEXTUAL**: Project context files
-5. **WORKFLOW**: Task management files
-
-## 📊 File Count Summary
+## 📉 Evolution
 
 ```
-Total Rules Files: 8
-├── Core Rules (Always Applied): 2
-├── Detailed References: 2
-├── Context Files: 3
-└── Workflow Files: 1
-
-Removed/Consolidated: 5 files
-├── coding-standards.mdc → development-standards.mdc
-├── database-schema.mdc → schema-reference.mdc
-├── tech-stack.mdc → development-standards.mdc
-├── ui-component-standards.mdc → development-standards.mdc
-└── environment-config.template.mdc → deleted
+Version 1 (Initial):     9 files, ~1,500 lines
+Version 2 (Consolidated): 6 files, ~450 lines (70% reduction)
+Version 3 (No Context7):  5 files, ~300 lines (80% reduction)
 ```
 
-## 🎯 Key Improvements
+### What Was Removed
 
-### Before Restructure
+❌ **Context7 files** - Redundant with Claude Sonnet 4
 
-- 13 files with overlapping content
-- Complex navigation between files
-- Redundant information scattered across multiple files
-- No clear entry point
+- Claude already has recent training data
+- Cursor has `@web` for latest docs when needed
+- Less complexity, same results
 
-### After Restructure
+❌ **Generic code examples** - Claude knows these
 
-- 8 focused files with clear purposes
-- Single master reference file
-- Context7 integration for external docs
-- Clear workflow and priorities
-- Consolidated internal patterns
+- How to write React components
+- How to use Prisma queries
+- How to structure Next.js apps
 
-## 📝 Usage Guidelines
+✅ **Kept: Project-specific patterns only**
 
-### For New Developers
+- Your getCurrentUserId() pattern
+- Your entity-based multi-tenancy
+- Your placeholder email system
+- Your specific file organization
 
-1. Start with `cursor-rules.mdc` - understand the basics
-2. Read `context7-mcp-usage.mdc` - learn Context7 workflow
-3. Reference `development-standards.mdc` when coding
-4. Use `schema-reference.mdc` for database work
+## 🎯 What Each File Does
 
-### For Experienced Team Members
+### cursor-rules.mdc (Master)
 
-- `cursor-rules.mdc` for quick reference
-- `schema-reference.mdc` for database patterns
-- Context files for business context
+**Problem it solves:** Enforces project-specific decisions
 
-### For AI Assistants
+- Never use Supabase .from() (use Prisma)
+- Always lookup users by email (not auth.id)
+- Always filter by entityId (multi-tenant)
+- Standard ActionResult<T> type
 
-1. Always check Context7 first for external libraries
-2. Use internal patterns from reference files
-3. Follow established database and UI patterns
-4. Reference actual codebase examples
+### patterns.mdc (Unique Patterns)
 
-This streamlined structure provides comprehensive coverage while maintaining simplicity and avoiding redundancy.
+**Problem it solves:** Documents non-obvious integrations
+
+- How Supabase auth + Prisma data work together in THIS project
+- Entity-based multi-tenancy implementation
+- Placeholder email generation logic
+- File structure (where things live)
+
+### project-context.mdc (Domain)
+
+**Problem it solves:** Provides business context
+
+- Swedish housing cooperative terminology
+- GDPR compliance requirements
+- Target users (seniors, non-tech-savvy)
+
+### key-features.mdc (Requirements)
+
+**Problem it solves:** Feature specifications
+
+- What the dashboard should show
+- How lending workflow works
+- Validation rules
+
+### file-organization.mdc (Structure)
+
+**Problem it solves:** Keeps project organized
+
+- No .md files in root
+- All docs in docs/ structure
+
+## ✅ Benefits
+
+1. **80% smaller** than original
+2. **Zero redundancy** with Claude's knowledge
+3. **Only documents unique decisions**
+4. **Fast to load and understand**
+5. **No external dependencies** (no Context7)
+
+## 🚫 What We Don't Document
+
+- ❌ How to write React components (Claude knows)
+- ❌ How to use Prisma (Claude knows)
+- ❌ How to use Next.js App Router (Claude knows)
+- ❌ Generic TypeScript patterns (Claude knows)
+
+## ✅ What We Do Document
+
+- ✅ Your auth-to-database lookup pattern
+- ✅ Your entity-based multi-tenancy
+- ✅ Your placeholder email system
+- ✅ Your specific file organization
+- ✅ Your business domain (housing cooperatives)
+
+## 📚 For Developers
+
+### Starting work:
+
+1. Master rules apply automatically
+2. Context rules load based on files you edit
+3. Trust Claude for generic patterns
+4. Use `@web` if you need latest docs
+
+### Common scenarios:
+
+**"How do I query the database?"**
+→ Claude knows Prisma. Just follow the master rule: always filter by entityId
+
+**"How do I create a server action?"**
+→ Claude knows Next.js 15. Just use the ActionResult<T> pattern from master rules
+
+**"How does auth work in this project?"**
+→ Check `cursor-rules.mdc` for the getCurrentUserId() pattern (project-specific)
+
+**"How does multi-tenancy work?"**
+→ Check `patterns.mdc` for entity-based isolation (unique to project)
+
+---
+
+**Last Updated**: November 7, 2025  
+**Philosophy**: Document decisions, not documentation. Trust Claude, customize your patterns.

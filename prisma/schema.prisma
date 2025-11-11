@@ -9,33 +9,48 @@ datasource db {
 }
 
 model Entity {
-  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String        @db.VarChar(200)
-  encryptionKey String        @db.Text // Encrypted with master ENCRYPTION_KEY
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  users         User[]
-  borrowers     Borrower[]
-  keyTypes      KeyType[]
-  issueRecords  IssueRecord[]
-  invitations   Invitation[]
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String             @db.VarChar(200)
+  encryptionKey    String             @db.Text // Encrypted with master ENCRYPTION_KEY
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  members          UserOrganisation[] @relation("OrganisationMembers")
+  activeForUsers   User[]             @relation("ActiveOrganisation")
+  borrowers        Borrower[]
+  keyTypes         KeyType[]
+  issueRecords     IssueRecord[]
+  invitations      Invitation[]
 
   @@unique([name])
 }
 
 model User {
-  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email           String        @unique
-  name            String?
-  entityId        String        @db.Uuid
-  role            UserRole      @default(MEMBER)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  entity          Entity        @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  issueRecords    IssueRecord[]
-  sentInvitations Invitation[]
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                String             @unique
+  name                 String?
+  activeOrganisationId String?            @db.Uuid
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  organisations        UserOrganisation[]
+  activeOrganisation   Entity?            @relation("ActiveOrganisation", fields: [activeOrganisationId], references: [id])
+  issueRecords         IssueRecord[]
+  sentInvitations      Invitation[]
 
-  @@index([entityId])
+  @@index([activeOrganisationId])
+}
+
+model UserOrganisation {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @db.Uuid
+  organisationId String   @db.Uuid
+  role           UserRole
+  joinedAt       DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organisation   Entity   @relation("OrganisationMembers", fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organisationId])
+  @@index([userId])
+  @@index([organisationId])
 }
 
 enum UserRole {

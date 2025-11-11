@@ -9,7 +9,7 @@ interface TeamOverviewProps {
     id: string;
     email: string;
     name: string | null;
-    role: UserRole;
+    roleInActiveOrg: UserRole;
   };
 }
 
@@ -26,13 +26,15 @@ const roleColors = {
 };
 
 export function TeamOverview({ user }: TeamOverviewProps) {
-  const Icon = roleIcons[user.role];
+  const Icon = roleIcons[user.roleInActiveOrg];
 
   return (
     <div className="space-y-4">
       <div>
         <h2 className="text-xl font-semibold">Your Profile</h2>
-        <p className="text-sm text-muted-foreground">Your account information in this organization</p>
+        <p className="text-sm text-muted-foreground">
+          Your account information in this organisation
+        </p>
       </div>
 
       <div className="space-y-3">
@@ -51,9 +53,9 @@ export function TeamOverview({ user }: TeamOverviewProps) {
         <div>
           <label className="text-sm font-medium text-muted-foreground">Role</label>
           <div className="mt-1">
-            <Badge className={roleColors[user.role]}>
+            <Badge className={roleColors[user.roleInActiveOrg]}>
               <Icon className="h-3 w-3 mr-1" />
-              {user.role}
+              {user.roleInActiveOrg}
             </Badge>
           </div>
         </div>
@@ -61,4 +63,3 @@ export function TeamOverview({ user }: TeamOverviewProps) {
     </div>
   );
 }
-
