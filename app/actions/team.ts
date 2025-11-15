@@ -88,7 +88,7 @@ export async function inviteUser(
     // Check if user already exists in this organization
     const existingMembership = await prisma.userOrganisation.findFirst({
       where: {
-        organisationId: currentUser.activeOrganisationId,
+        organisationId: currentUser.entityId,
         user: {
           email,
         },
@@ -103,7 +103,7 @@ export async function inviteUser(
     const existingInvitation = await prisma.invitation.findFirst({
       where: {
         email,
-        entityId: currentUser.activeOrganisationId,
+        entityId: currentUser.entityId,
         accepted: false,
         expiresAt: { gt: new Date() },
       },
@@ -120,7 +120,7 @@ export async function inviteUser(
     // Create invitation
     const invitation = await prisma.invitation.create({
       data: {
-        entityId: currentUser.activeOrganisationId,
+        entityId: currentUser.entityId,
         email,
         role,
         token,
@@ -143,7 +143,7 @@ export async function inviteUser(
       role,
     );
 
-    revalidatePath('/settings/team');
+    revalidatePath('/settings/organization');
 
     return {
       success: true,
@@ -176,7 +176,7 @@ export async function listTeamMembers(): Promise<
     const currentUser = await getCurrentUser();
 
     const memberships = await prisma.userOrganisation.findMany({
-      where: { organisationId: currentUser.activeOrganisationId },
+      where: { organisationId: currentUser.entityId },
       include: {
         user: {
           select: {
@@ -233,7 +233,7 @@ export async function listPendingInvitations(): Promise<
 
     const invitations = await prisma.invitation.findMany({
       where: {
-        entityId: currentUser.activeOrganisationId,
+        entityId: currentUser.entityId,
         accepted: false,
         expiresAt: { gt: new Date() },
       },
@@ -289,7 +289,7 @@ export async function cancelInvitation(invitationId: string): Promise<ActionResu
 
     // Check permission: must be in same org and either owner/admin or the person who sent it
     if (
-      invitation.entityId !== currentUser.activeOrganisationId ||
+      invitation.entityId !== currentUser.entityId ||
       (currentUser.roleInActiveOrg === 'MEMBER' && invitation.createdBy !== currentUser.id)
     ) {
       return { success: false, error: 'You do not have permission to cancel this invitation.' };
@@ -303,7 +303,7 @@ export async function cancelInvitation(invitationId: string): Promise<ActionResu
       where: { id: invitationId },
     });
 
-    revalidatePath('/settings/team');
+    revalidatePath('/settings/organization');
 
     return { success: true };
   } catch (error) {
@@ -331,7 +331,7 @@ export async function changeUserRole(userId: string, newRole: UserRole): Promise
       where: {
         userId_organisationId: {
           userId,
-          organisationId: currentUser.activeOrganisationId,
+          organisationId: currentUser.entityId,
         },
       },
     });
@@ -348,7 +348,7 @@ export async function changeUserRole(userId: string, newRole: UserRole): Promise
       data: { role: newRole },
     });
 
-    revalidatePath('/settings/team');
+    revalidatePath('/settings/organization');
 
     return { success: true };
   } catch (error) {
@@ -381,7 +381,7 @@ export async function removeUser(userId: string): Promise<ActionResult> {
       where: {
         userId_organisationId: {
           userId,
-          organisationId: currentUser.activeOrganisationId,
+          organisationId: currentUser.entityId,
         },
       },
     });
@@ -394,7 +394,7 @@ export async function removeUser(userId: string): Promise<ActionResult> {
     if (membership.role === 'OWNER') {
       const ownerCount = await prisma.userOrganisation.count({
         where: {
-          organisationId: currentUser.activeOrganisationId,
+          organisationId: currentUser.entityId,
           role: 'OWNER',
         },
       });
@@ -412,7 +412,7 @@ export async function removeUser(userId: string): Promise<ActionResult> {
       where: { id: membership.id },
     });
 
-    revalidatePath('/settings/team');
+    revalidatePath('/settings/organization');
 
     return { success: true };
   } catch (error) {
@@ -425,7 +425,7 @@ export async function removeUser(userId: string): Promise<ActionResult> {
  * Leave the current organization
  * User must not be the last owner
  */
-export async function leaveOrganisation(): Promise<ActionResult> {
+export async function leaveOrganisation(): Promise<ActionResult<{ needsOrganization?: boolean }>> {
   try {
     const currentUser = await getCurrentUser();
 
@@ -434,7 +434,7 @@ export async function leaveOrganisation(): Promise<ActionResult> {
       where: {
         userId_organisationId: {
           userId: currentUser.id,
-          organisationId: currentUser.activeOrganisationId,
+          organisationId: currentUser.entityId,
         },
       },
     });
@@ -447,7 +447,7 @@ export async function leaveOrganisation(): Promise<ActionResult> {
     if (membership.role === 'OWNER') {
       const ownerCount = await prisma.userOrganisation.count({
         where: {
-          organisationId: currentUser.activeOrganisationId,
+          organisationId: currentUser.entityId,
           role: 'OWNER',
         },
       });

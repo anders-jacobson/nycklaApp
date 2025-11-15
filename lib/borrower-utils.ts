@@ -300,10 +300,10 @@ export async function createBorrowerWithAffiliation(
 /**
  * Find existing borrower by email with new structure
  */
-export async function findBorrowerByEmail(email: string, userId: string) {
+export async function findBorrowerByEmail(email: string, entityId: string) {
   return await prisma.borrower.findFirst({
     where: {
-      userId,
+      entityId,
       OR: [
         {
           residentBorrower: {

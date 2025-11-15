@@ -17,8 +17,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { IconDots, IconShieldCheck, IconShield, IconUser } from '@tabler/icons-react';
-import { changeUserRole, removeUser } from '@/app/actions/team';
+import { changeUserRole, removeUser, leaveOrganisation } from '@/app/actions/team';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { UserRole } from '@prisma/client';
 
 interface TeamMember {
@@ -26,7 +27,7 @@ interface TeamMember {
   email: string;
   name: string | null;
   role: UserRole;
-  createdAt: Date;
+  joinedAt: Date;
 }
 
 interface CurrentUser {
@@ -49,14 +50,14 @@ const roleColors = {
 export function TeamMembersSection({
   members,
   currentUser,
-  canInvite,
 }: {
   members: TeamMember[];
   currentUser: CurrentUser;
-  canInvite: boolean;
 }) {
   const [loading, setLoading] = useState<string | null>(null);
+  const router = useRouter();
   const isOwner = currentUser.roleInActiveOrg === 'OWNER';
+  const ownerCount = members.filter((m) => m.role === 'OWNER').length;
 
   async function handleRoleChange(userId: string, newRole: UserRole) {
     setLoading(userId);
@@ -73,6 +74,23 @@ export function TeamMembersSection({
     setLoading(null);
     if (!result.success) alert(result.error);
     else location.reload();
+  }
+
+  async function handleLeave() {
+    if (!confirm('Are you sure you want to leave this organization?')) return;
+    setLoading(currentUser.id);
+    const result = await leaveOrganisation();
+    setLoading(null);
+    if (!result.success) {
+      alert(result.error);
+    } else {
+      // If user needs to create a new organization, redirect them
+      if (result.data?.needsOrganization) {
+        router.push('/auth/complete-profile');
+      } else {
+        router.refresh();
+      }
+    }
   }
 
   return (
@@ -94,13 +112,14 @@ export function TeamMembersSection({
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Joined</TableHead>
-                {isOwner && <TableHead className="w-[50px]"></TableHead>}
+                <TableHead className="w-[50px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {members.map((member) => {
                 const Icon = roleIcons[member.role];
                 const isSelf = member.id === currentUser.id;
+                const isLastOwner = member.role === 'OWNER' && ownerCount === 1;
 
                 return (
                   <TableRow key={member.id}>
@@ -124,27 +143,44 @@ export function TeamMembersSection({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(member.createdAt).toLocaleDateString('sv-SE', {
+                      {new Date(member.joinedAt).toLocaleDateString('sv-SE', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',
                       })}
                     </TableCell>
-                    {isOwner && (
-                      <TableCell>
-                        {!isSelf && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                disabled={loading === member.id}
-                              >
-                                <IconDots className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            disabled={loading === member.id}
+                          >
+                            <IconDots className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {isSelf ? (
+                            // Menu for current user (self)
+                            <DropdownMenuItem
+                              onClick={handleLeave}
+                              disabled={isLastOwner}
+                              className="text-destructive"
+                            >
+                              {isLastOwner ? 'Cannot leave (last owner)' : 'Leave organization'}
+                            </DropdownMenuItem>
+                          ) : isOwner ? (
+                            // Menu for OWNER looking at other users
+                            <>
+                              {member.role !== 'OWNER' && (
+                                <DropdownMenuItem
+                                  onClick={() => handleRoleChange(member.id, 'OWNER')}
+                                >
+                                  Promote to Owner
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() =>
                                   handleRoleChange(
@@ -157,15 +193,21 @@ export function TeamMembersSection({
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleRemove(member.id, member.email)}
+                                disabled={isLastOwner}
                                 className="text-destructive"
                               >
-                                Remove from team
+                                {isLastOwner ? 'Cannot remove (last owner)' : 'Remove from team'}
                               </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </TableCell>
-                    )}
+                            </>
+                          ) : (
+                            // Non-owner users can only leave
+                            <DropdownMenuItem onClick={handleLeave} className="text-destructive">
+                              Leave organization
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 );
               })}

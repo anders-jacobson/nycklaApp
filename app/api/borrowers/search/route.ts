@@ -14,10 +14,10 @@ async function getCurrentUserInfo() {
 
   const dbUser = await prisma.user.findUnique({
     where: { email: user.email },
-    select: { id: true, entityId: true },
+    select: { id: true, activeOrganisationId: true },
   });
-  if (!dbUser) throw new Error('User not found');
-  return dbUser;
+  if (!dbUser || !dbUser.activeOrganisationId) throw new Error('User not found');
+  return { id: dbUser.id, entityId: dbUser.activeOrganisationId };
 }
 
 export async function GET(req: NextRequest) {

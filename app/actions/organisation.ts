@@ -86,7 +86,7 @@ export async function listUserOrganisations(): Promise<
       name: m.organisation.name,
       role: m.role,
       memberCount: m.organisation._count.members,
-      isActive: m.organisation.id === user.activeOrganisationId,
+      isActive: m.organisation.id === user.entityId,
       createdAt: m.organisation.createdAt,
     }));
 
@@ -113,7 +113,7 @@ export async function getActiveOrganisation(): Promise<
     const user = await getCurrentUser();
 
     const organisation = await prisma.entity.findUnique({
-      where: { id: user.activeOrganisationId },
+      where: { id: user.entityId },
       select: {
         id: true,
         name: true,
@@ -141,6 +141,55 @@ export async function getActiveOrganisation(): Promise<
   } catch (error) {
     console.error('Error getting active organisation:', error);
     return { success: false, error: 'Failed to load organisation details.' };
+  }
+}
+
+/**
+ * Update organisation name
+ * Only OWNER can update the name
+ */
+export async function updateOrganisationName(name: string): Promise<ActionResult> {
+  try {
+    const user = await getCurrentUser();
+
+    // Only OWNER can update organisation name
+    if (user.roleInActiveOrg !== 'OWNER') {
+      return { success: false, error: 'Only organisation owners can update the name.' };
+    }
+
+    // Validate name
+    if (!name || name.trim().length < 2) {
+      return { success: false, error: 'Organisation name must be at least 2 characters.' };
+    }
+
+    if (name.trim().length > 200) {
+      return { success: false, error: 'Organisation name must be less than 200 characters.' };
+    }
+
+    // Check if organisation name already exists (excluding current organisation)
+    const existing = await prisma.entity.findFirst({
+      where: {
+        name: name.trim(),
+        id: { not: user.entityId },
+      },
+    });
+
+    if (existing) {
+      return { success: false, error: 'An organisation with this name already exists.' };
+    }
+
+    // Update organisation name
+    await prisma.entity.update({
+      where: { id: user.entityId },
+      data: { name: name.trim() },
+    });
+
+    revalidatePath('/', 'layout');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating organisation name:', error);
+    return { success: false, error: 'Failed to update organisation name.' };
   }
 }
 

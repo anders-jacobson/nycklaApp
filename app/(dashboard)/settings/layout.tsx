@@ -20,14 +20,14 @@ export default function SettingsLayout({
         <div className="border-b">
           <nav className="flex gap-6 px-6" aria-label="Settings tabs">
             <Link
-              href="/settings/team"
+              href="/settings/organization"
               className={`py-3 text-sm font-medium transition-colors ${
-                pathname === '/settings/team'
+                pathname === '/settings/organization'
                   ? 'border-b-2 border-primary text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Team
+              Organization
             </Link>
           </nav>
         </div>

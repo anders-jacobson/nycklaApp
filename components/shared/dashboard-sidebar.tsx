@@ -22,7 +22,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/compone
 
 interface DashboardSidebarProps extends React.ComponentProps<typeof Sidebar> {
   organisations: Array<{ id: string; name: string; role: string }>;
-  activeOrganisationId?: string;
+  activeEntityId?: string;
   user?: {
     name: string;
     email: string;
@@ -48,13 +48,8 @@ const data = {
       icon: IconListDetails,
     },
     {
-      title: 'Organisations',
-      url: '/organisations',
-      icon: IconBuilding,
-    },
-    {
       title: 'Settings',
-      url: '/settings/team',
+      url: '/settings/organization',
       icon: IconSettings,
     },
     {
@@ -116,7 +111,7 @@ const data = {
 
 export function DashboardSidebar({
   organisations,
-  activeOrganisationId,
+  activeEntityId,
   user,
   ...props
 }: DashboardSidebarProps) {
@@ -129,8 +124,8 @@ export function DashboardSidebar({
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
-        {activeOrganisationId && (
-          <TeamSwitcher organisations={organisations} activeOrganisationId={activeOrganisationId} />
+        {activeEntityId && (
+          <TeamSwitcher organisations={organisations} activeEntityId={activeEntityId} />
         )}
       </SidebarHeader>
       <SidebarContent>

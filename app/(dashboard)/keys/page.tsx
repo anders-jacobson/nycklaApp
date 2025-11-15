@@ -12,6 +12,8 @@ import { getKeyStatusSummary } from '@/app/actions/dashboard';
 import KeyChart from '@/components/shared/chart-bar';
 import TotalStatusPieChart from '@/components/shared/chart-pie';
 import { KeyTypesTable } from '@/components/keys/key-types-table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconKey, IconInfoCircle } from '@tabler/icons-react';
 
 async function getKeyTypes() {
   const { entityId } = await getCurrentUser();
@@ -109,6 +111,52 @@ async function markFoundAction(formData: FormData) {
 export default async function Page() {
   // Fetch both key types and key status data
   const [keyTypes, keyChartData] = await Promise.all([getKeyTypes(), getKeyStatusSummary()]);
+
+  // Show empty state for new organisations
+  if (keyTypes.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
+          <Card>
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <IconKey className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle>No keys found</CardTitle>
+              <CardDescription>
+                Get started by creating your first key type for this organisation
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center pb-6">
+              <div className="bg-muted/50 rounded-lg p-4 mb-4">
+                <div className="flex items-start gap-2 text-sm text-muted-foreground text-left">
+                  <IconInfoCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium mb-1">Quick Start:</p>
+                    <ol className="list-decimal list-inside space-y-1">
+                      <li>Create a key type (e.g., "A" for apartment keys)</li>
+                      <li>Add copies with unique numbers</li>
+                      <li>Start tracking who borrows each key</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <KeyTypesTable
+            data={keyTypes}
+            updateAction={updateKeyTypeAction}
+            deleteAction={deleteKeyTypeAction}
+            createAction={createKeyTypeAction}
+            addCopyAction={addKeyCopyAction}
+            markLostAction={markLostAction}
+            markFoundAction={markFoundAction}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col">

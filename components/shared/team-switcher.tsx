@@ -1,19 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import { IconBuilding, IconCheck, IconChevronDown, IconPlus } from '@tabler/icons-react';
+import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { switchOrganisation } from '@/app/actions/organisation';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 interface Organisation {
   id: string;
@@ -23,21 +21,21 @@ interface Organisation {
 
 interface TeamSwitcherProps {
   organisations: Organisation[];
-  activeOrganisationId: string;
+  activeEntityId: string;
 }
 
-export function TeamSwitcher({ organisations, activeOrganisationId }: TeamSwitcherProps) {
+export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProps) {
   const router = useRouter();
   const [isSwitching, setIsSwitching] = React.useState(false);
 
-  const activeOrg = organisations.find((org) => org.id === activeOrganisationId);
+  const activeOrg = organisations.find((org) => org.id === activeEntityId);
 
   if (!activeOrg) {
     return null;
   }
 
   const handleSwitchOrganisation = async (organisationId: string) => {
-    if (organisationId === activeOrganisationId || isSwitching) return;
+    if (organisationId === activeEntityId || isSwitching) return;
 
     setIsSwitching(true);
     try {
@@ -103,18 +101,9 @@ export function TeamSwitcher({ organisations, activeOrganisationId }: TeamSwitch
                     {org.role.toLowerCase()}
                   </span>
                 </div>
-                {org.id === activeOrganisationId && <IconCheck className="ml-auto h-4 w-4" />}
+                {org.id === activeEntityId && <IconCheck className="ml-auto h-4 w-4" />}
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2" asChild>
-              <Link href="/organisations">
-                <div className="flex size-6 items-center justify-center rounded-md border bg-background">
-                  <IconBuilding className="h-4 w-4" />
-                </div>
-                <div className="font-medium">Manage Organisations</div>
-              </Link>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

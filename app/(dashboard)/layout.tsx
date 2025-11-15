@@ -17,7 +17,7 @@ async function Layout({ children }: { children: React.ReactNode }) {
 
   // If there's an authenticated user, try to get their profile data
   let organisations: Array<{ id: string; name: string; role: string }> = [];
-  let activeOrganisationId: string | undefined;
+  let activeEntityId: string | undefined;
   let user: { name: string; email: string } | undefined;
 
   if (authUser) {
@@ -43,7 +43,7 @@ async function Layout({ children }: { children: React.ReactNode }) {
       });
 
       if (profile) {
-        activeOrganisationId = profile.activeOrganisationId || undefined;
+        activeEntityId = profile.activeOrganisationId || undefined;
         organisations = profile.organisations.map((o) => ({
           id: o.organisation.id,
           name: o.organisation.name,
@@ -70,7 +70,7 @@ async function Layout({ children }: { children: React.ReactNode }) {
     >
       <DashboardSidebar
         organisations={organisations}
-        activeOrganisationId={activeOrganisationId}
+        activeEntityId={activeEntityId}
         user={user}
       />
       <SidebarInset>

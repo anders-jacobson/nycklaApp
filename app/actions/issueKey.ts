@@ -29,7 +29,7 @@ export async function getAvailableKeyTypes(): Promise<
   >
 > {
   try {
-    const { activeOrganisationId: entityId } = await getCurrentUser();
+    const { entityId } = await getCurrentUser();
 
     const keyTypes = await prisma.keyType.findMany({
       where: { entityId },
@@ -74,7 +74,7 @@ export async function checkKeyAvailability(keyTypeId: string): Promise<
   }>
 > {
   try {
-    const { activeOrganisationId: entityId } = await getCurrentUser();
+    const { entityId } = await getCurrentUser();
 
     const keyType = await prisma.keyType.findFirst({
       where: { id: keyTypeId, entityId },
@@ -120,7 +120,7 @@ export async function issueKey(formData: FormData): Promise<
   }>
 > {
   try {
-    const { id: userId } = await getCurrentUser();
+    const { id: userId, entityId } = await getCurrentUser();
 
     // Extract form data
     const keyTypeId = (formData.get('keyTypeId') as string | null) ?? '';
@@ -146,7 +146,6 @@ export async function issueKey(formData: FormData): Promise<
       email: borrowerEmail,
       phone: borrowerPhone,
       company: borrowerCompany,
-      address: borrowerAddress,
       borrowerPurpose: borrowerPurpose,
     });
 
@@ -219,7 +218,7 @@ export async function issueKey(formData: FormData): Promise<
               email: validation.sanitized.email,
               phone: validation.sanitized.phone,
               company: validation.sanitized.company,
-              address: validation.sanitized.address,
+              address: borrowerAddress,
               borrowerPurpose: validation.sanitized.borrowerPurpose,
             },
             entityId,
@@ -278,7 +277,7 @@ export async function getAvailableKeyCopy(keyTypeId: string): Promise<
   }>
 > {
   try {
-    const { activeOrganisationId: entityId } = await getCurrentUser();
+    const { entityId } = await getCurrentUser();
 
     const keyCopy = await prisma.keyCopy.findFirst({
       where: {
@@ -318,7 +317,7 @@ export async function getAvailableKeyCopy(keyTypeId: string): Promise<
  */
 export async function returnKey(issueRecordId: string): Promise<ActionResult<undefined>> {
   try {
-    const { activeOrganisationId: entityId } = await getCurrentUser();
+    const { entityId } = await getCurrentUser();
 
     await prisma.$transaction(async (tx) => {
       // 1. Fetch and validate the issue record for the current entity
@@ -386,7 +385,11 @@ export async function markKeyLost(params: {
   }>
 > {
   try {
-    const { activeOrganisationId: entityId, id: userId } = await getCurrentUser();
+    const user = await getCurrentUser();
+    if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
+      return { success: false, error: 'Only owners and admins can mark keys as lost.' };
+    }
+    const { entityId, id: userId } = user;
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Load current issue record with key info and borrower

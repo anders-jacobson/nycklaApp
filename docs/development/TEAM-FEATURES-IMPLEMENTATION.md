@@ -40,47 +40,29 @@
 
 ## 🔄 Next Steps (Remaining Work)
 
-### Step 1: Add Role Permission Guards (HIGH)
+### Step 1: Add Role Permission Guards ✅ COMPLETED
 
-Add permission checks to existing server actions:
+**All role guards have been implemented following the standard pattern:**
 
-####app/actions/keyTypes.ts`
 ```typescript
-// Add to deleteKeyType
-export async function deleteKeyType(id: string) {
-  const user = await getCurrentUser();
-  
-  // NEW: Only OWNER and ADMIN can delete
-  if (!['OWNER', 'ADMIN'].includes(user.role)) {
-    return { success: false, error: 'Only owners and admins can delete key types.' };
-  }
-  
-  // existing logic...
+const user = await getCurrentUser();
+if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
+  return { success: false, error: 'Only owners and admins can [action].' };
 }
-
-// Add to updateKeyType
-export async function updateKeyType(id: string, formData: FormData) {
-  const user = await getCurrentUser();
-  
-  // NEW: Only OWNER and ADMIN can update
-  if (!['OWNER', 'ADMIN'].includes(user.role)) {
-    return { success: false, error: 'Only owners and admins can update key types.' };
-  }
-  
-  // existing logic...
-}
-
-// addKeyCopy - same pattern
 ```
 
-**Actions needing guards**:
-- ✅ `issueKey` - All roles (already correct)
-- ✅ `returnKey` - All roles (already correct)
-- ⚠️ `deleteKeyType` - OWNER/ADMIN only
-- ⚠️ `updateKeyType` - OWNER/ADMIN only
-- ⚠️ `addKeyCopy` - OWNER/ADMIN only
-- ⚠️ `markAvailableCopyLost` - OWNER/ADMIN only
-- ⚠️ `markLostCopyFound` - OWNER/ADMIN only
+**Protected Actions**:
+- ✅ `issueKey` - All roles (no guard needed)
+- ✅ `returnKey` - All roles (no guard needed)
+- ✅ `deleteKeyType` - OWNER/ADMIN only (line 109)
+- ✅ `updateKeyType` - OWNER/ADMIN only (line 69)
+- ✅ `addKeyCopy` - OWNER/ADMIN only (line 138)
+- ✅ `markAvailableCopyLost` - OWNER/ADMIN only (line 218)
+- ✅ `markLostCopyFound` - OWNER/ADMIN only (line 245)
+- ✅ `markKeyLost` - OWNER/ADMIN only (issueKey.ts:389)
+
+**Documentation**: See `docs/security/rbac-permissions.md` for complete permission matrix
+**Tests**: See `__tests__/role-based-permissions.test.ts` for role permission tests
 
 ### Step 2: Build Team Management UI
 
@@ -339,29 +321,33 @@ npm run dev
 | Database schema | ✅ Done | HIGH | -|
 | Team actions | ✅ Done | HIGH | - |
 | Enhanced registration | ✅ Done | HIGH | - |
-| Role guards | ⏳ Pending | HIGH | 1-2 hours |
+| Role guards | ✅ Done | HIGH | - |
+| Role guard tests | ✅ Done | HIGH | - |
+| RBAC documentation | ✅ Done | HIGH | - |
 | Team UI page | ⏳ Pending | HIGH | 3-4 hours |
 | Settings UI page | ⏳ Pending | MEDIUM | 2 hours |
 | Registration UI update | ⏳ Pending | MEDIUM | 1 hour |
 | Email sending | ⏳ Pending | LOW | 30 min |
-| Testing | ⏳ Pending | HIGH | 2 hours |
+| Integration testing | ⏳ Pending | HIGH | 2 hours |
 
-**Total remaining**: ~9-11 hours of work
+**Total remaining**: ~8-9 hours of work
 
 ---
 
-## 🚀 You're 40% Done!
+## 🚀 You're 55% Done!
 
 **Completed**:
 - ✅ Database schema
 - ✅ All server actions
 - ✅ Registration logic
+- ✅ Role-based permission guards
+- ✅ RBAC documentation
+- ✅ Role permission tests
 
 **Remaining**:
 - ⏳ UI pages (biggest task)
-- ⏳ Permission guards (important)
 - ⏳ Email integration (optional for MVP)
-- ⏳ Testing
+- ⏳ Integration testing
 
 **Ready to continue with UI implementation?** Let me know and I'll build out the team management pages!
 

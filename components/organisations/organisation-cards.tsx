@@ -20,7 +20,7 @@ interface Organisation {
 
 interface OrganisationCardsProps {
   organisations: Organisation[];
-  activeOrganisationId: string;
+  activeEntityId: string;
 }
 
 const roleColors = {
@@ -29,12 +29,12 @@ const roleColors = {
   MEMBER: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
 };
 
-export function OrganisationCards({ organisations, activeOrganisationId }: OrganisationCardsProps) {
+export function OrganisationCards({ organisations, activeEntityId }: OrganisationCardsProps) {
   const router = useRouter();
   const [switching, setSwitching] = useState<string | null>(null);
 
   async function handleSwitch(organisationId: string) {
-    if (organisationId === activeOrganisationId) return;
+    if (organisationId === activeEntityId) return;
     
     setSwitching(organisationId);
     try {

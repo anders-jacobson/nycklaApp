@@ -11,7 +11,7 @@ export interface CurrentUser {
   id: string;
   email: string;
   name: string | null;
-  activeOrganisationId: string;
+  entityId: string;
   roleInActiveOrg: UserRole;
   allOrganisations: Array<{
     id: string;
@@ -91,7 +91,7 @@ export async function getCurrentUser(): Promise<CurrentUser> {
     id: dbUser.id,
     email: dbUser.email,
     name: dbUser.name,
-    activeOrganisationId: activeOrgId,
+    entityId: activeOrgId,
     roleInActiveOrg: activeOrgRelation.role,
     allOrganisations: dbUser.organisations.map((o) => ({
       id: o.organisationId,

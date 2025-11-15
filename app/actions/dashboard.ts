@@ -6,7 +6,7 @@ import { getBorrowerDetails } from '@/lib/borrower-utils';
 // Helper to get entityId for dashboard queries
 async function getEntityId() {
   const user = await getCurrentUser();
-  return user.activeOrganisationId;
+  return user.entityId;
 }
 
 export async function getKeyStatusSummary() {
