@@ -25,6 +25,16 @@ Business requirements, user stories, and product specifications for the Key Mana
 - Mobile-optimized interactions
 - Accessibility guidelines
 
+### **[User Roles Guide](./user-roles-guide.md)** 👥 ⭐ **NEW**
+
+**Understanding user permissions and roles**
+
+- Three role types: Owner, Admin, Member
+- What each role can do
+- How to manage your team
+- Common questions and scenarios
+- Quick reference table
+
 ### **[User Guide](./user-guide.md)** 📖
 
 **End-user documentation and help** _(Coming Soon)_
@@ -63,22 +73,26 @@ A web-based, mobile-first application providing centralized key tracking with:
 ### **✅ MVP Features Delivered**
 
 - **Authentication**: Email/password + Google OAuth
-- **Security**: Complete RLS implementation (18 policies)
+- **Security**: Complete RLS implementation + RBAC (3 roles)
+- **Multi-Organisation**: Users can belong to multiple organisations
+- **Team Management**: Invite, promote, and manage team members
 - **Dashboard**: Visual key status with charts and tables
+- **Key Management**: Full CRUD for key types and copies
+- **Lending Workflow**: Complete lend/return process
 - **Foundation**: Mobile-responsive interface with shadcn/ui
 
 ### **🔄 Current Development**
 
-- **Key Management**: CRUD operations for key types and copies
-- **Borrower System**: Contact management and relationship tracking
-- **Lending Workflow**: Complete lend/return process automation
+- **Enhanced Reporting**: Analytics and insights
+- **Borrower History**: Track lending patterns
+- **Search & Filters**: Improved data discovery
 
 ### **⏳ Future Enhancements**
 
 - **Notifications**: Email/SMS reminders for overdue keys
-- **Multi-User**: Support for 2 users per cooperative
-- **Advanced Features**: Bulk operations, CSV import, analytics
+- **Advanced Features**: Bulk operations, CSV import
 - **Offline Capability**: Mobile offline functionality
+- **Integrations**: Export reports, calendar sync
 
 ## 📊 **Success Metrics**
 
@@ -125,15 +139,18 @@ A web-based, mobile-first application providing centralized key tracking with:
 
 ## 🔍 **Feature Breakdown**
 
-| Feature                 | Status         | Priority    | Notes                         |
-| ----------------------- | -------------- | ----------- | ----------------------------- |
-| **Key Inventory**       | ✅ Dashboard   | MVP         | Charts and tables implemented |
-| **Authentication**      | ✅ Complete    | MVP         | Email + OAuth working         |
-| **Key CRUD**            | 🔄 In Progress | MVP         | Current development focus     |
-| **Borrower Management** | ⏳ Planned     | MVP         | Next after key CRUD           |
-| **Lending Workflow**    | ⏳ Planned     | MVP         | Core business process         |
-| **Notifications**       | ⏳ Future      | Enhancement | Email/SMS reminders           |
-| **Multi-User**          | ⏳ Future      | Enhancement | Max 2 users per account       |
+| Feature                 | Status      | Priority    | Notes                            |
+| ----------------------- | ----------- | ----------- | -------------------------------- |
+| **Key Inventory**       | ✅ Complete | MVP         | Charts and tables implemented    |
+| **Authentication**      | ✅ Complete | MVP         | Email + OAuth working            |
+| **Key CRUD**            | ✅ Complete | MVP         | Full management functionality    |
+| **Borrower Management** | ✅ Complete | MVP         | Create, update, affiliation      |
+| **Lending Workflow**    | ✅ Complete | MVP         | Issue and return implemented     |
+| **Multi-User & Roles**  | ✅ Complete | MVP         | 3 roles, unlimited users per org |
+| **Team Management**     | ✅ Complete | MVP         | Invite, promote, manage          |
+| **Multi-Organisation**  | ✅ Complete | Enhancement | Users can join multiple orgs     |
+| **Notifications**       | ⏳ Future   | Enhancement | Email/SMS reminders              |
+| **Advanced Analytics**  | ⏳ Future   | Enhancement | Reports and insights             |
 
 ## 📱 **Platform Support**
 
@@ -179,5 +196,5 @@ For product questions and feedback:
 
 ---
 
-**Last Updated**: February 2025  
-**Next Review**: After MVP completion and user testing
+**Last Updated**: November 2025  
+**Next Review**: After user testing and feedback collection
