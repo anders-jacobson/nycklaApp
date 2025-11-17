@@ -19,6 +19,7 @@ Technical implementation details, tasks, and development workflows.
 
 - **[Tasks](./development/tasks.md)** - Current implementation roadmap and task breakdown
 - **[Implementation Status](./development/IMPLEMENTATION-STATUS.md)** ⭐ - Current feature status and next steps
+- **[UI Components Guide](./development/UI-COMPONENTS.md)** - ResponsiveDialog and UI patterns
 - **[Architecture Decision Record](./development/ARCHITECTURE-DECISION-RECORD.md)** - Multi-tenant entity model decisions
 - **[Features](./development/features/)** - Feature specs and implementation notes
 
@@ -51,13 +52,14 @@ Business requirements, user stories, and product specifications.
 
 ## 🔍 **Finding Information**
 
-| What You Need             | Where to Look                    |
-| ------------------------- | -------------------------------- |
-| **Security policies**     | `security/security-overview.md`  |
-| **Authentication setup**  | `security/setup-security.md`     |
-| **Current tasks**         | `development/tasks.md`           |
-| **Business requirements** | `product/requirements.md`        |
-| **Testing procedures**    | `security/auth-testing-guide.md` |
+| What You Need             | Where to Look                       |
+| ------------------------- | ----------------------------------- |
+| **Security policies**     | `security/security-overview.md`     |
+| **Authentication setup**  | `security/setup-security.md`        |
+| **Current tasks**         | `development/tasks.md`              |
+| **UI Components**         | `development/UI-COMPONENTS.md`      |
+| **Business requirements** | `product/requirements.md`           |
+| **Testing procedures**    | `security/auth-testing-guide.md`    |
 
 ## 📝 **Documentation Standards**
 

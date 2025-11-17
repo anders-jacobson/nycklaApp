@@ -14,6 +14,16 @@ Technical implementation details, tasks, and development workflows for the Key M
 - Priority ordering for development work
 - Security milestone achievements
 
+### **[UI Components Guide](./UI-COMPONENTS.md)** 🎨 ⭐ **NEW**
+
+**ResponsiveDialog and UI component patterns**
+
+- ResponsiveDialog component (auto mobile/desktop)
+- Built-in pointer-events cleanup
+- shadcn/ui component reference
+- Tabler Icons usage
+- Best practices and examples
+
 ### **[Architecture Decision Record](./ARCHITECTURE-DECISION-RECORD.md)** 🏗️
 
 **Multi-tenant entity model architectural decisions**
@@ -190,6 +200,7 @@ This automatically replaces high-level tasks with detailed sub-tasks.
 | Development Need          | Where to Look                            |
 | ------------------------- | ---------------------------------------- |
 | **Current tasks**         | [Tasks](./tasks.md)                      |
+| **UI Components**         | [UI Components Guide](./UI-COMPONENTS.md)|
 | **What to work on next**  | [Tasks](./tasks.md) - Priority Order     |
 | **Completed features**    | [Tasks](./tasks.md) - Completed sections |
 | **Technical standards**   | `.cursor/rules/` in project root         |

@@ -261,3 +261,162 @@ export async function createOrganisation(
     return { success: false, error: 'Failed to create organisation.' };
   }
 }
+
+/**
+ * Get statistics about an organisation for deletion confirmation
+ * Shows impact of deletion
+ */
+export async function getOrganisationDeletionStats(): Promise<
+  ActionResult<{
+    memberCount: number;
+    keyTypeCount: number;
+    keyCount: number;
+    borrowerCount: number;
+    activeLoanCount: number;
+  }>
+> {
+  try {
+    const user = await getCurrentUser();
+
+    const [memberCount, keyTypeCount, keyCount, borrowerCount, activeLoanCount] =
+      await Promise.all([
+        prisma.userOrganisation.count({
+          where: { organisationId: user.entityId },
+        }),
+        prisma.keyType.count({
+          where: { entityId: user.entityId },
+        }),
+        prisma.keyCopy.count({
+          where: {
+            keyType: {
+              entityId: user.entityId,
+            },
+          },
+        }),
+        prisma.borrower.count({
+          where: { entityId: user.entityId },
+        }),
+        prisma.issueRecord.count({
+          where: {
+            entityId: user.entityId,
+            returnedDate: null,
+          },
+        }),
+      ]);
+
+    return {
+      success: true,
+      data: {
+        memberCount,
+        keyTypeCount,
+        keyCount,
+        borrowerCount,
+        activeLoanCount,
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching organisation stats:', error);
+    return { success: false, error: 'Failed to fetch organisation statistics.' };
+  }
+}
+
+/**
+ * Delete the current organisation permanently
+ * Only OWNER can delete
+ * Requires all other members to have left first
+ */
+export async function deleteOrganisation(): Promise<
+  ActionResult<{
+    needsOrganization: boolean;
+    switchedToOrgName?: string;
+  }>
+> {
+  try {
+    const user = await getCurrentUser();
+
+    // Only OWNER can delete organisation
+    if (user.roleInActiveOrg !== 'OWNER') {
+      return { success: false, error: 'Only organisation owners can delete the organisation.' };
+    }
+
+    // Count members - if more than 1, block deletion
+    const memberCount = await prisma.userOrganisation.count({
+      where: { organisationId: user.entityId },
+    });
+
+    if (memberCount > 1) {
+      return {
+        success: false,
+        error: 'All other members must leave the organisation before you can delete it.',
+      };
+    }
+
+    // Get organisation name for logging
+    const organisation = await prisma.entity.findUnique({
+      where: { id: user.entityId },
+      select: { name: true },
+    });
+
+    // Perform deletion in transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Remove user's membership first
+      await tx.userOrganisation.deleteMany({
+        where: {
+          userId: user.id,
+          organisationId: user.entityId,
+        },
+      });
+
+      // Delete the organisation (cascade will handle all related data)
+      await tx.entity.delete({
+        where: { id: user.entityId },
+      });
+
+      // Check if user has other organisations
+      const otherMembership = await tx.userOrganisation.findFirst({
+        where: { userId: user.id },
+        include: {
+          organisation: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      if (otherMembership) {
+        // Switch to another organisation
+        await tx.user.update({
+          where: { id: user.id },
+          data: { activeOrganisationId: otherMembership.organisationId },
+        });
+
+        return {
+          switchedToId: otherMembership.organisation.id,
+          switchedToName: otherMembership.organisation.name,
+        };
+      } else {
+        // No other organisations, set active to null
+        await tx.user.update({
+          where: { id: user.id },
+          data: { activeOrganisationId: null },
+        });
+
+        return { switchedToId: null, switchedToName: null };
+      }
+    });
+
+    revalidatePath('/', 'layout');
+
+    console.log(`Organisation "${organisation?.name}" deleted by user ${user.email}`);
+
+    return {
+      success: true,
+      data: {
+        needsOrganization: !result.switchedToId,
+        switchedToOrgName: result.switchedToName || undefined,
+      },
+    };
+  } catch (error) {
+    console.error('Error deleting organisation:', error);
+    return { success: false, error: 'Failed to delete organisation.' };
+  }
+}

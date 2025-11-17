@@ -13,15 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { KeyboardShortcutTip } from '@/components/ui/keyboard-tip';
 import { updateBorrowerPurpose } from '@/app/actions/dashboard';
@@ -115,57 +107,56 @@ function AffiliationInfoDialog({ borrower }: { borrower: BorrowerWithKeys }) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      title="Borrower Purpose"
+      description="Why this external borrower needs access to keys."
+      trigger={
         <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1">
           <IconInfoCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" />
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md" onKeyDown={handleKeyDown}>
-        <DialogHeader>
-          <DialogTitle>Borrower Purpose</DialogTitle>
-          <DialogDescription>Why this external borrower needs access to keys.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="purpose" className="text-sm font-medium flex items-center gap-2">
-              Purpose Description
-              <KeyboardShortcutTip
-                shortcuts={[
-                  { key: 'Click', action: 'Edit purpose text' },
-                  { key: 'Ctrl+Enter', action: 'Save and close' },
-                  { key: 'Escape', action: 'Cancel changes' },
-                ]}
-                position="right"
-              />
-            </label>
-            <Textarea
-              id="purpose"
-              value={purpose}
-              onChange={(e) => handlePurposeChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Enter purpose for key access..."
-              className="mt-1 min-h-20"
-              disabled={isLoading}
+      }
+      footer={
+        <Button ref={closeButtonRef} onClick={handleSave} disabled={isLoading} className="gap-1">
+          {isLoading && <IconLoader className="h-3 w-3 animate-spin" />}
+          {hasChanged ? 'Save & Close' : 'Close'}
+        </Button>
+      }
+    >
+      <div className="space-y-4" onKeyDown={handleKeyDown}>
+        <div>
+          <label htmlFor="purpose" className="text-sm font-medium flex items-center gap-2">
+            Purpose Description
+            <KeyboardShortcutTip
+              shortcuts={[
+                { key: 'Click', action: 'Edit purpose text' },
+                { key: 'Ctrl+Enter', action: 'Save and close' },
+                { key: 'Escape', action: 'Cancel changes' },
+              ]}
+              position="right"
             />
-          </div>
-          <div className="text-xs text-muted-foreground">
-            <strong>Company:</strong> {borrower.companyName || 'Not specified'}
-          </div>
-          {hasChanged && (
-            <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-              Changes will be saved when you close this dialog.
-            </div>
-          )}
+          </label>
+          <Textarea
+            id="purpose"
+            value={purpose}
+            onChange={(e) => handlePurposeChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Enter purpose for key access..."
+            className="mt-1 min-h-20"
+            disabled={isLoading}
+          />
         </div>
-        <DialogFooter>
-          <Button ref={closeButtonRef} onClick={handleSave} disabled={isLoading} className="gap-1">
-            {isLoading && <IconLoader className="h-3 w-3 animate-spin" />}
-            {hasChanged ? 'Save & Close' : 'Close'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div className="text-xs text-muted-foreground">
+          <strong>Company:</strong> {borrower.companyName || 'Not specified'}
+        </div>
+        {hasChanged && (
+          <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+            Changes will be saved when you close this dialog.
+          </div>
+        )}
+      </div>
+    </ResponsiveDialog>
   );
 }
 

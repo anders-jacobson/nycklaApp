@@ -4,6 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { TeamMembersSection } from '@/components/settings/team-members-section';
 import { TeamInviteSection } from '@/components/settings/team-invite-section';
 import { OrganizationOverview } from '@/components/settings/organization-overview';
+import { DeleteOrganizationSection } from '@/components/settings/delete-organization-section';
 
 export default async function OrganizationSettingsPage() {
   const user = await getCurrentUser();
@@ -48,6 +49,13 @@ export default async function OrganizationSettingsPage() {
         <>
           <Separator />
           <TeamInviteSection userRole={user.roleInActiveOrg} invitations={invitations} />
+        </>
+      )}
+
+      {isOwner && (
+        <>
+          <Separator />
+          <DeleteOrganizationSection organizationName={entity?.name || ''} isOwner={isOwner} />
         </>
       )}
     </div>

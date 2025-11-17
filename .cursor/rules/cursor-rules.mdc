@@ -33,17 +33,29 @@ const keys = await prisma.keyType.findMany({
 });
 ```
 
-### 3. UI → shadcn/ui + Tabler Icons Only
+### 3. UI → shadcn/ui + Tabler Icons + ResponsiveDialog
 
 ```typescript
 // ❌ NEVER plain HTML
 <button>Click</button>
 
-// ✅ ALWAYS
+// ✅ ALWAYS use shadcn/ui + Tabler Icons
 import { Button } from '@/components/ui/button';
 import { IconPlus } from '@tabler/icons-react';
 
 <Button><IconPlus className="h-4 w-4" />Add</Button>
+
+// ✅ Use ResponsiveDialog for user-facing dialogs (auto mobile/desktop)
+import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
+
+<ResponsiveDialog
+  open={isOpen}
+  onOpenChange={setIsOpen}
+  title="Dialog Title"
+  footer={<Button>Save</Button>}
+>
+  <div>Content</div>
+</ResponsiveDialog>
 ```
 
 ### 4. Server Actions → Standard Result Type
@@ -105,12 +117,14 @@ IssueRecord { issuedDate, returnedDate?, keyCopyId, borrowerId, userId }
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server'; // Server only for auth
 import { Button } from '@/components/ui/button';
+import { ResponsiveDialog } from '@/components/ui/responsive-dialog'; // User dialogs
 import { IconPlus } from '@tabler/icons-react';
 ```
 
 ## 📚 Reference
 
 - **More patterns**: `.cursor/rules/patterns.mdc` (context-based)
+- **UI Components**: `docs/development/UI-COMPONENTS.md` (ResponsiveDialog guide)
 - **Project context**: `.cursor/rules/project-context.mdc`
 - **Features**: `.cursor/rules/key-features.mdc`
 - **Actual schema**: `prisma/schema.prisma`
@@ -120,6 +134,7 @@ import { IconPlus } from '@tabler/icons-react';
 - [ ] Used Prisma (not Supabase .from())?
 - [ ] Used getCurrentUser() pattern (returns activeOrganisationId)?
 - [ ] Used shadcn/ui + Tabler Icons?
+- [ ] Used ResponsiveDialog for user-facing dialogs?
 - [ ] Filtered by activeOrganisationId for data isolation?
 - [ ] Used transactions for multi-step ops?
 - [ ] Used ActionResult<T> type?

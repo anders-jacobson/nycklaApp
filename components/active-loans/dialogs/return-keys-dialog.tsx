@@ -4,14 +4,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
 import { IconLoader } from '@tabler/icons-react';
 import { returnMultipleKeysAction } from '@/app/actions/issueKeyWrapper';
 import { toastError, toastSuccess } from '@/components/ui/toast-store';
@@ -83,58 +76,14 @@ export function ReturnKeysDialog({
     }
   }, [open, borrowedKeys.length, onOpenChange]);
 
-  // Cleanup: Ensure body pointer-events is restored when dialog closes
-  React.useEffect(() => {
-    if (!open) {
-      // Force cleanup of body styles when dialog closes
-      // Use requestAnimationFrame + setTimeout to ensure this runs after Radix cleanup and animations
-      const cleanup = () => {
-        document.body.style.pointerEvents = '';
-        document.body.style.overflow = '';
-      };
-      // Run after animation completes (200ms duration + buffer)
-      const timer = setTimeout(cleanup, 250);
-      return () => clearTimeout(timer);
-    }
-  }, [open]);
-
-  // Also cleanup on unmount
-  React.useEffect(() => {
-    return () => {
-      document.body.style.pointerEvents = '';
-      document.body.style.overflow = '';
-    };
-  }, []);
-
   return (
-    <Dialog open={open && borrowedKeys.length > 0} onOpenChange={onOpenChange} modal={true}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Select keys to return</DialogTitle>
-          <DialogDescription>Choose which keys to return for {borrowerName}.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-2">
-          {borrowedKeys.map((k) => (
-            <div key={k.issueId} className="flex items-center space-x-2">
-              <Checkbox
-                id={k.issueId}
-                checked={selectedIds.includes(k.issueId)}
-                onCheckedChange={() => toggle(k.issueId)}
-              />
-              <Label htmlFor={k.issueId} className="cursor-pointer font-normal">
-                {k.keyLabel}
-                {k.copyNumber} • {k.keyFunction}
-              </Label>
-            </div>
-          ))}
-        </div>
-        {isLastSelectionForBorrower && (
-          <div className="mt-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-900 text-sm">
-            Returning all keys for <strong>{borrowerName}</strong> will remove their contact from
-            the system.
-          </div>
-        )}
-        <DialogFooter>
+    <ResponsiveDialog
+      open={open && borrowedKeys.length > 0}
+      onOpenChange={onOpenChange}
+      title="Select keys to return"
+      description={`Choose which keys to return for ${borrowerName}.`}
+      footer={
+        <>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Cancel
           </Button>
@@ -142,9 +91,31 @@ export function ReturnKeysDialog({
             {isLoading && <IconLoader className="h-3.5 w-3.5 animate-spin mr-1" />}
             Return {selectedIds.length === 1 ? 'Key' : 'Keys'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className="space-y-2">
+        {borrowedKeys.map((k) => (
+          <div key={k.issueId} className="flex items-center space-x-2">
+            <Checkbox
+              id={k.issueId}
+              checked={selectedIds.includes(k.issueId)}
+              onCheckedChange={() => toggle(k.issueId)}
+            />
+            <Label htmlFor={k.issueId} className="cursor-pointer font-normal">
+              {k.keyLabel}
+              {k.copyNumber} • {k.keyFunction}
+            </Label>
+          </div>
+        ))}
+      </div>
+      {isLastSelectionForBorrower && (
+        <div className="mt-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-900 text-sm">
+          Returning all keys for <strong>{borrowerName}</strong> will remove their contact from
+          the system.
+        </div>
+      )}
+    </ResponsiveDialog>
   );
 }
 

@@ -73,7 +73,30 @@ function generatePlaceholderEmail(name: string): string {
 }
 ```
 
-### 4. Import Paths (Project-Specific Locations)
+### 4. ResponsiveDialog for User-Facing Dialogs
+
+```typescript
+// ✅ Use ResponsiveDialog for all user-facing dialogs
+import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
+
+// Automatically renders Dialog on desktop, Drawer on mobile (< 768px)
+// Built-in pointer-events cleanup prevents body from staying locked
+<ResponsiveDialog
+  open={isOpen}
+  onOpenChange={setIsOpen}
+  title="Dialog Title"
+  description="Optional description"
+  trigger={<Button>Open Dialog</Button>}  // Optional
+  footer={<Button>Save</Button>}          // Optional
+>
+  <div>Dialog content</div>
+</ResponsiveDialog>
+
+// ❌ Don't use Dialog directly for user-facing dialogs
+import { Dialog } from '@/components/ui/dialog'; // Only for UI primitives
+```
+
+### 5. Import Paths (Project-Specific Locations)
 
 ```typescript
 // Database
@@ -86,9 +109,14 @@ import { createClient } from '@/lib/supabase/client';
 // Encryption (unique to project)
 import { encryptPII, decryptPII } from '@/lib/encryption';
 import { prismaEncryptionMiddleware } from '@/lib/prisma-encryption';
+
+// UI Components
+import { ResponsiveDialog } from '@/components/ui/responsive-dialog'; // User dialogs
+import { Button } from '@/components/ui/button';
+import { IconPlus } from '@tabler/icons-react'; // ONLY Tabler Icons
 ```
 
-### 5. File Structure (Where Things Live)
+### 6. File Structure (Where Things Live)
 
 ```
 app/
@@ -97,6 +125,13 @@ app/
 ├── actions/             # Server actions (not /api/actions)
 └── auth/
 
+components/
+├── ui/                  # shadcn/ui components + ResponsiveDialog
+├── shared/              # Shared across features
+├── active-loans/        # Feature-specific components
+├── keys/
+└── settings/
+
 lib/
 ├── supabase/           # Client factories (not in lib/ root)
 │   ├── server.ts
@@ -104,6 +139,9 @@ lib/
 │   └── middleware.ts
 ├── prisma.ts           # Singleton client
 └── encryption.ts       # PII encryption
+
+hooks/
+└── use-mobile.ts       # Mobile detection (< 768px)
 ```
 
 ## Tech Stack (For Reference)
