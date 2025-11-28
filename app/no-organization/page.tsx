@@ -34,7 +34,7 @@ export default async function NoOrganizationPage() {
         </div>
 
         <div className="space-y-3">
-          <Link href="/auth/complete-profile" className="block">
+          <Link href="/create-organization" className="block">
             <Button className="w-full" size="lg">
               <IconPlus className="h-4 w-4" />
               Create New Organization

@@ -351,6 +351,36 @@ npm run dev
 
 **Ready to continue with UI implementation?** Let me know and I'll build out the team management pages!
 
+---
+
+## 🔄 React 19 Migration (November 2024)
+
+### useFormState → useActionState
+
+The team invitation forms have been updated for React 19 compatibility.
+
+**What Changed:**
+- React 19 renamed `useFormState` to `useActionState`
+- Hook moved from `react-dom` to `react` package
+- Functionality remains identical
+
+**Migration:**
+```typescript
+// ❌ Old (React 18)
+import { useFormState } from 'react-dom';
+const [state, formAction] = useFormState(serverAction, initialState);
+
+// ✅ New (React 19)
+import { useActionState } from 'react';
+const [state, formAction] = useActionState(serverAction, initialState);
+```
+
+**Files Updated:**
+- ✅ `components/settings/team-invite-section.tsx`
+- ✅ `components/settings/invite-user-form.tsx`
+
+**Why:** More accurate name (works with any action, not just forms), moved to core React package as a fundamental feature.
+
 
 
 

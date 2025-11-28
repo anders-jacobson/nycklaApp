@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth-utils';
+import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { UserRole } from '@prisma/client';
 import { generateEntityKey, encryptEntityKey } from '@/lib/entity-encryption';
@@ -201,7 +202,22 @@ export async function createOrganisation(
   name: string,
 ): Promise<ActionResult<{ organisationId: string }>> {
   try {
-    const user = await getCurrentUser();
+    // Get user - handle case where they have no org yet
+    const supabase = await createClient();
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser?.email) {
+      return { success: false, error: 'Not authenticated.' };
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { email: authUser.email },
+      select: { id: true },
+    });
+
+    if (!dbUser) {
+      return { success: false, error: 'User not found.' };
+    }
 
     // Validate name
     if (!name || name.trim().length < 2) {
@@ -238,7 +254,7 @@ export async function createOrganisation(
       // Create membership as OWNER
       await tx.userOrganisation.create({
         data: {
-          userId: user.id,
+          userId: dbUser.id,
           organisationId: organisation.id,
           role: 'OWNER',
         },
@@ -246,7 +262,7 @@ export async function createOrganisation(
 
       // Set as active organisation
       await tx.user.update({
-        where: { id: user.id },
+        where: { id: dbUser.id },
         data: { activeOrganisationId: organisation.id },
       });
 
@@ -405,6 +421,7 @@ export async function deleteOrganisation(): Promise<
     });
 
     revalidatePath('/', 'layout');
+    revalidatePath('/settings/organization', 'page');
 
     console.log(`Organisation "${organisation?.name}" deleted by user ${user.email}`);
 

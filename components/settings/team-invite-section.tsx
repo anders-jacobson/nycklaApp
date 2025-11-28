@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useFormState } from 'react-dom';
+import { useState, useActionState } from 'react';
 import { inviteUser, cancelInvitation } from '@/app/actions/team';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +39,7 @@ export function TeamInviteSection({
   userRole: UserRole;
   invitations: Invitation[];
 }) {
-  const [state, formAction] = useFormState(inviteAction, { success: false, error: '' });
+  const [state, formAction] = useActionState(inviteAction, { success: false, error: '' });
   const [role, setRole] = useState<UserRole>('MEMBER');
   const [loading, setLoading] = useState<string | null>(null);
 

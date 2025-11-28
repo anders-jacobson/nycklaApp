@@ -14,7 +14,7 @@ Technical implementation details, tasks, and development workflows for the Key M
 - Priority ordering for development work
 - Security milestone achievements
 
-### **[UI Components Guide](./UI-COMPONENTS.md)** 🎨 ⭐ **NEW**
+### **[UI Components Guide](./UI-COMPONENTS.md)** 🎨
 
 **ResponsiveDialog and UI component patterns**
 

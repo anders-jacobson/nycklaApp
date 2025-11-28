@@ -65,7 +65,8 @@ export function DeleteOrganizationDialog({
             ? `Organization deleted. Switched to "${switchedToName}"`
             : 'Organization deleted successfully',
         );
-        router.push('/');
+        // Navigate and refresh to load new org data
+        router.push('/settings/organization');
         router.refresh();
       }
     } else {
@@ -85,91 +86,6 @@ export function DeleteOrganizationDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Delete Organization"
-      description={
-        <div className="space-y-4">
-          <div className="flex items-start gap-3 rounded-md border border-destructive/50 bg-destructive/10 p-3">
-            <IconAlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
-            <div className="space-y-1 text-sm">
-              <p className="font-medium text-destructive">This action is irreversible</p>
-              <p className="text-muted-foreground">
-                All data related to <span className="font-semibold">{organizationName}</span> will
-                be permanently deleted.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <p className="text-sm font-medium">This will delete:</p>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-md border p-3">
-                <div className="text-2xl font-bold">{stats.memberCount}</div>
-                <div className="text-muted-foreground">
-                  {stats.memberCount === 1 ? 'Member' : 'Members'}
-                </div>
-              </div>
-              <div className="rounded-md border p-3">
-                <div className="text-2xl font-bold">{stats.keyTypeCount}</div>
-                <div className="text-muted-foreground">Key Types</div>
-              </div>
-              <div className="rounded-md border p-3">
-                <div className="text-2xl font-bold">{stats.keyCount}</div>
-                <div className="text-muted-foreground">Keys</div>
-              </div>
-              <div className="rounded-md border p-3">
-                <div className="text-2xl font-bold">{stats.borrowerCount}</div>
-                <div className="text-muted-foreground">Borrowers</div>
-              </div>
-            </div>
-            {stats.activeLoanCount > 0 && (
-              <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
-                <div className="text-2xl font-bold text-destructive">{stats.activeLoanCount}</div>
-                <div className="text-sm text-destructive">
-                  Active {stats.activeLoanCount === 1 ? 'Loan' : 'Loans'} will be permanently lost
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirm-delete" className="text-sm font-medium">
-              Type{' '}
-              <span className="select-all font-mono font-semibold text-foreground">
-                {organizationName}
-              </span>{' '}
-              to confirm
-            </Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleCopyOrgName}
-                className="shrink-0"
-                title="Copy organization name"
-              >
-                {copied ? (
-                  <IconCheck className="h-4 w-4" />
-                ) : (
-                  <IconCopy className="h-4 w-4" />
-                )}
-              </Button>
-              <Input
-                id="confirm-delete"
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={organizationName}
-                className="flex-1"
-                disabled={isDeleting}
-                autoComplete="off"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Press Enter to confirm deletion once you&apos;ve typed the name
-            </p>
-          </div>
-        </div>
-      }
       footer={
         <div className="flex w-full gap-2">
           <Button
@@ -190,7 +106,86 @@ export function DeleteOrganizationDialog({
           </Button>
         </div>
       }
-    />
+    >
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 rounded-md border border-destructive/50 bg-destructive/10 p-3">
+          <IconAlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
+          <div className="space-y-1 text-sm">
+            <div className="font-medium text-destructive">This action is irreversible</div>
+            <div className="text-muted-foreground">
+              All data related to <span className="font-semibold">{organizationName}</span> will be
+              permanently deleted.
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="text-sm font-medium">This will delete:</div>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-md border p-3">
+              <div className="text-2xl font-bold">{stats.memberCount}</div>
+              <div className="text-muted-foreground">
+                {stats.memberCount === 1 ? 'Member' : 'Members'}
+              </div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-2xl font-bold">{stats.keyTypeCount}</div>
+              <div className="text-muted-foreground">Key Types</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-2xl font-bold">{stats.keyCount}</div>
+              <div className="text-muted-foreground">Keys</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-2xl font-bold">{stats.borrowerCount}</div>
+              <div className="text-muted-foreground">Borrowers</div>
+            </div>
+          </div>
+          {stats.activeLoanCount > 0 && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
+              <div className="text-2xl font-bold text-destructive">{stats.activeLoanCount}</div>
+              <div className="text-sm text-destructive">
+                Active {stats.activeLoanCount === 1 ? 'Loan' : 'Loans'} will be permanently lost
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirm-delete" className="text-sm font-medium">
+            Type{' '}
+            <span className="select-all font-mono font-semibold text-foreground">
+              {organizationName}
+            </span>{' '}
+            to confirm
+          </Label>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCopyOrgName}
+              className="shrink-0"
+              title="Copy organization name"
+            >
+              {copied ? <IconCheck className="h-4 w-4" /> : <IconCopy className="h-4 w-4" />}
+            </Button>
+            <Input
+              id="confirm-delete"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={organizationName}
+              className="flex-1"
+              disabled={isDeleting}
+              autoComplete="off"
+            />
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Press Enter to confirm deletion once you&apos;ve typed the name
+          </div>
+        </div>
+      </div>
+    </ResponsiveDialog>
   );
 }
-

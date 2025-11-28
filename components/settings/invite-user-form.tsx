@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useFormState } from 'react-dom';
+import { useState, useActionState } from 'react';
 import { inviteUser } from '@/app/actions/team';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +16,7 @@ async function inviteAction(prevState: any, formData: FormData) {
 }
 
 export function InviteUserForm({ userRole }: { userRole: UserRole }) {
-  const [state, formAction] = useFormState(inviteAction, { success: false, error: '' });
+  const [state, formAction] = useActionState(inviteAction, { success: false, error: '' });
   const [role, setRole] = useState<UserRole>('MEMBER');
 
   const canInviteAdmin = userRole === 'OWNER';
