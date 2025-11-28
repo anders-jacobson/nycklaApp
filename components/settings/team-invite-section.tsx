@@ -33,7 +33,14 @@ interface Invitation {
   inviterName: string;
 }
 
-async function inviteAction(prevState: any, formData: FormData) {
+type InviteActionState =
+  | { success: true; data?: { inviteId: string; token: string } }
+  | { success: false; error: string };
+
+async function inviteAction(
+  prevState: InviteActionState,
+  formData: FormData,
+): Promise<InviteActionState> {
   const email = formData.get('email') as string;
   const role = formData.get('role') as UserRole;
   return await inviteUser(email, role);
@@ -46,7 +53,10 @@ export function TeamInviteSection({
   userRole: UserRole;
   invitations: Invitation[];
 }) {
-  const [state, formAction] = useActionState(inviteAction, { success: false, error: '' });
+  const [state, formAction] = useActionState<InviteActionState, FormData>(inviteAction, {
+    success: false,
+    error: '',
+  });
   const [role, setRole] = useState<UserRole>('MEMBER');
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -104,7 +114,9 @@ export function TeamInviteSection({
             </div>
           </div>
 
-          {state.error && <p className="text-sm text-destructive">{state.error}</p>}
+          {!state.success && state.error && (
+            <p className="text-sm text-destructive">{state.error}</p>
+          )}
 
           {state.success && (
             <p className="text-sm text-green-600 dark:text-green-400">
@@ -135,7 +147,7 @@ export function TeamInviteSection({
                   <TableHead>Role</TableHead>
                   <TableHead>Invited By</TableHead>
                   <TableHead>Expires</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                  <TableHead className="w-[50px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
