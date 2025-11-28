@@ -5,7 +5,13 @@ import { inviteUser } from '@/app/actions/team';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { UserRole } from '@prisma/client';
 import { IconUserPlus } from '@tabler/icons-react';
 
@@ -34,7 +40,7 @@ export function InviteUserForm({ userRole }: { userRole: UserRole }) {
             required
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="role">Role</Label>
           <Select name="role" value={role} onValueChange={(v) => setRole(v as UserRole)}>
@@ -50,13 +56,9 @@ export function InviteUserForm({ userRole }: { userRole: UserRole }) {
         </div>
       </div>
 
-      {state.error && (
-        <p className="text-sm text-destructive">{state.error}</p>
-      )}
-      
-      {state.success && (
-        <p className="text-sm text-green-600">✓ Invitation sent successfully!</p>
-      )}
+      {state.error && <p className="text-sm text-destructive">{state.error}</p>}
+
+      {state.success && <p className="text-sm text-green-600">✓ Invitation sent successfully!</p>}
 
       <Button type="submit" className="gap-1.5">
         <IconUserPlus className="h-4 w-4" />
@@ -65,15 +67,3 @@ export function InviteUserForm({ userRole }: { userRole: UserRole }) {
     </form>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

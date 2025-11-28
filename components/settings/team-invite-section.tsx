@@ -5,7 +5,14 @@ import { inviteUser, cancelInvitation } from '@/app/actions/team';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -117,9 +124,7 @@ export function TeamInviteSection({
         <div className="space-y-4">
           <div>
             <h3 className="text-lg font-semibold">Pending Invitations</h3>
-            <p className="text-sm text-muted-foreground">
-              Invitations waiting to be accepted
-            </p>
+            <p className="text-sm text-muted-foreground">Invitations waiting to be accepted</p>
           </div>
 
           <div className="rounded-md border">
@@ -136,7 +141,7 @@ export function TeamInviteSection({
               <TableBody>
                 {invitations.map((inv) => {
                   const daysLeft = Math.ceil(
-                    (new Date(inv.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                    (new Date(inv.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
                   );
 
                   return (
@@ -181,13 +186,3 @@ export function TeamInviteSection({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-

@@ -9,7 +9,7 @@ export default async function NoOrganizationPage() {
 
   try {
     user = await getCurrentUser();
-    
+
     // If user actually has an org, redirect to dashboard
     if (user.entityId) {
       redirect('/');
@@ -53,12 +53,10 @@ export default async function NoOrganizationPage() {
           <p className="mb-2 font-medium">What happened?</p>
           <p className="text-muted-foreground">
             Your organization was deleted, or you left all organizations you were part of. You need
-            to create a new organization or be invited to an existing one to continue using the
-            app.
+            to create a new organization or be invited to an existing one to continue using the app.
           </p>
         </div>
       </div>
     </div>
   );
 }
-

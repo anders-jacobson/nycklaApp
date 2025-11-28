@@ -3,15 +3,18 @@
 ## ✅ Completed (Phase 1 - Core Infrastructure)
 
 ### 1. Database Schema ✅
+
 - Added `Invitation` model with all fields
 - Added relations to `Entity` and `User`
 - Added indexes for performance
 - **Run**: `npx prisma migrate dev --name add-team-invitations`
 
 ### 2. Team Management Actions ✅
+
 **File**: `app/actions/team.ts`
 
 **Functions implemented**:
+
 - ✅ `inviteUser(email, role)` - Send invitations (OWNER/ADMIN)
 - ✅ `listTeamMembers()` - View all team members
 - ✅ `listPendingInvitations()` - View pending invites
@@ -21,15 +24,18 @@
 - ✅ `validateInvitationToken(token)` - Validate invite links
 
 **Features**:
+
 - Role-based permissions enforced
 - Prevents self-modification
 - Token generation and expiration (7 days)
 - Email notification (console.log for now)
 
 ### 3. Enhanced Registration ✅
+
 **File**: `app/actions/registerUser.ts`
 
 **Changes**:
+
 - Accepts optional `inviteToken` parameter
 - Validates invitation (token, expiration, email match)
 - Joins existing organization with invited role
@@ -52,6 +58,7 @@ if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
 ```
 
 **Protected Actions**:
+
 - ✅ `issueKey` - All roles (no guard needed)
 - ✅ `returnKey` - All roles (no guard needed)
 - ✅ `deleteKeyType` - OWNER/ADMIN only (line 109)
@@ -67,6 +74,7 @@ if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
 ### Step 2: Build Team Management UI
 
 #### Create Settings Layout
+
 **File**: `app/(dashboard)/settings/layout.tsx`
 
 ```typescript
@@ -105,16 +113,20 @@ export default function SettingsLayout({
 ```
 
 #### Create Team Page
+
 **File**: `app/(dashboard)/settings/team/page.tsx`
 
 **Features to include**:
+
 1. **Current Team Members Table**
+
    - Email, Name, Role, Joined Date
    - Change Role dropdown (OWNER only)
    - Remove button (OWNER only)
    - Can't modify yourself
 
 2. **Pending Invitations Table**
+
    - Email, Role, Sent By, Expires
    - Resend button
    - Cancel button
@@ -125,9 +137,11 @@ export default function SettingsLayout({
    - Send Invitation button
 
 #### Create Organization Settings Page
+
 **File**: `app/(dashboard)/settings/organization/page.tsx`
 
 **Features**:
+
 - View organization name
 - Edit organization name (OWNER only)
 - View created date
@@ -137,6 +151,7 @@ export default function SettingsLayout({
 ### Step 3: Update Registration UI
 
 #### Add Invite Token Support
+
 **File**: `app/auth/register/page.tsx`
 
 ```typescript
@@ -150,7 +165,7 @@ export default function RegisterPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [inviteInfo, setInviteInfo] = useState(null);
-  
+
   useEffect(() => {
     if (token) {
       validateInvitationToken(token).then((result) => {
@@ -169,7 +184,7 @@ export default function RegisterPage() {
           <p className="text-sm">Role: {inviteInfo.role}</p>
         </div>
       )}
-      
+
       <form action={registerUser}>
         <input type="hidden" name="inviteToken" value={token || ''} />
         <input type="email" name="email" defaultValue={inviteInfo?.email} />
@@ -187,6 +202,7 @@ export default function RegisterPage() {
 ### Step 4: Add Email Sending
 
 #### Create Email Utility
+
 **File**: `lib/email.ts`
 
 ```typescript
@@ -217,11 +233,13 @@ export async function sendInvitationEmail(params: {
 ```
 
 **Environment variables needed**:
+
 ```bash
 RESEND_API_KEY=re_xxx
 ```
 
 **Update `app/actions/team.ts`**:
+
 ```typescript
 import { sendInvitationEmail } from '@/lib/email';
 
@@ -238,6 +256,7 @@ await sendInvitationEmail({
 ### Step 5: Update Navigation
 
 #### Add Settings Link to Sidebar
+
 **File**: `components/shared/dashboard-sidebar.tsx`
 
 ```typescript
@@ -262,6 +281,7 @@ const data = {
 ## 📋 Testing Checklist
 
 ### Test Flow 1: Create Organization & Invite
+
 1. ✅ Register new user (becomes OWNER)
 2. ✅ Navigate to `/settings/team`
 3. ✅ Invite a user as ADMIN
@@ -272,6 +292,7 @@ const data = {
 8. ✅ Check team page shows both users
 
 ### Test Flow 2: Role Management
+
 1. ✅ Login as OWNER
 2. ✅ Change ADMIN to MEMBER
 3. ✅ Verify role updated
@@ -280,6 +301,7 @@ const data = {
 6. ✅ Try to access team settings (should work, but can't invite)
 
 ### Test Flow 3: Invitation Edge Cases
+
 1. ✅ Send invitation to existing team member (should fail)
 2. ✅ Use invitation with wrong email (should fail)
 3. ✅ Use expired invitation (should fail)
@@ -287,6 +309,7 @@ const data = {
 5. ✅ Cancel pending invitation (should work)
 
 ### Test Flow 4: Permission Guards
+
 1. ✅ MEMBER tries to delete key type (blocked)
 2. ✅ MEMBER tries to invite user (blocked)
 3. ✅ ADMIN tries to delete key type (allowed)
@@ -316,19 +339,19 @@ npm run dev
 
 ## 📊 Implementation Progress
 
-| Task | Status | Priority | Time Estimate |
-|------|--------|----------|---------------|
-| Database schema | ✅ Done | HIGH | -|
-| Team actions | ✅ Done | HIGH | - |
-| Enhanced registration | ✅ Done | HIGH | - |
-| Role guards | ✅ Done | HIGH | - |
-| Role guard tests | ✅ Done | HIGH | - |
-| RBAC documentation | ✅ Done | HIGH | - |
-| Team UI page | ⏳ Pending | HIGH | 3-4 hours |
-| Settings UI page | ⏳ Pending | MEDIUM | 2 hours |
-| Registration UI update | ⏳ Pending | MEDIUM | 1 hour |
-| Email sending | ⏳ Pending | LOW | 30 min |
-| Integration testing | ⏳ Pending | HIGH | 2 hours |
+| Task                   | Status     | Priority | Time Estimate |
+| ---------------------- | ---------- | -------- | ------------- |
+| Database schema        | ✅ Done    | HIGH     | -             |
+| Team actions           | ✅ Done    | HIGH     | -             |
+| Enhanced registration  | ✅ Done    | HIGH     | -             |
+| Role guards            | ✅ Done    | HIGH     | -             |
+| Role guard tests       | ✅ Done    | HIGH     | -             |
+| RBAC documentation     | ✅ Done    | HIGH     | -             |
+| Team UI page           | ⏳ Pending | HIGH     | 3-4 hours     |
+| Settings UI page       | ⏳ Pending | MEDIUM   | 2 hours       |
+| Registration UI update | ⏳ Pending | MEDIUM   | 1 hour        |
+| Email sending          | ⏳ Pending | LOW      | 30 min        |
+| Integration testing    | ⏳ Pending | HIGH     | 2 hours       |
 
 **Total remaining**: ~8-9 hours of work
 
@@ -337,6 +360,7 @@ npm run dev
 ## 🚀 You're 55% Done!
 
 **Completed**:
+
 - ✅ Database schema
 - ✅ All server actions
 - ✅ Registration logic
@@ -345,6 +369,7 @@ npm run dev
 - ✅ Role permission tests
 
 **Remaining**:
+
 - ⏳ UI pages (biggest task)
 - ⏳ Email integration (optional for MVP)
 - ⏳ Integration testing
@@ -360,11 +385,13 @@ npm run dev
 The team invitation forms have been updated for React 19 compatibility.
 
 **What Changed:**
+
 - React 19 renamed `useFormState` to `useActionState`
 - Hook moved from `react-dom` to `react` package
 - Functionality remains identical
 
 **Migration:**
+
 ```typescript
 // ❌ Old (React 18)
 import { useFormState } from 'react-dom';
@@ -376,16 +403,8 @@ const [state, formAction] = useActionState(serverAction, initialState);
 ```
 
 **Files Updated:**
+
 - ✅ `components/settings/team-invite-section.tsx`
 - ✅ `components/settings/invite-user-form.tsx`
 
 **Why:** More accurate name (works with any action, not just forms), moved to core React package as a fundamental feature.
-
-
-
-
-
-
-
-
-

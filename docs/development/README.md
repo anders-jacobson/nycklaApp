@@ -197,14 +197,14 @@ This automatically replaces high-level tasks with detailed sub-tasks.
 
 ## 🔍 **Quick Reference**
 
-| Development Need          | Where to Look                            |
-| ------------------------- | ---------------------------------------- |
-| **Current tasks**         | [Tasks](./tasks.md)                      |
-| **UI Components**         | [UI Components Guide](./UI-COMPONENTS.md)|
-| **What to work on next**  | [Tasks](./tasks.md) - Priority Order     |
-| **Completed features**    | [Tasks](./tasks.md) - Completed sections |
-| **Technical standards**   | `.cursor/rules/` in project root         |
-| **Security requirements** | `../security/security-overview.md`       |
+| Development Need          | Where to Look                             |
+| ------------------------- | ----------------------------------------- |
+| **Current tasks**         | [Tasks](./tasks.md)                       |
+| **UI Components**         | [UI Components Guide](./UI-COMPONENTS.md) |
+| **What to work on next**  | [Tasks](./tasks.md) - Priority Order      |
+| **Completed features**    | [Tasks](./tasks.md) - Completed sections  |
+| **Technical standards**   | `.cursor/rules/` in project root          |
+| **Security requirements** | `../security/security-overview.md`        |
 
 ## 📝 **Contributing**
 

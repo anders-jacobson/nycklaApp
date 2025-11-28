@@ -12,11 +12,13 @@ This project has been updated to React 19. This document tracks breaking changes
 ### 1. useFormState → useActionState
 
 **What Changed:**
+
 - React 19 renamed `useFormState` to `useActionState`
 - Hook moved from `react-dom` package to `react` package
 - Functionality remains identical
 
 **Migration:**
+
 ```typescript
 // ❌ Old (React 18)
 import { useFormState } from 'react-dom';
@@ -28,10 +30,12 @@ const [state, formAction] = useActionState(serverAction, initialState);
 ```
 
 **Files Updated:**
+
 - ✅ `components/settings/team-invite-section.tsx`
 - ✅ `components/settings/invite-user-form.tsx`
 
 **Why the rename?**
+
 - More accurate name - can be used for any async action, not just forms
 - Better consistency with React's action-based patterns
 - Moved to core `react` package as fundamental feature
@@ -51,9 +55,9 @@ async function inviteAction(prevState: any, formData: FormData) {
 
 // Component using the hook
 function InviteForm() {
-  const [state, formAction] = useActionState(inviteAction, { 
-    success: false, 
-    error: '' 
+  const [state, formAction] = useActionState(inviteAction, {
+    success: false,
+    error: ''
   });
 
   return (
@@ -82,6 +86,3 @@ function InviteForm() {
 
 - [React 19 Upgrade Guide](https://react.dev/blog/2024/04/25/react-19-upgrade-guide)
 - [useActionState API Reference](https://react.dev/reference/react/useActionState)
-
-
-

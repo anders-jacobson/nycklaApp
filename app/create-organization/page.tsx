@@ -40,9 +40,7 @@ export default function CreateOrganizationPage() {
             <IconBuilding className="h-8 w-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold">Create New Organization</h1>
-          <p className="text-muted-foreground">
-            Set up your organization to start managing keys
-          </p>
+          <p className="text-muted-foreground">Set up your organization to start managing keys</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -68,7 +66,10 @@ export default function CreateOrganizationPage() {
         </form>
 
         <div className="text-center">
-          <Link href="/no-organization" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <Link
+            href="/no-organization"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
             <IconArrowLeft className="h-4 w-4" />
             Back
           </Link>
@@ -77,6 +78,3 @@ export default function CreateOrganizationPage() {
     </div>
   );
 }
-
-
-
