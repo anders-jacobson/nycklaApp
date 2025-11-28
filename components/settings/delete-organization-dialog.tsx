@@ -65,8 +65,8 @@ export function DeleteOrganizationDialog({
             ? `Organization deleted. Switched to "${switchedToName}"`
             : 'Organization deleted successfully',
         );
-        // Navigate and refresh to load new org data
-        router.push('/settings/organization');
+        // Navigate to active-loans to start fresh with switched org
+        router.push('/active-loans');
         router.refresh();
       }
     } else {

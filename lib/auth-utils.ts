@@ -3,6 +3,7 @@
  * Provides helper functions to get current user with multi-organisation context
  */
 
+import { cache } from 'react';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import type { UserRole } from '@prisma/client';
@@ -24,10 +25,13 @@ export interface CurrentUser {
  * Get the currently authenticated user with multi-organisation context
  * Use this in all server actions to get user identity and organisation membership
  *
+ * Uses React.cache() to deduplicate calls within the same request
+ * Multiple getCurrentUser() calls = single DB query per request
+ *
  * @returns Current user with active organisation and all memberships
  * @throws Error if not authenticated or user not found
  */
-export async function getCurrentUser(): Promise<CurrentUser> {
+export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -96,10 +100,10 @@ export async function getCurrentUser(): Promise<CurrentUser> {
     allOrganisations: dbUser.organisations.map((o) => ({
       id: o.organisationId,
       name: o.organisation.name,
-      role: o.role,
-    })),
-  };
-}
+    role: o.role,
+  })),
+};
+});
 
 /**
  * Check if the current user has a specific role or higher in their active organisation

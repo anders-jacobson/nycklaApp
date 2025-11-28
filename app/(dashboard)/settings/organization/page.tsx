@@ -6,6 +6,10 @@ import { TeamInviteSection } from '@/components/settings/team-invite-section';
 import { OrganizationOverview } from '@/components/settings/organization-overview';
 import { DeleteOrganizationSection } from '@/components/settings/delete-organization-section';
 
+// Revalidate every 30 seconds - balance freshness vs performance
+// On-demand revalidation happens via revalidatePath() in actions
+export const revalidate = 30;
+
 export default async function OrganizationSettingsPage() {
   const user = await getCurrentUser();
 

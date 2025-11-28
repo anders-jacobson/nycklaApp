@@ -50,6 +50,9 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
     try {
       const result = await switchOrganisation(organisationId);
       if (result.success) {
+        // Navigate to active-loans to force layout re-render with new org context
+        router.push('/active-loans');
+        // Refresh to invalidate caches and fetch fresh data
         router.refresh();
       } else {
         console.error('Failed to switch organisation:', result.error);
@@ -71,6 +74,9 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
       if (result.success) {
         setShowCreateDialog(false);
         setNewOrgName('');
+        // Navigate to active-loans to start fresh with new org
+        router.push('/active-loans');
+        // Refresh to load new organization's data
         router.refresh();
       } else {
         setCreateError(result.error);

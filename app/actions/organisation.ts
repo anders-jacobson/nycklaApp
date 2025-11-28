@@ -38,6 +38,9 @@ export async function switchOrganisation(organisationId: string): Promise<Action
 
     // Revalidate all pages to reflect the organisation switch
     revalidatePath('/', 'layout');
+    revalidatePath('/settings/organization');
+    revalidatePath('/active-loans');
+    revalidatePath('/keys');
 
     return { success: true };
   } catch (error) {
@@ -185,6 +188,7 @@ export async function updateOrganisationName(name: string): Promise<ActionResult
     });
 
     revalidatePath('/', 'layout');
+    revalidatePath('/settings/organization');
 
     return { success: true };
   } catch (error) {
@@ -254,6 +258,9 @@ export async function createOrganisation(
     });
 
     revalidatePath('/', 'layout');
+    revalidatePath('/settings/organization');
+    revalidatePath('/active-loans');
+    revalidatePath('/keys');
 
     return { success: true, data: { organisationId: result.id } };
   } catch (error) {
@@ -406,6 +413,9 @@ export async function deleteOrganisation(): Promise<
     });
 
     revalidatePath('/', 'layout');
+    revalidatePath('/settings/organization');
+    revalidatePath('/active-loans');
+    revalidatePath('/keys');
 
     console.log(`Organisation "${organisation?.name}" deleted by user ${user.email}`);
 
