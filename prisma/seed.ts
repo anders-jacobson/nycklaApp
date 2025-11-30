@@ -283,14 +283,19 @@ async function main() {
     }
   }
 
-  // Create fresh database user (entity was just created, so user doesn't exist)
+  // Create fresh database user with multi-organization support
   console.log('👤 Creating database user...');
   const existingUser = await prisma.user.create({
     data: {
       email: testEmail,
       name: 'Anders Jacobson',
-      entityId: entity.id,
-      role: 'ADMIN',
+      activeOrganisationId: entity.id,
+      organisations: {
+        create: {
+          organisationId: entity.id,
+          role: 'ADMIN',
+        },
+      },
     },
   });
   console.log(`✅ Created database user: ${existingUser.email}`);

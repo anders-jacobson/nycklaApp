@@ -1,10 +1,10 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test:workflows": "tsx tests/test-issue-return-workflows.ts"
   },
   "prisma": {
@@ -35,7 +35,7 @@
     "cmdk": "^1.1.1",
     "crypto-js": "^4.2.0",
     "lucide-react": "^0.516.0",
-    "next": "15.3.3",
+    "next": "^16.0.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.3",
@@ -53,8 +53,9 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/ui": "^3.2.4",
+    "baseline-browser-mapping": "^2.8.32",
     "eslint": "^9",
-    "eslint-config-next": "15.3.3",
+    "eslint-config-next": "^16.0.5",
     "eslint-config-prettier": "^10.1.5",
     "prettier": "^3.5.3",
     "prisma": "^6.9.0",
