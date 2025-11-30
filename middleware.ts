@@ -1,7 +1,12 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
-const PUBLIC_PATHS = ['/auth', '/api', '/'];
+// Specific public paths - all other routes require authentication
+const PUBLIC_PATHS = [
+  '/auth',
+  '/api/check-user-exists',
+  '/',
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

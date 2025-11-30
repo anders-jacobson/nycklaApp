@@ -23,7 +23,7 @@
  * REQUIREMENTS:
  * - ENCRYPTION_KEY environment variable (master encryption key)
  * - NEXT_PUBLIC_SUPABASE_URL (for auth user creation)
- * - SUPABASE_SERVICE_ROLE_KEY (optional, for auth user password updates)
+ * - SUPABASE_SECRET_KEY (optional, for auth user password updates)
  *
  * USAGE:
  *   npx prisma db seed
@@ -227,21 +227,21 @@ async function main() {
 
   // Create Supabase Admin client
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
 
-  if (!supabaseUrl || !supabaseServiceKey) {
+  if (!supabaseUrl || !supabaseSecretKey) {
     console.log(
       '⚠️  WARNING: Supabase credentials not found. Skipping Supabase Auth user creation.',
     );
-    console.log('   Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to .env.local');
+    console.log('   Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY to .env.local');
   }
 
   const testEmail = 'anders.ebrev@gmail.com';
   const testPassword = 'TestPassword123!'; // Default password
 
   // Create or update Supabase Auth user
-  if (supabaseUrl && supabaseServiceKey) {
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  if (supabaseUrl && supabaseSecretKey) {
+    const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,

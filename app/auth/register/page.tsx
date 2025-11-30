@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { registerUser } from '@/app/actions/registerUser';
+import { signInWithOAuth } from '@/app/actions/auth';
 
 export default function RegisterPage() {
   const [message, setMessage] = useState<string | null>(null);
@@ -27,6 +28,14 @@ export default function RegisterPage() {
     });
   }
 
+  async function handleGoogleSignUp() {
+    const result = await signInWithOAuth('google');
+    if (result?.error) {
+      setMessage(result.error);
+    }
+    // If successful, the server action will redirect
+  }
+
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">
@@ -37,6 +46,7 @@ export default function RegisterPage() {
             {!success && (
               <button
                 type="button"
+                onClick={handleGoogleSignUp}
                 className="google-btn w-full flex items-center justify-center gap-2 rounded-md border border-border bg-primary/90 px-4 py-2 text-primary-foreground font-medium shadow transition duration-200"
               >
                 <svg

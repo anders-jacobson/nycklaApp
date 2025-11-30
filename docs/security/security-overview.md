@@ -118,6 +118,28 @@ All tables have RLS enabled with optimized policies:
 - **Callback Handling**: Server-side OAuth callback processing
 - **Profile Completion**: OAuth users complete cooperative information
 
+### **JWT Signing Keys**
+
+We use Supabase's modern JWT signing keys system with ES256 (P-256 Elliptic Curve) algorithm:
+
+**Benefits:**
+- **Performance**: JWT validation is local and fast (no Auth server in hot path)
+- **Security**: Private key is not extractable from Supabase
+- **Rotation**: Zero-downtime key rotation without signing out users
+- **Compliance**: Aligns with SOC2, PCI-DSS, ISO27000 best practices
+
+**Key Management:**
+- **Algorithm**: ES256 (Elliptic Curve P-256)
+- **Private Key**: Stored securely in Supabase (non-extractable)
+- **Public Key**: Available via JWKS endpoint for verification
+- **Rotation**: Can be performed anytime without downtime
+
+**Migration from Legacy:**
+- **Migrated**: November 28, 2025
+- **Implementation**: All auth code uses `supabase.auth.getUser()` (no manual JWT verification)
+- **Code Changes**: Zero - our implementation was already compatible
+- **Documentation**: See `docs/development/JWT-SIGNING-KEYS-MIGRATION-READINESS.md`
+
 ---
 
 ## 🚨 **Security Checklist**
@@ -149,10 +171,10 @@ All tables have RLS enabled with optimized policies:
 ### **Required Environment Variables**
 
 ```bash
-# Supabase Configuration
+# Supabase Configuration (Modern Keys)
 NEXT_PUBLIC_SUPABASE_URL=https://dmibohhlaqrlfdytqvhd.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ... # Public anon key (safe to expose)
-SUPABASE_SERVICE_ROLE_KEY=eyJ... # NEVER expose - server-only
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_... # Modern key (safe to expose)
+SUPABASE_SECRET_KEY=sb_secret_... # NEVER expose - server-only, admin operations
 
 # Application Configuration
 NEXT_PUBLIC_SITE_URL=http://localhost:3000 # Update for production
@@ -164,8 +186,8 @@ NEXTAUTH_SECRET=... # Random secret for production
 
 ### **Security Notes**
 
-- **ANON_KEY**: Safe to expose - designed for client-side use
-- **SERVICE_ROLE_KEY**: Never expose - bypasses RLS
+- **PUBLISHABLE_KEY** (`sb_publishable_...`): Safe to expose - designed for client/server auth
+- **SECRET_KEY** (`sb_secret_...`): Never expose - bypasses RLS, admin operations only
 - **SITE_URL**: Required for OAuth redirects
 - **Database URL**: Keep secure - contains credentials
 
@@ -256,5 +278,5 @@ For security concerns or questions:
 - Update TASKS.md with security findings
 - Document any security issues or improvements needed
 
-**Last Updated**: February 2025  
-**Next Review**: After auth settings update and testing completion
+**Last Updated**: November 28, 2025  
+**Next Review**: After JWT signing keys migration completion and final testing

@@ -1,19 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { useState } from 'react';
-
-const supabase = createClient();
-
-function handleGoogleSignIn() {
-  supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo:
-        typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : undefined,
-    },
-  });
-}
+import { login, signInWithOAuth } from '@/app/actions/auth';
 
 export function LoginForm() {
   const [message, setMessage] = useState<string | null>(null);
@@ -24,20 +12,22 @@ export function LoginForm() {
     setMessage(null);
     setIsPending(true);
     const formData = new FormData(event.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setIsPending(false);
-    if (error) {
-      if (error.message.toLowerCase().includes('email not confirmed')) {
-        setMessage('Please confirm your email before logging in.');
-      } else {
-        setMessage(error.message);
-      }
-    } else {
-      // Optionally redirect or reload page on success
-      window.location.href = '/active-loans';
+    
+    const result = await login(formData);
+    
+    if (result?.error) {
+      setMessage(result.error);
+      setIsPending(false);
     }
+    // If successful, the server action will redirect
+  }
+
+  async function handleGoogleSignIn() {
+    const result = await signInWithOAuth('google');
+    if (result?.error) {
+      setMessage(result.error);
+    }
+    // If successful, the server action will redirect
   }
 
   return (

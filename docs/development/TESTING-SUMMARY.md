@@ -90,9 +90,9 @@ Check your `.env.local` file:
 # Database
 DATABASE_URL="postgresql://..."
 
-# Supabase
+# Supabase (Modern Keys)
 NEXT_PUBLIC_SUPABASE_URL="https://..."
-NEXT_PUBLIC_SUPABASE_ANON_KEY="..."
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_..."
 ```
 
 Try regenerating Prisma client:
