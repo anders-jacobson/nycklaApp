@@ -32,6 +32,24 @@ export function LoginForm() {
     }
   }, [cooldownSeconds]);
 
+  // Auto-submit when 6 digits are entered
+  useEffect(() => {
+    if (code.length === 6 && !isPending) {
+      setMessage(null);
+      startTransition(async () => {
+        const result = await verifyOtpCode(email, code);
+
+        if (!result.success) {
+          setMessage(result.error);
+          return;
+        }
+
+        // Session is set, redirect via callback for user upsert
+        router.push('/auth/callback');
+      });
+    }
+  }, [code, email, isPending, router]);
+
   async function handleGoogleSignIn() {
     const result = await signInWithOAuth('google');
     if (result?.error) {
@@ -227,11 +245,11 @@ export function LoginForm() {
             </a>
           </div>
 
-          {/* Resend Link */}
+          {/* Resend Button */}
           <div className="text-center">
-            <button
+            <Button
               type="button"
-              className="text-sm text-primary hover:underline"
+              variant="outline"
               onClick={() => {
                 setStep('email');
                 setCode('');
@@ -239,10 +257,8 @@ export function LoginForm() {
               }}
               disabled={cooldownSeconds > 0}
             >
-              {cooldownSeconds > 0
-                ? `Can't find your code? Wait ${cooldownSeconds}s to resend.`
-                : "Can't find your code? Request a new code."}
-            </button>
+              {cooldownSeconds > 0 ? `Wait ${cooldownSeconds}s` : 'Send new code'}
+            </Button>
           </div>
         </div>
       )}
