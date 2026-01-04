@@ -52,9 +52,9 @@ Wait Time Before Revocation: JWT_EXPIRY + 15 min = _____
 
 1. ✅ `lib/supabase/server.ts` - Uses `supabase.auth.getUser()` ✅
 2. ✅ `lib/supabase/client.ts` - Standard browser client ✅
-3. ✅ `lib/supabase/middleware.ts` - Proper session handling ✅
+3. ✅ `lib/supabase/session.ts` - Proper session handling ✅
 4. ✅ `lib/auth-utils.ts` - Uses `getCurrentUser()` pattern ✅
-5. ✅ `middleware.ts` - Correct cookie handling via `updateSession()` ✅
+5. ✅ `proxy.ts` - Correct cookie handling via `updateSession()` ✅ (Next.js 16)
 
 **No manual JWT verification found:**
 - ✅ No `jwt.verify()` calls

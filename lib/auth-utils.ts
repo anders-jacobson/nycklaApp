@@ -38,13 +38,13 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user?.email) {
+  if (error || !user) {
     throw new Error('Not authenticated');
   }
 
-  // Fetch user with all organisation memberships
+  // CHANGE: Lookup by Supabase user.id instead of email
   const dbUser = await prisma.user.findUnique({
-    where: { email: user.email },
+    where: { id: user.id }, // UUID lookup (was: email string comparison)
     select: {
       id: true,
       email: true,
@@ -56,38 +56,45 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
             select: { id: true, name: true },
           },
         },
+        orderBy: { joinedAt: 'asc' }, // CRITICAL: Deterministic ordering
       },
     },
   });
 
   if (!dbUser) {
-    // User exists in Supabase Auth but not in database
-    // This can happen if database was reset or registration incomplete
+    // User exists in Supabase but not in Prisma
+    // With new flow this should rarely happen (callback upserts everyone)
     throw new Error('USER_NOT_IN_DB');
   }
 
-  // If no active organisation set, set it to first organisation
-  let activeOrgId = dbUser.activeOrganisationId;
-
-  if (!activeOrgId && dbUser.organisations.length > 0) {
-    const firstOrg = dbUser.organisations[0];
-    activeOrgId = firstOrg.organisationId;
-
-    // Update database to persist this choice
-    await prisma.user.update({
-      where: { id: dbUser.id },
-      data: { activeOrganisationId: activeOrgId },
-    });
-  }
-
-  if (!activeOrgId) {
+  // CHANGE: Validate membership exists (authorization check)
+  if (dbUser.organisations.length === 0) {
     throw new Error('USER_HAS_NO_ORGANISATIONS');
   }
 
+  // CHANGE: Validate activeOrganisationId (but don't fix it here - callback handles that)
+  let activeOrgId = dbUser.activeOrganisationId;
+
+  // If null or not in current memberships, use first org (deterministic due to orderBy)
+  if (
+    !activeOrgId ||
+    !dbUser.organisations.some((o) => o.organisationId === activeOrgId)
+  ) {
+    const firstOrg = dbUser.organisations[0];
+    activeOrgId = firstOrg.organisationId;
+
+    // NOTE: We don't update the DB here because getCurrentUser() is cached.
+    // Callback route handles fixing stale activeOrganisationId on login.
+    // This ensures the user can proceed even if activeOrganisationId is stale.
+  }
+
   // Find the role in the active organisation
-  const activeOrgRelation = dbUser.organisations.find((o) => o.organisationId === activeOrgId);
+  const activeOrgRelation = dbUser.organisations.find(
+    (o) => o.organisationId === activeOrgId,
+  );
 
   if (!activeOrgRelation) {
+    // Should never happen after the checks above, but safety
     throw new Error('ACTIVE_ORG_NOT_IN_MEMBERSHIPS');
   }
 
@@ -100,9 +107,9 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
     allOrganisations: dbUser.organisations.map((o) => ({
       id: o.organisationId,
       name: o.organisation.name,
-    role: o.role,
-  })),
-};
+      role: o.role,
+    })),
+  };
 });
 
 /**
@@ -134,4 +141,38 @@ export async function requireRole(requiredRole: UserRole): Promise<void> {
   if (!(await hasRole(requiredRole))) {
     throw new Error(`Requires ${requiredRole} role or higher`);
   }
+}
+
+/**
+ * Check if user has any organisation memberships
+ */
+export async function hasMembership(userId: string): Promise<boolean> {
+  const count = await prisma.userOrganisation.count({
+    where: { userId },
+  });
+  return count > 0;
+}
+
+/**
+ * Get user's first organisation (for default selection)
+ */
+export async function getFirstOrganisation(userId: string): Promise<string | null> {
+  const membership = await prisma.userOrganisation.findFirst({
+    where: { userId },
+    select: { organisationId: true },
+    orderBy: { joinedAt: 'asc' },
+  });
+  return membership?.organisationId || null;
+}
+
+/**
+ * Validate user has access to specific organisation
+ */
+export async function hasAccessToOrg(userId: string, orgId: string): Promise<boolean> {
+  const membership = await prisma.userOrganisation.findUnique({
+    where: {
+      userId_organisationId: { userId, organisationId: orgId },
+    },
+  });
+  return !!membership;
 }

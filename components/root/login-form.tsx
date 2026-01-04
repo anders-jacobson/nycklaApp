@@ -1,125 +1,251 @@
 'use client';
-import Link from 'next/link';
-import { useState } from 'react';
-import { login, signInWithOAuth } from '@/app/actions/auth';
+
+import { useState, useTransition, useEffect, useRef } from 'react';
+import { signInWithOAuth, sendOtpCode, verifyOtpCode } from '@/app/actions/auth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { IconBrandGoogle, IconArrowLeft, IconMail } from '@tabler/icons-react';
+import { useRouter } from 'next/navigation';
+import { Turnstile } from '@marsidev/react-turnstile';
+
+type Step = 'email' | 'waiting';
 
 export function LoginForm() {
+  const router = useRouter();
+  const [step, setStep] = useState<Step>('email');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [message, setMessage] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [isPending, startTransition] = useTransition();
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<any>(null);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage(null);
-    setIsPending(true);
-    const formData = new FormData(event.currentTarget);
-    
-    const result = await login(formData);
-    
-    if (result?.error) {
-      setMessage(result.error);
-      setIsPending(false);
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
+
+  // Cooldown timer to prevent spam
+  useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setTimeout(() => setCooldownSeconds(cooldownSeconds - 1), 1000);
+      return () => clearTimeout(timer);
     }
-    // If successful, the server action will redirect
-  }
+  }, [cooldownSeconds]);
 
   async function handleGoogleSignIn() {
     const result = await signInWithOAuth('google');
     if (result?.error) {
       setMessage(result.error);
     }
-    // If successful, the server action will redirect
+  }
+
+  async function handleSendCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (cooldownSeconds > 0) return;
+
+    setMessage(null);
+    startTransition(async () => {
+      // Pass captchaToken to server action (following Supabase docs pattern)
+      const result = await sendOtpCode(email, captchaToken || undefined);
+
+      if (!result.success) {
+        setMessage(result.error);
+        // Reset CAPTCHA on error
+        turnstileRef.current?.reset();
+        setCaptchaToken(null);
+        return;
+      }
+
+      setStep('waiting');
+      setCooldownSeconds(60); // 60s cooldown
+
+      // Reset CAPTCHA after successful send
+      turnstileRef.current?.reset();
+      setCaptchaToken(null);
+    });
+  }
+
+  async function handleVerifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setMessage(null);
+    startTransition(async () => {
+      const result = await verifyOtpCode(email, code);
+
+      if (!result.success) {
+        setMessage(result.error);
+        return;
+      }
+
+      // Session is set, redirect via callback for user upsert
+      router.push('/auth/callback');
+    });
   }
 
   return (
-    <div className="space-y-6">
-      <span className="text-2xl font-bold mb-6 block">Log In</span>
-      <button
-        type="button"
-        className="google-btn w-full flex items-center justify-center gap-2 rounded-md border border-border bg-primary/90 px-4 py-2 text-primary-foreground font-medium shadow transition duration-200"
-        onClick={handleGoogleSignIn}
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g clipPath="url(#clip0_993_156)">
-            <path
-              d="M19.8052 10.2309C19.8052 9.5508 19.7491 8.86727 19.629 8.19824H10.2V12.0491H15.6261C15.3982 13.2727 14.6521 14.3364 13.6011 15.0364V17.0364H16.6011C18.4011 15.3818 19.8052 13.0364 19.8052 10.2309Z"
-              fill="#4285F4"
-            />
-            <path
-              d="M10.2 20C12.7 20 14.8011 19.1818 16.6011 17.0364L13.6011 15.0364C12.6011 15.7364 11.4011 16.1818 10.2 16.1818C7.80114 16.1818 5.80114 14.5091 5.10114 12.3273H2.00114V14.3818C3.80114 17.5091 6.80114 20 10.2 20Z"
-              fill="#34A853"
-            />
-            <path
-              d="M5.10114 12.3273C4.80114 11.5273 4.60114 10.6909 4.60114 9.81818C4.60114 8.94545 4.80114 8.10909 5.10114 7.30909V5.25455H2.00114C1.40114 6.45455 1.00114 7.78182 1.00114 9.18182C1.00114 10.5818 1.40114 11.9091 2.00114 13.1091L5.10114 12.3273Z"
-              fill="#FBBC05"
-            />
-            <path
-              d="M10.2 3.81818C11.5011 3.81818 12.7011 4.27273 13.6011 5.12727L16.6011 2.12727C14.8011 0.218182 12.7 0 10.2 0C6.80114 0 3.80114 2.49091 2.00114 5.25455L5.10114 7.30909C5.80114 5.12727 7.80114 3.81818 10.2 3.81818Z"
-              fill="#EA4335"
-            />
-          </g>
-          <defs>
-            <clipPath id="clip0_993_156">
-              <rect width="20" height="20" fill="white" />
-            </clipPath>
-          </defs>
-        </svg>
-        Sign in with Google
-      </button>
-      <div className="flex items-center gap-2">
-        <div className="h-px flex-1 bg-muted" />
-        <span className="text-muted-foreground text-xs">or</span>
-        <div className="h-px flex-1 bg-muted" />
-      </div>
-      {message && <div className="text-red-600 text-center">{message}</div>}
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            className="block w-full rounded-md border border-border bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Enter your email"
-          />
+    <div className="w-full space-y-6">
+      <h1 className="text-2xl font-bold">Log In</h1>
+
+      {step === 'email' ? (
+        <>
+          {/* Email OTP - PRIMARY */}
+          <form onSubmit={handleSendCode} className="space-y-4">
+            <div>
+              <Label htmlFor="email" className="text-base">
+                Email address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                required
+                className="h-11 text-base"
+                autoFocus
+              />
+            </div>
+
+            {/* Turnstile CAPTCHA Widget */}
+            <div className="flex justify-center">
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={siteKey}
+                onSuccess={(token) => setCaptchaToken(token)}
+                onError={() => {
+                  setCaptchaToken(null);
+                  setMessage('CAPTCHA verification failed. Please try again.');
+                }}
+                onExpire={() => setCaptchaToken(null)}
+                options={{
+                  theme: 'light',
+                  size: 'normal',
+                }}
+              />
+            </div>
+
+            {message && <p className="text-sm text-destructive">{message}</p>}
+
+            <Button
+              type="submit"
+              className="w-full h-11"
+              disabled={isPending || cooldownSeconds > 0 || !captchaToken}
+              size="lg"
+            >
+              {isPending
+                ? 'Sending...'
+                : cooldownSeconds > 0
+                  ? `Wait ${cooldownSeconds}s`
+                  : !captchaToken
+                    ? 'Complete CAPTCHA first'
+                    : 'Continue with email'}
+            </Button>
+          </form>
+
+          {/* Divider */}
+          <div className="flex items-center gap-2">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-muted-foreground text-xs">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          {/* Google OAuth - SECONDARY */}
+          <Button
+            type="button"
+            onClick={handleGoogleSignIn}
+            className="w-full h-11"
+            variant="outline"
+            size="lg"
+          >
+            <IconBrandGoogle className="mr-2 h-5 w-5" />
+            Sign in with Google
+          </Button>
+        </>
+      ) : (
+        /* Waiting for email - simplified design */
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="space-y-4 text-center">
+            <h1 className="text-3xl font-bold">We emailed you a code</h1>
+            <div className="space-y-2">
+              <p className="text-base text-muted-foreground">
+                We sent an email to <strong className="text-foreground">{email}</strong>. Enter the
+                code here or tap the button in the email to continue.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                If you don't see the email, check your spam or junk folder.
+              </p>
+            </div>
+          </div>
+
+          {/* OTP Code Input */}
+          <form onSubmit={handleVerifyCode} className="space-y-6">
+            <div className="flex justify-center gap-3">
+              <Input
+                id="code"
+                type="text"
+                inputMode="numeric"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                maxLength={6}
+                className="h-16 text-2xl text-center tracking-[0.5em] font-mono"
+                autoComplete="one-time-code"
+                autoFocus
+              />
+            </div>
+
+            {message && <p className="text-sm text-destructive text-center">{message}</p>}
+
+            {/* Hidden submit button for enter key */}
+            <button type="submit" className="hidden" />
+          </form>
+
+          {/* Email Client Links */}
+          <div className="flex justify-center gap-6">
+            <a
+              href="https://mail.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.545l8.073-6.052C21.69 2.28 24 3.434 24 5.457z" />
+              </svg>
+              <span className="text-sm">Open Gmail</span>
+            </a>
+
+            <a
+              href="https://outlook.live.com/mail"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7.88 12.04q0 .45-.11.87-.1.41-.33.74-.22.33-.58.52-.37.2-.87.2t-.85-.2q-.35-.21-.57-.55-.22-.33-.33-.75-.1-.42-.1-.86t.1-.87q.1-.43.34-.76.22-.34.59-.54.36-.2.87-.2t.86.2q.35.21.57.55.22.34.31.77.1.43.1.88zM24 12v9.38q0 .46-.33.8-.33.32-.8.32H7.13q-.46 0-.8-.33-.32-.33-.32-.8V18H1q-.41 0-.7-.3-.3-.29-.3-.7V7q0-.41.3-.7Q.58 6 1 6h6.5L12 0l4.5 6H23q.41 0 .7.3.3.29.3.7v5zm-6.5 8.5v-8H7.88v8zM12 8.5l-3.75-5H5.5v5h13V3.5h-2.75z" />
+              </svg>
+              <span className="text-sm">Open Outlook</span>
+            </a>
+          </div>
+
+          {/* Resend Link */}
+          <div className="text-center">
+            <button
+              type="button"
+              className="text-sm text-primary hover:underline"
+              onClick={() => {
+                setStep('email');
+                setCode('');
+                setMessage(null);
+              }}
+              disabled={cooldownSeconds > 0}
+            >
+              {cooldownSeconds > 0
+                ? `Can't find your code? Wait ${cooldownSeconds}s to resend.`
+                : "Can't find your code? Request a new code."}
+            </button>
+          </div>
         </div>
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-1">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            className="block w-full rounded-md border border-border bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Enter your password"
-          />
-        </div>
-        <button
-          type="submit"
-          className="google-btn w-full rounded-md bg-primary px-4 py-2 text-primary-foreground font-medium shadow transition duration-200"
-          disabled={isPending}
-        >
-          {isPending ? 'Logging in...' : 'Log In'}
-        </button>
-      </form>
-      <div className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{' '}
-        <Link href="/auth/register" className="underline">
-          Register
-        </Link>
-      </div>
+      )}
     </div>
   );
 }

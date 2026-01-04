@@ -2,15 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
 
-// Placeholder: In a real implementation, you would verify the Supabase session/cookie here
-// and check if the user profile is complete (has cooperative name)
-// If not, redirect to /auth/complete-profile
-// If yes, redirect to /dashboard
-
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/active-loans';
+  const type = searchParams.get('type'); // email confirmation, password reset, etc.
 
   if (code) {
     const supabase = await createClient();
@@ -20,7 +16,9 @@ export async function GET(req: NextRequest) {
 
     if (error) {
       console.error('Error exchanging code for session:', error);
-      return NextResponse.redirect(new URL('/auth/login?error=auth_error', req.url));
+      return NextResponse.redirect(
+        new URL('/auth/login?error=Unable to verify link. Please try again.', req.url),
+      );
     }
 
     // Get the current session after exchange
@@ -30,30 +28,72 @@ export async function GET(req: NextRequest) {
 
     if (!user) {
       // No user, redirect to login
-      return NextResponse.redirect(new URL('/auth/login', req.url));
+      return NextResponse.redirect(new URL('/auth/login?error=Session expired', req.url));
     }
 
     const email = user.email;
+    const supabaseUserId = user.id;
 
     if (!email) {
       return NextResponse.redirect(new URL('/auth/login?error=no_email', req.url));
     }
 
-    // Query User table for user
-    const userRecord = await prisma.user.findUnique({
-      where: { email },
-      select: { activeOrganisationId: true },
+    // Note: Password reset flow removed - using passwordless auth only
+
+    // ALWAYS upsert user (new or returning)
+    // This creates a minimal record without granting org access
+    const userRecord = await prisma.user.upsert({
+      where: { id: supabaseUserId },
+      create: {
+        id: supabaseUserId,
+        email: email,
+        name: user.user_metadata?.full_name || null,
+        activeOrganisationId: null, // No org assigned yet
+      },
+      update: {
+        email: email, // Sync email changes for returning users
+        // name is NOT synced - user controls it in app
+      },
+      select: {
+        activeOrganisationId: true,
+        organisations: {
+          select: {
+            organisationId: true,
+            organisation: {
+              select: { id: true, name: true },
+            },
+          },
+          orderBy: { joinedAt: 'asc' }, // CRITICAL: Deterministic ordering
+        },
+      },
     });
 
-    if (!userRecord || !userRecord.activeOrganisationId) {
-      // No user or missing entity, redirect to complete profile
+    // Check membership count (this is authorization, not authentication)
+    const membershipCount = userRecord.organisations.length;
+
+    if (membershipCount === 0) {
+      // No memberships = needs to create org or use invitation
       return NextResponse.redirect(new URL('/auth/complete-profile', req.url));
     }
 
-    // User is complete, redirect to specified redirect URL or dashboard
+    // Has memberships - ensure activeOrganisationId is valid
+    if (
+      !userRecord.activeOrganisationId ||
+      !userRecord.organisations.some((o) => o.organisationId === userRecord.activeOrganisationId)
+    ) {
+      // activeOrganisationId is null or stale, set to first org
+      const firstOrg = userRecord.organisations[0];
+      await prisma.user.update({
+        where: { id: supabaseUserId },
+        data: { activeOrganisationId: firstOrg.organisationId },
+      });
+    }
+
+    // User has valid membership and active org
+    // Redirect to dashboard (magic link, OAuth, etc.)
     return NextResponse.redirect(new URL(next, req.url));
   }
 
   // No code provided, redirect to login
-  return NextResponse.redirect(new URL('/auth/login?error=no_code', req.url));
+  return NextResponse.redirect(new URL('/auth/login?error=Invalid link', req.url));
 }

@@ -21,7 +21,7 @@ export async function updateUser({ email, name }: { email: string; name?: string
 
     // Update user profile - entity cannot be changed after registration
     await prisma.user.update({
-      where: { email },
+      where: { id: user.id }, // UUID lookup instead of email
       data: {
         name: name || undefined,
       },

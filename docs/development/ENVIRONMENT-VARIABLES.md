@@ -26,6 +26,30 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
+### Cloudflare Turnstile CAPTCHA (Optional)
+
+```bash
+# Cloudflare Turnstile Site Key for CAPTCHA protection
+# Development (test key - always passes): 1x00000000000000000000AA
+# Production: Get from https://dash.cloudflare.com/ → Turnstile
+# Required only if CAPTCHA is enabled in Supabase Auth settings
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+```
+
+**Setup Instructions:**
+1. For development, use the test key above (always passes)
+2. For production:
+   - Create a Turnstile site at https://dash.cloudflare.com/
+   - Copy the **Site Key** (public, for client-side)
+   - Copy the **Secret Key** (private, for Supabase dashboard)
+   - Add Site Key to `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+   - Add Secret Key to Supabase → Authentication → Bot and Abuse Protection
+
+**Test Keys Reference:**
+- Site Key (client): `1x00000000000000000000AA` (always passes)
+- Secret Key (server): `1x0000000000000000000000000000000AA` (for Supabase)
+- Docs: https://developers.cloudflare.com/turnstile/reference/testing/
+
 ### Database Configuration
 
 ```bash

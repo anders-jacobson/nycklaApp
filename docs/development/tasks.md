@@ -551,6 +551,6 @@ Implementation roadmap for the Swedish housing cooperative key management applic
 
 ### Configuration
 
-- `middleware.ts` - Route protection middleware ✅
+- `proxy.ts` - Route protection proxy ✅ (Next.js 16)
 - `tailwind.config.js` - Tailwind configuration ✅
 - `.cursor/rules/` - Development standards and cursor rules ✅

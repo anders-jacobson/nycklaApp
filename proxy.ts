@@ -1,37 +1,46 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import { updateSession } from '@/lib/supabase/session';
 
-// Specific public paths - all other routes require authentication
-const PUBLIC_PATHS = [
-  '/auth',
-  '/api/check-user-exists',
-  '/',
-];
+// Public paths that don't require authentication
+const PUBLIC_PATHS = ['/auth', '/api/', '/'];
+
+// Helper to copy cookies from one response to another
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie.name, cookie.value, cookie);
+  });
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public paths
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    const { response } = await updateSession(request);
-    return response;
-  }
+  // Update session and get user
+  const { response, user } = await updateSession(request);
 
-  // For protected routes, check auth and redirect if needed
-  const { response: supabaseResponse, user } = await updateSession(request);
+  // Check if this is a public path
+  const isPublicRoute = PUBLIC_PATHS.some(
+    (p) =>
+      pathname === p || pathname.startsWith(p + '/') || (p.endsWith('/') && pathname.startsWith(p)),
+  );
 
-  // Check if user is authenticated
-  if (!user) {
+  // NOT logged in + trying to access protected route → redirect to login
+  if (!user && !isPublicRoute) {
     const loginUrl = new URL('/auth/login', request.url);
     const redirectResponse = NextResponse.redirect(loginUrl);
-    // Copy over any cookies that were set during session update
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
-    });
+    copyCookies(response, redirectResponse);
     return redirectResponse;
   }
 
-  return supabaseResponse;
+  // LOGGED IN + trying to access auth pages (login/register/etc) → redirect to dashboard
+  // (No need to show login page if already authenticated)
+  if (user && pathname.startsWith('/auth') && pathname !== '/auth/callback') {
+    const dashboardUrl = new URL('/active-loans', request.url);
+    const redirectResponse = NextResponse.redirect(dashboardUrl);
+    copyCookies(response, redirectResponse);
+    return redirectResponse;
+  }
+
+  return response;
 }
 
 export const config = {
@@ -41,7 +50,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
+     * - public files (images, svgs, etc.)
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],

@@ -38,11 +38,9 @@ export async function updateSession(request: NextRequest) {
     error,
   } = await supabase.auth.getUser();
 
-  // Handle session refresh errors
-  if (error) {
+  // Handle session refresh errors (ignore "missing session" - that's expected for logged-out users)
+  if (error && !error.message.includes('Auth session missing')) {
     console.error('Session refresh failed:', error.message);
-    // Clear invalid session cookies and continue
-    // The calling middleware will handle redirects based on user being null
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
@@ -53,3 +51,4 @@ export async function updateSession(request: NextRequest) {
 
   return { response: supabaseResponse, user };
 }
+

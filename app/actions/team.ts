@@ -35,7 +35,7 @@ async function sendInvitationEmail(
   inviterName: string,
   role: UserRole,
 ): Promise<void> {
-  const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/register?token=${token}`;
+  const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/login?token=${token}`;
 
   // TODO: Replace with actual email service
   console.log('📧 INVITATION EMAIL');

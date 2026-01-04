@@ -33,9 +33,9 @@
 **Files Verified:**
 - `lib/supabase/server.ts`
 - `lib/supabase/client.ts`
-- `lib/supabase/middleware.ts`
+- `lib/supabase/session.ts`
 - `lib/auth-utils.ts`
-- `middleware.ts`
+- `proxy.ts` (Next.js 16)
 
 ### 4. Documentation Updates
 **Status:** ✅ COMPLETED

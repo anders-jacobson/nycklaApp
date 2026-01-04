@@ -92,7 +92,8 @@ export default function SyncSessionPage() {
             <CardTitle>Session Mismatch</CardTitle>
           </div>
           <CardDescription>
-            Your authentication session is active, but your user profile is missing from the database.
+            Your authentication session is active, but your user profile is missing from the
+            database.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -100,9 +101,7 @@ export default function SyncSessionPage() {
             <p className="text-sm">
               <strong>Logged in as:</strong> {authEmail}
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              This usually happens when:
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">This usually happens when:</p>
             <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-muted-foreground">
               <li>The database was reset during development</li>
               <li>Your registration wasn't completed</li>
@@ -113,31 +112,17 @@ export default function SyncSessionPage() {
             <p className="text-sm font-medium">To fix this:</p>
             <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
               <li>Sign out from your current session</li>
-              <li>Register again with the same or a new email</li>
+              <li>Log in again with the same or a new email address</li>
               <li>Complete your organization setup</li>
             </ol>
           </div>
 
           <Button onClick={handleSignOut} className="w-full gap-2">
             <IconLogout className="h-4 w-4" />
-            Sign Out and Register Again
+            Sign Out and Log In Again
           </Button>
         </CardContent>
       </Card>
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -11,7 +11,7 @@ This document outlines the changes made to align with the latest Supabase Auth S
 **Files Updated:**
 - `lib/supabase/server.ts`
 - `lib/supabase/client.ts`
-- `lib/supabase/middleware.ts`
+- `lib/supabase/session.ts`
 
 **Action Required:**
 - Update your `.env.local` file
@@ -52,7 +52,7 @@ This document outlines the changes made to align with the latest Supabase Auth S
 **Changed:** Restricted public API paths from broad `/api` to specific routes
 
 **Files Updated:**
-- `middleware.ts` - Now only `/auth` and `/api/check-user-exists` are public
+- `proxy.ts` - Now only `/auth` and `/api/check-user-exists` are public (Next.js 16 uses proxy instead of middleware)
 
 **Security Impact:**
 - All other API routes now require authentication
@@ -66,7 +66,7 @@ This document outlines the changes made to align with the latest Supabase Auth S
 **Changed:** Added error handling for session refresh failures
 
 **Files Updated:**
-- `lib/supabase/middleware.ts` - Now logs and handles auth errors gracefully
+- `lib/supabase/session.ts` - Now logs and handles auth errors gracefully
 
 **Benefits:**
 - Better debugging of auth issues

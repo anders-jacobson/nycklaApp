@@ -89,11 +89,11 @@ export default function NavbarRoot() {
             </>
           ) : (
             <>
-              <Link href="/auth/register">
-                <Button variant="default">Register</Button>
+              <Link href="/auth/login">
+                <Button variant="default">Sign Up</Button>
               </Link>
               <Link href="/auth/login">
-                <Button variant="secondary">Login</Button>
+                <Button variant="outline">Log In</Button>
               </Link>
             </>
           )}
