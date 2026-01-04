@@ -14,6 +14,7 @@ import TotalStatusPieChart from '@/components/shared/chart-pie';
 import { KeyTypesTable } from '@/components/keys/key-types-table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { IconKey, IconInfoCircle } from '@tabler/icons-react';
+import { getBorrowerDetails } from '@/lib/borrower-utils';
 
 async function getKeyTypes() {
   const { entityId } = await getCurrentUser();
@@ -33,16 +34,8 @@ async function getKeyTypes() {
                 select: {
                   id: true,
                   affiliation: true,
-                  residentBorrower: {
-                    select: {
-                      name: true,
-                    },
-                  },
-                  externalBorrower: {
-                    select: {
-                      name: true,
-                    },
-                  },
+                  residentBorrower: true, // Get full record for decryption
+                  externalBorrower: true, // Get full record for decryption
                 },
               },
             },
@@ -53,26 +46,51 @@ async function getKeyTypes() {
       },
     },
   });
-  return keyTypes.map((kt) => ({
-    id: kt.id,
-    label: kt.label,
-    name: kt.function,
-    accessArea: kt.accessArea ?? '',
-    copies: kt.keyCopies.map((copy) => ({
-      id: copy.id,
-      copyNumber: copy.copyNumber,
-      status: copy.status,
-      borrower: copy.issueRecords[0]?.borrower
-        ? {
-            id: copy.issueRecords[0].borrower.id,
-            name:
-              copy.issueRecords[0].borrower.residentBorrower?.name ||
-              copy.issueRecords[0].borrower.externalBorrower?.name ||
-              'Unknown',
+
+  // Decrypt borrower names
+  const keyTypesWithDecryptedNames = await Promise.all(
+    keyTypes.map(async (kt) => {
+      const copies = await Promise.all(
+        kt.keyCopies.map(async (copy) => {
+          let borrowerName = null;
+          if (copy.issueRecords[0]?.borrower) {
+            try {
+              const decryptedBorrower = await getBorrowerDetails(
+                copy.issueRecords[0].borrower,
+                entityId,
+              );
+              borrowerName = decryptedBorrower.name;
+            } catch (err) {
+              console.error('Failed to decrypt borrower name:', err);
+              borrowerName = 'Unknown';
+            }
           }
-        : null,
-    })),
-  }));
+
+          return {
+            id: copy.id,
+            copyNumber: copy.copyNumber,
+            status: copy.status,
+            borrower: copy.issueRecords[0]?.borrower
+              ? {
+                  id: copy.issueRecords[0].borrower.id,
+                  name: borrowerName || 'Unknown',
+                }
+              : null,
+          };
+        }),
+      );
+
+      return {
+        id: kt.id,
+        label: kt.label,
+        name: kt.function,
+        accessArea: kt.accessArea ?? '',
+        copies,
+      };
+    }),
+  );
+
+  return keyTypesWithDecryptedNames;
 }
 
 // Wrapper server actions to satisfy form action typing (void return)

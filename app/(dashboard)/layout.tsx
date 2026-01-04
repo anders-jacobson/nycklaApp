@@ -22,9 +22,9 @@ async function Layout({ children }: { children: React.ReactNode }) {
 
   if (authUser) {
     try {
-      // Use Prisma to find user with organisations
+      // Use Prisma to find user by ID (aligned with Supabase auth.users.id)
       const profile = await prisma.user.findUnique({
-        where: { email: authUser.email! },
+        where: { id: authUser.id },
         select: {
           name: true,
           email: true,

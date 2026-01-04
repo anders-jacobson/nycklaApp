@@ -299,20 +299,31 @@ export async function createBorrowerWithAffiliation(
 
 /**
  * Find existing borrower by email with new structure
+ * NOTE: Emails are encrypted, so we must encrypt the search term first
  */
 export async function findBorrowerByEmail(email: string, entityId: string) {
+  // Get entity encryption key
+  const entityKey = await getEntityKey(entityId);
+  
+  // Encrypt the search email to match encrypted stored emails
+  const encryptedEmail = encryptWithEntityKey(email, entityKey);
+  
+  if (!encryptedEmail) {
+    return null; // Cannot search without encryption
+  }
+
   return await prisma.borrower.findFirst({
     where: {
       entityId,
       OR: [
         {
           residentBorrower: {
-            email,
+            email: encryptedEmail, // Search with encrypted value
           },
         },
         {
           externalBorrower: {
-            email,
+            email: encryptedEmail, // Search with encrypted value
           },
         },
       ],

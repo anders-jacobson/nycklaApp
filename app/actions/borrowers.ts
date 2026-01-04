@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { revalidatePath } from 'next/cache';
+import { getEntityKey, encryptWithEntityKey } from '@/lib/entity-encryption';
 
 type ActionResult<T> = { success: true; data?: T } | { success: false; error: string };
 
@@ -13,11 +14,22 @@ export async function checkEmailExists(
   try {
     const { entityId } = await getCurrentUser();
 
+    // Encrypt the email to match encrypted stored values
+    const entityKey = await getEntityKey(entityId);
+    const encryptedEmail = encryptWithEntityKey(email, entityKey);
+
+    if (!encryptedEmail) {
+      return { success: false, error: 'Failed to encrypt email for search' };
+    }
+
     const count = await prisma.borrower.count({
       where: {
         entityId,
         id: excludeBorrowerId ? { not: excludeBorrowerId } : undefined,
-        OR: [{ residentBorrower: { email } }, { externalBorrower: { email } }],
+        OR: [
+          { residentBorrower: { email: encryptedEmail } },
+          { externalBorrower: { email: encryptedEmail } },
+        ],
       },
     });
 
@@ -43,6 +55,9 @@ export async function updateBorrowerAffiliation(params: {
   try {
     const { entityId } = await getCurrentUser();
 
+    // Get entity encryption key
+    const entityKey = await getEntityKey(entityId);
+
     await prisma.$transaction(async (tx) => {
       const borrower = await tx.borrower.findFirst({
         where: { id: params.borrowerId, entityId },
@@ -51,15 +66,15 @@ export async function updateBorrowerAffiliation(params: {
       if (!borrower) throw new Error('Borrower not found');
 
       if (params.target === 'EXTERNAL') {
-        // Create external entity
+        // Create external entity with encrypted data
         const external = await tx.externalBorrower.create({
           data: {
-            name: params.data.name,
-            email: params.data.email,
-            phone: params.data.phone,
-            company: params.data.company,
-            address: params.data.address,
-            borrowerPurpose: params.data.borrowerPurpose,
+            name: encryptWithEntityKey(params.data.name, entityKey)!,
+            email: encryptWithEntityKey(params.data.email, entityKey)!,
+            phone: encryptWithEntityKey(params.data.phone, entityKey),
+            company: encryptWithEntityKey(params.data.company, entityKey),
+            address: encryptWithEntityKey(params.data.address, entityKey),
+            borrowerPurpose: encryptWithEntityKey(params.data.borrowerPurpose, entityKey),
           },
         });
         await tx.borrower.update({
@@ -71,12 +86,12 @@ export async function updateBorrowerAffiliation(params: {
           },
         });
       } else {
-        // Create resident entity (optional path)
+        // Create resident entity with encrypted data
         const resident = await tx.residentBorrower.create({
           data: {
-            name: params.data.name,
-            email: params.data.email,
-            phone: params.data.phone,
+            name: encryptWithEntityKey(params.data.name, entityKey)!,
+            email: encryptWithEntityKey(params.data.email, entityKey)!,
+            phone: encryptWithEntityKey(params.data.phone, entityKey),
           },
         });
         await tx.borrower.update({
