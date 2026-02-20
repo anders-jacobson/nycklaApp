@@ -6,7 +6,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test:workflows": "tsx tests/test-issue-return-workflows.ts"
+    "test:workflows": "tsx tests/test-issue-return-workflows.ts",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
