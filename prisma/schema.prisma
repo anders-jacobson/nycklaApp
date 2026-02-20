@@ -9,17 +9,19 @@ datasource db {
 }
 
 model Entity {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String             @db.VarChar(200)
-  encryptionKey    String             @db.Text // Encrypted with master ENCRYPTION_KEY
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  members          UserOrganisation[] @relation("OrganisationMembers")
-  activeForUsers   User[]             @relation("ActiveOrganisation")
-  borrowers        Borrower[]
-  keyTypes         KeyType[]
-  issueRecords     IssueRecord[]
-  invitations      Invitation[]
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String             @db.VarChar(200)
+  encryptionKey     String             @db.Text // Encrypted with master ENCRYPTION_KEY
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  members           UserOrganisation[] @relation("OrganisationMembers")
+  activeForUsers    User[]             @relation("ActiveOrganisation")
+  borrowers         Borrower[]
+  keyTypes          KeyType[]
+  issueRecords      IssueRecord[]
+  invitations       Invitation[]
+  accessAreas       AccessArea[]
+  onboardingSession OnboardingSession?
 
   @@unique([name])
 }
@@ -60,14 +62,14 @@ enum UserRole {
 }
 
 model KeyType {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  label      String    @db.VarChar(2)
-  function   String    @db.VarChar(100)
-  accessArea String?
-  createdAt  DateTime  @default(now())
-  entityId   String    @db.Uuid
-  keyCopies  KeyCopy[]
-  entity     Entity    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  label       String              @db.VarChar(50)
+  function    String              @db.VarChar(100)
+  createdAt   DateTime            @default(now())
+  entityId    String              @db.Uuid
+  keyCopies   KeyCopy[]
+  entity      Entity              @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  accessAreas KeyTypeAccessArea[]
 
   @@index([entityId])
 }
@@ -193,4 +195,40 @@ model Invitation {
   @@index([entityId])
   @@index([token])
   @@index([email])
+}
+
+model AccessArea {
+  id        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityId  String              @db.Uuid
+  name      String              @db.VarChar(100)
+  createdAt DateTime            @default(now())
+  entity    Entity              @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  keyTypes  KeyTypeAccessArea[]
+
+  @@unique([entityId, name])
+  @@index([entityId])
+}
+
+model KeyTypeAccessArea {
+  keyTypeId    String     @db.Uuid
+  accessAreaId String     @db.Uuid
+  keyType      KeyType    @relation(fields: [keyTypeId], references: [id], onDelete: Cascade)
+  accessArea   AccessArea @relation(fields: [accessAreaId], references: [id], onDelete: Cascade)
+
+  @@id([keyTypeId, accessAreaId])
+  @@index([keyTypeId])
+  @@index([accessAreaId])
+}
+
+model OnboardingSession {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityId    String    @unique @db.Uuid
+  step        Int       @default(1)
+  draftJson   Json?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  entity      Entity    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@index([entityId])
 }

@@ -5,13 +5,15 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
 // Google OAuth sign-in
-export async function signInWithOAuth(provider: 'google') {
+export async function signInWithOAuth(provider: 'google', inviteToken?: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      // Pass invitation token in query params (OAuth flow)
+      queryParams: inviteToken ? { inviteToken } : undefined,
     },
   });
 
@@ -29,6 +31,7 @@ export async function signInWithOAuth(provider: 'google') {
 export async function sendOtpCode(
   email: string,
   captchaToken?: string,
+  inviteToken?: string,
 ): Promise<{ success: true } | { success: false; error: string }> {
   const supabase = await createClient();
 
@@ -41,6 +44,8 @@ export async function sendOtpCode(
       shouldCreateUser: true,
       // Pass CAPTCHA token (required if CAPTCHA enabled in Supabase dashboard)
       captchaToken,
+      // Pass invitation token in user_metadata (for callback to process)
+      data: inviteToken ? { inviteToken } : undefined,
     },
   });
 

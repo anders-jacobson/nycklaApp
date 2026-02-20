@@ -33,7 +33,7 @@ export function SiteHeader() {
           <Button variant="link" asChild size="sm" className="hidden sm:flex">
             <Link href="/" className="dark:text-foreground flex items-center gap-1">
               <IconKey className="size-4" />
-              Keytrackr
+              Nyckla
             </Link>
           </Button>
         </div>

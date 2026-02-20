@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth-utils';
 import {
@@ -15,9 +16,17 @@ import { KeyTypesTable } from '@/components/keys/key-types-table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { IconKey, IconInfoCircle } from '@tabler/icons-react';
 import { getBorrowerDetails } from '@/lib/borrower-utils';
+import { shouldShowOnboarding } from '@/lib/onboarding-utils';
 
 async function getKeyTypes() {
   const { entityId } = await getCurrentUser();
+
+  // Check if onboarding is needed
+  const needsOnboarding = await shouldShowOnboarding(entityId);
+  if (needsOnboarding) {
+    redirect('/onboarding/keys');
+  }
+
   const keyTypes = await prisma.keyType.findMany({
     where: { entityId },
     orderBy: [{ label: 'asc' }],
@@ -43,6 +52,15 @@ async function getKeyTypes() {
           },
         },
         orderBy: { copyNumber: 'asc' },
+      },
+      accessAreas: {
+        include: {
+          accessArea: {
+            select: {
+              name: true,
+            },
+          },
+        },
       },
     },
   });
@@ -80,11 +98,14 @@ async function getKeyTypes() {
         }),
       );
 
+      // Join access area names into comma-separated string for UI compatibility
+      const accessAreaNames = kt.accessAreas.map((aa) => aa.accessArea.name).join(', ');
+
       return {
         id: kt.id,
         label: kt.label,
         name: kt.function,
-        accessArea: kt.accessArea ?? '',
+        accessArea: accessAreaNames,
         copies,
       };
     }),

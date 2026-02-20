@@ -44,6 +44,7 @@ todos:
     status: pending
     dependencies:
       - test-happy-paths
+isProject: false
 ---
 
 # Align Prisma User.id with Supabase Auth User ID
@@ -71,13 +72,11 @@ flowchart TD
     PrismaUser -->|"App-owned"| Memberships[UserOrganisation[]]
 ```
 
-
-
 ## Implementation Steps
 
 ### 1. Update Prisma Schema
 
-**File:** [`prisma/schema.prisma`](prisma/schema.prisma)Change User model:
+**File:** `[prisma/schema.prisma](prisma/schema.prisma)`Change User model:
 
 ```prisma
 model User {
@@ -114,7 +113,7 @@ This will prompt about data loss (expected since we're changing PK strategy).
 
 ### 3. Update Registration Flow (Make Idempotent)
 
-**File:** [`app/actions/registerUser.ts`](app/actions/registerUser.ts)**Critical: Change from `create` to `upsert`** to handle double-submits and race conditions.Changes at lines 43-80 (invitation flow) and 119-148 (new org flow):
+**File:** `[app/actions/registerUser.ts](app/actions/registerUser.ts)`**Critical: Change from `create` to `upsert**` to handle double-submits and race conditions.Changes at lines 43-80 (invitation flow) and 119-148 (new org flow):
 
 ```typescript
 const authUserId = data.user?.id;
@@ -125,7 +124,7 @@ if (!authUserId) {
 // INVITATION FLOW: Use upsert + atomic invitation consumption
 if (inviteToken) {
   // ... validation ...
-  
+
   await prisma.$transaction(async (tx) => {
     // Upsert user (idempotent)
     const user = await tx.user.upsert({
@@ -136,16 +135,16 @@ if (inviteToken) {
         activeOrganisationId: invitation.entityId,
       },
       update: {
-        email,  // Sync email if changed
-        activeOrganisationId: invitation.entityId,  // Set active org
+        email, // Sync email if changed
+        activeOrganisationId: invitation.entityId, // Set active org
       },
     });
 
     // CRITICAL: Atomically consume invitation (prevents double-accept race condition)
     const consumed = await tx.invitation.updateMany({
-      where: { 
-        id: invitation.id, 
-        accepted: false  // Only update if not already accepted
+      where: {
+        id: invitation.id,
+        accepted: false, // Only update if not already accepted
       },
       data: { accepted: true },
     });
@@ -199,8 +198,8 @@ await prisma.$transaction(async (tx) => {
       activeOrganisationId: entity.id,
     },
     update: {
-      email,  // Sync email if changed
-      activeOrganisationId: entity.id,  // Set active org
+      email, // Sync email if changed
+      activeOrganisationId: entity.id, // Set active org
     },
   });
 
@@ -233,7 +232,7 @@ await prisma.$transaction(async (tx) => {
 
 ### 4. Implement Smart Callback Upsert (Always Create User, Check Membership)
 
-**File:** [`app/auth/callback/route.ts`](app/auth/callback/route.ts)**Philosophy:** Always upsert a minimal user record (even for new users), but base authorization on **membership**, not just `activeOrganisationId`.Replace database lookups (lines 49-76) with this pattern:
+**File:** `[app/auth/callback/route.ts](app/auth/callback/route.ts)`**Philosophy:** Always upsert a minimal user record (even for new users), but base authorization on **membership**, not just `activeOrganisationId`.Replace database lookups (lines 49-76) with this pattern:
 
 ```typescript
 // After successful auth.exchangeCodeForSession and getUser()
@@ -252,10 +251,10 @@ const userRecord = await prisma.user.upsert({
     id: supabaseUserId,
     email: email,
     name: user.user_metadata?.full_name || null,
-    activeOrganisationId: null,  // No org assigned yet
+    activeOrganisationId: null, // No org assigned yet
   },
   update: {
-    email: email,  // Sync email changes for returning users
+    email: email, // Sync email changes for returning users
     // name is NOT synced - user controls it in app
   },
   select: {
@@ -267,7 +266,7 @@ const userRecord = await prisma.user.upsert({
           select: { id: true, name: true },
         },
       },
-      orderBy: { joinedAt: 'asc' },  // CRITICAL: Deterministic ordering
+      orderBy: { joinedAt: 'asc' }, // CRITICAL: Deterministic ordering
     },
   },
 });
@@ -281,8 +280,10 @@ if (membershipCount === 0) {
 }
 
 // Has memberships - ensure activeOrganisationId is valid
-if (!userRecord.activeOrganisationId || 
-    !userRecord.organisations.some(o => o.organisationId === userRecord.activeOrganisationId)) {
+if (
+  !userRecord.activeOrganisationId ||
+  !userRecord.organisations.some((o) => o.organisationId === userRecord.activeOrganisationId)
+) {
   // activeOrganisationId is null or stale, set to first org
   const firstOrg = userRecord.organisations[0];
   await prisma.user.update({
@@ -316,7 +317,7 @@ return NextResponse.redirect(new URL(next, req.url));
 
 ### 5. Update getCurrentUser() - ID-based Lookup + Membership Validation
 
-**File:** [`lib/auth-utils.ts`](lib/auth-utils.ts)Optimize lookup from email-based to ID-based, and add membership validation (lines 34-106):
+**File:** `[lib/auth-utils.ts](lib/auth-utils.ts)`Optimize lookup from email-based to ID-based, and add membership validation (lines 34-106):
 
 ```typescript
 export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
@@ -332,7 +333,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
 
   // CHANGE: Lookup by Supabase user.id instead of email
   const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },  // UUID lookup (was: email string comparison)
+    where: { id: user.id }, // UUID lookup (was: email string comparison)
     select: {
       id: true,
       email: true,
@@ -344,7 +345,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
             select: { id: true, name: true },
           },
         },
-        orderBy: { joinedAt: 'asc' },  // CRITICAL: Deterministic ordering
+        orderBy: { joinedAt: 'asc' }, // CRITICAL: Deterministic ordering
       },
     },
   });
@@ -364,20 +365,17 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   let activeOrgId = dbUser.activeOrganisationId;
 
   // If null or not in current memberships, use first org (deterministic due to orderBy)
-  if (!activeOrgId || 
-      !dbUser.organisations.some(o => o.organisationId === activeOrgId)) {
+  if (!activeOrgId || !dbUser.organisations.some((o) => o.organisationId === activeOrgId)) {
     const firstOrg = dbUser.organisations[0];
     activeOrgId = firstOrg.organisationId;
-    
+
     // NOTE: We don't update the DB here because getCurrentUser() is cached.
     // Callback route handles fixing stale activeOrganisationId on login.
     // This ensures the user can proceed even if activeOrganisationId is stale.
   }
 
   // Find the role in the active organisation
-  const activeOrgRelation = dbUser.organisations.find(
-    (o) => o.organisationId === activeOrgId
-  );
+  const activeOrgRelation = dbUser.organisations.find((o) => o.organisationId === activeOrgId);
 
   if (!activeOrgRelation) {
     // Should never happen after the checks above, but safety
@@ -410,31 +408,29 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
 
 ### 6. Update Other Auth Checks
 
-**File:** [`app/actions/updateProfile.ts`](app/actions/updateProfile.ts)Change lookup from email to ID (line 23-28):
+**File:** `[app/actions/updateProfile.ts](app/actions/updateProfile.ts)`Change lookup from email to ID (line 23-28):
 
 ```typescript
 // BEFORE:
 await prisma.user.update({
-  where: { email },  // String comparison
+  where: { email }, // String comparison
   data: { name: name || undefined },
 });
 
 // AFTER:
 await prisma.user.update({
-  where: { id: user.id },  // UUID lookup
+  where: { id: user.id }, // UUID lookup
   data: { name: name || undefined },
 });
 ```
 
-
-
 ### 7. Add Helper Queries for Membership Checking
 
-**File:** [`lib/auth-utils.ts`](lib/auth-utils.ts)Add utility functions for common membership operations:
+**File:** `[lib/auth-utils.ts](lib/auth-utils.ts)`Add utility functions for common membership operations:
 
 ```typescript
 /**
-    * Check if user has any organisation memberships
+ * Check if user has any organisation memberships
  */
 export async function hasMembership(userId: string): Promise<boolean> {
   const count = await prisma.userOrganisation.count({
@@ -444,7 +440,7 @@ export async function hasMembership(userId: string): Promise<boolean> {
 }
 
 /**
-    * Get user's first organisation (for default selection)
+ * Get user's first organisation (for default selection)
  */
 export async function getFirstOrganisation(userId: string): Promise<string | null> {
   const membership = await prisma.userOrganisation.findFirst({
@@ -456,7 +452,7 @@ export async function getFirstOrganisation(userId: string): Promise<string | nul
 }
 
 /**
-    * Validate user has access to specific organisation
+ * Validate user has access to specific organisation
  */
 export async function hasAccessToOrg(userId: string, orgId: string): Promise<boolean> {
   const membership = await prisma.userOrganisation.findUnique({
@@ -467,8 +463,6 @@ export async function hasAccessToOrg(userId: string, orgId: string): Promise<boo
   return !!membership;
 }
 ```
-
-
 
 ### 8. Add Display Name Editor in Settings
 
@@ -487,8 +481,6 @@ export default function ProfileSettings() {
 }
 ```
 
-
-
 ## Updated Architecture: Authentication ≠ Authorization
 
 **Critical principle:** Callback creates user record, but **membership grants access**.
@@ -499,31 +491,29 @@ flowchart TD
     Auth --> Callback[Callback Route]
     Callback --> Upsert[Always Upsert User<br/>id, email, name]
     Upsert --> CheckMembership{Has UserOrganisation<br/>membership?}
-    
+
     CheckMembership -->|No| CompleteProfile[/auth/complete-profile]
     CheckMembership -->|Yes| ValidateActiveOrg{activeOrganisationId<br/>valid?}
-    
+
     ValidateActiveOrg -->|Yes| Dashboard[/active-loans]
     ValidateActiveOrg -->|No/Null| SetDefault[Set to first org]
     SetDefault --> Dashboard
-    
+
     CompleteProfile --> UserChoice{User Action}
     UserChoice -->|Create Org| RegisterNewOrg[registerUser<br/>creates org + membership]
     UserChoice -->|Enter Code| RegisterInvite[registerUser<br/>joins via invitation]
-    
+
     RegisterNewOrg --> Membership1[UserOrganisation<br/>role = OWNER]
     RegisterInvite --> Membership2[UserOrganisation<br/>role = from invitation]
-    
+
     Membership1 --> Dashboard
     Membership2 --> Dashboard
-    
+
     style Upsert fill:#e1f5e1
     style CheckMembership fill:#fff3cd
     style Membership1 fill:#cfe2ff
     style Membership2 fill:#cfe2ff
 ```
-
-
 
 ## Data Flow After Migration
 
@@ -541,7 +531,7 @@ sequenceDiagram
     CB->>P: Upsert User (id, email, activeOrganisationId=null)
     P-->>CB: User record
     CB->>P: Check UserOrganisation count
-    
+
     alt Has membership
         P-->>CB: organisations.length > 0
         CB->>CB: Validate/fix activeOrganisationId
@@ -554,16 +544,14 @@ sequenceDiagram
         Reg->>P: Upsert User + Create UserOrganisation
         Reg->>App: Redirect to /active-loans
     end
-    
+
     Note over App,P: All queries use user.id (UUID)
-    
+
     App->>P: getCurrentUser() → findUnique(id)
     P->>P: Validate membership exists
     P->>P: Validate activeOrganisationId
     P-->>App: User + entityId + role
 ```
-
-
 
 ## Architecture Refinements (Based on Security Review)
 
@@ -608,28 +596,28 @@ sequenceDiagram
 
 ### Happy Paths
 
-- [ ] New user registration creates User with Supabase ID
-- [ ] OAuth login (Google) upserts user with full_name from metadata
-- [ ] Email confirmation flow upserts user
-- [ ] User can create new organisation (becomes OWNER)
-- [ ] User can join via invitation code (gets correct role)
-- [ ] getCurrentUser() returns correct user with valid membership
-- [ ] Team member lists show display names
-- [ ] User can edit display name in settings
-- [ ] IssueRecords reference correct userId
+- New user registration creates User with Supabase ID
+- OAuth login (Google) upserts user with full_name from metadata
+- Email confirmation flow upserts user
+- User can create new organisation (becomes OWNER)
+- User can join via invitation code (gets correct role)
+- getCurrentUser() returns correct user with valid membership
+- Team member lists show display names
+- User can edit display name in settings
+- IssueRecords reference correct userId
 
 ### Edge Cases & Security
 
-- [ ] **Idempotency**: Double-submit registration doesn't error
-- [ ] **Membership validation**: User without membership redirected to complete-profile
-- [ ] **Stale activeOrganisationId**: Auto-fixed to first org on login
-- [ ] **Removed from org**: User removed from all orgs redirected to complete-profile
-- [ ] **Email change**: User changes email in Supabase, syncs on next login
-- [ ] **Null activeOrganisationId**: getCurrentUser() sets to first org
-- [ ] **Invalid invitation**: Expired/used/wrong-email invitation rejected
-- [ ] **Duplicate membership**: Joining same org twice handled gracefully
-- [ ] **OAuth without org**: Google login creates user but requires org selection
-- [ ] **Back button**: Navigating back during registration doesn't break state
+- **Idempotency**: Double-submit registration doesn't error
+- **Membership validation**: User without membership redirected to complete-profile
+- **Stale activeOrganisationId**: Auto-fixed to first org on login
+- **Removed from org**: User removed from all orgs redirected to complete-profile
+- **Email change**: User changes email in Supabase, syncs on next login
+- **Null activeOrganisationId**: getCurrentUser() sets to first org
+- **Invalid invitation**: Expired/used/wrong-email invitation rejected
+- **Duplicate membership**: Joining same org twice handled gracefully
+- **OAuth without org**: Google login creates user but requires org selection
+- **Back button**: Navigating back during registration doesn't break state
 
 ## Key Security Principles
 
@@ -641,47 +629,41 @@ const { user } = await supabase.auth.getUser();
 
 // ✅ CORRECT: But only members can access data (Prisma)
 const membership = await prisma.userOrganisation.findFirst({
-  where: { userId: user.id, organisationId: entityId }
+  where: { userId: user.id, organisationId: entityId },
 });
 if (!membership) throw new Error('Access denied');
 ```
-
-
 
 ### 2. activeOrganisationId is a Preference, Not Authorization
 
 ```typescript
 // ❌ WRONG: Trusting activeOrganisationId without validation
 const data = await prisma.keyType.findMany({
-  where: { entityId: user.activeOrganisationId }  // User might be removed!
+  where: { entityId: user.activeOrganisationId }, // User might be removed!
 });
 
 // ✅ CORRECT: Validate membership first
-const user = await getCurrentUser();  // This validates membership exists
+const user = await getCurrentUser(); // This validates membership exists
 const data = await prisma.keyType.findMany({
-  where: { entityId: user.entityId }  // Safe: getCurrentUser() ensures valid membership
+  where: { entityId: user.entityId }, // Safe: getCurrentUser() ensures valid membership
 });
 ```
-
-
 
 ### 3. Always Use Upsert for User Creation
 
 ```typescript
 // ❌ WRONG: Breaks on retry/double-submit
 const user = await prisma.user.create({
-  data: { id: authUserId, email }
+  data: { id: authUserId, email },
 });
 
 // ✅ CORRECT: Idempotent
 const user = await prisma.user.upsert({
   where: { id: authUserId },
   create: { id: authUserId, email },
-  update: { email }
+  update: { email },
 });
 ```
-
-
 
 ## Critical Fixes Applied (Production-Essential)
 
@@ -692,14 +674,12 @@ const user = await prisma.user.upsert({
 ```typescript
 await tx.userOrganisation.upsert({
   where: {
-    userId_organisationId: { userId, organisationId }
+    userId_organisationId: { userId, organisationId },
   },
   create: { userId, organisationId, role },
-  update: {}  // On retry, no changes needed
+  update: {}, // On retry, no changes needed
 });
 ```
-
-
 
 ### 2. Atomic Invitation Consumption ✅
 
@@ -708,14 +688,12 @@ await tx.userOrganisation.upsert({
 ```typescript
 const consumed = await tx.invitation.updateMany({
   where: { id: invitation.id, accepted: false },
-  data: { accepted: true }
+  data: { accepted: true },
 });
 if (consumed.count === 0) {
   throw new Error('Invitation already used');
 }
 ```
-
-
 
 ### 3. Deterministic "First Org" Selection ✅
 
@@ -727,8 +705,6 @@ organisations: {
   orderBy: { joinedAt: 'asc' }  // Consistent "first org"
 }
 ```
-
-
 
 ### 4. No DB Mutation in Cached Functions ✅
 
@@ -794,14 +770,14 @@ Since you're dev-only:
 
 ### 🎯 Production-Ready Checklist
 
-- [x] Idempotent user creation (upsert)
-- [x] Idempotent membership creation (upsert)
-- [x] Race-safe invitation consumption (atomic updateMany)
-- [x] Deterministic first-org selection (ordered by joinedAt)
-- [x] Membership-based authorization (not just activeOrganisationId)
-- [x] Stale activeOrg handling (callback fixes, getCurrentUser reads)
-- [x] Email change resilience (synced on every login)
-- [x] OAuth name handling (one-time default, user-editable)
+- Idempotent user creation (upsert)
+- Idempotent membership creation (upsert)
+- Race-safe invitation consumption (atomic updateMany)
+- Deterministic first-org selection (ordered by joinedAt)
+- Membership-based authorization (not just activeOrganisationId)
+- Stale activeOrg handling (callback fixes, getCurrentUser reads)
+- Email change resilience (synced on every login)
+- OAuth name handling (one-time default, user-editable)
 
 ### 🚀 Ready to Execute
 

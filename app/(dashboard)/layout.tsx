@@ -1,10 +1,14 @@
 import React from 'react';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { DashboardSidebar } from '@/components/shared/dashboard-sidebar';
 import { SiteHeader } from '@/components/shared/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/toaster';
+import { shouldShowOnboarding } from '@/lib/onboarding-utils';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
+import { isConnectionError } from '@/lib/db-error-handler';
 
 async function Layout({ children }: { children: React.ReactNode }) {
   // Create a Supabase client configured to use cookies
@@ -38,6 +42,7 @@ async function Layout({ children }: { children: React.ReactNode }) {
                 },
               },
             },
+            orderBy: { joinedAt: 'asc' }, // CRITICAL: Deterministic ordering for multi-org consistency
           },
         },
       });
@@ -53,9 +58,27 @@ async function Layout({ children }: { children: React.ReactNode }) {
           name: profile.name || '',
           email: profile.email,
         };
+
+        // Check if onboarding is needed
+        if (activeEntityId) {
+          const needsOnboarding = await shouldShowOnboarding(activeEntityId);
+          if (needsOnboarding) {
+            redirect('/onboarding/keys');
+          }
+        }
       }
     } catch (error) {
-      console.error('Failed to fetch user profile:', error);
+      // Re-throw redirect errors - they must propagate for Next.js routing to work
+      if (isRedirectError(error)) {
+        throw error;
+      }
+      
+      // Log connection errors differently
+      if (isConnectionError(error)) {
+        console.warn('Database connection issue (likely unstable network):', error);
+      } else {
+        console.error('Failed to fetch user profile:', error);
+      }
     }
   }
 
@@ -68,11 +91,7 @@ async function Layout({ children }: { children: React.ReactNode }) {
         } as React.CSSProperties
       }
     >
-      <DashboardSidebar
-        organisations={organisations}
-        activeEntityId={activeEntityId}
-        user={user}
-      />
+      <DashboardSidebar organisations={organisations} activeEntityId={activeEntityId} user={user} />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>

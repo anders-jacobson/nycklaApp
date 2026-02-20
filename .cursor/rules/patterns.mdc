@@ -13,29 +13,30 @@ For generic Next.js/Prisma/React patterns, Claude Sonnet 4 already knows them.
 
 ## Unique to This Project
 
-### 1. Multi-Tenant Data Access with Entity Model
+### 1. Multi-Organisation Data Access Pattern
 
 ```typescript
-// Always get entityId from user
-async function getCurrentUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error('Not authenticated');
+// ✅ STANDARD: Use in ALL server actions & routes with organisation context
+import { getCurrentUser } from '@/lib/auth-utils';
 
-  const userRecord = await prisma.user.findUnique({
-    where: { email: user.email },
-    select: { id: true, entityId: true, role: true },
-  });
-  if (!userRecord) throw new Error('User not found');
-  return userRecord; // Returns { id, entityId, role }
-}
+const user = await getCurrentUser(); 
+// Returns: { id, email, entityId, roleInActiveOrg, allOrganisations[] }
+// ⚠️ THROWS if user has no organisations
 
-// All queries filtered by entityId (not userId)
+// All queries filtered by entityId (active organisation)
 const data = await prisma.keyType.findMany({
-  where: { entityId: user.entityId }, // Entity-level isolation
+  where: { entityId: user.entityId }, // Organisation-level isolation
 });
+
+// ⚠️ EXCEPTION: Use getCurrentUserOrNull() for edge cases
+import { getCurrentUserOrNull } from '@/lib/auth-utils';
+
+const user = await getCurrentUserOrNull();
+// Returns: { id, email, activeOrganisationId, organisations[] } or null
+// NEVER throws - returns null if not authenticated or no orgs:
+//   - /no-organization
+//   - /onboarding/keys
+//   - /create-organization
 ```
 
 ### 2. Supabase for Auth, Prisma for Data

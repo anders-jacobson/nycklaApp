@@ -2,17 +2,27 @@
 
 import { useState, useTransition, useEffect, useRef } from 'react';
 import { signInWithOAuth, sendOtpCode, verifyOtpCode } from '@/app/actions/auth';
+import { validateInvitationToken } from '@/app/actions/team';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { IconBrandGoogle, IconArrowLeft, IconMail } from '@tabler/icons-react';
-import { useRouter } from 'next/navigation';
+import { IconBrandGoogle, IconArrowLeft, IconMail, IconUserPlus } from '@tabler/icons-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Turnstile } from '@marsidev/react-turnstile';
 
 type Step = 'email' | 'waiting';
 
+interface InvitationInfo {
+  email: string;
+  organizationName: string;
+  role: string;
+}
+
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('token');
+
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -20,9 +30,25 @@ export function LoginForm() {
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [isPending, startTransition] = useTransition();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [invitationInfo, setInvitationInfo] = useState<InvitationInfo | null>(null);
   const turnstileRef = useRef<any>(null);
 
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
+
+  // Validate invitation token on mount
+  useEffect(() => {
+    if (inviteToken) {
+      startTransition(async () => {
+        const result = await validateInvitationToken(inviteToken);
+        if (result.success) {
+          setInvitationInfo(result.data!);
+          setEmail(result.data!.email); // Pre-fill email
+        } else {
+          setMessage(result.error);
+        }
+      });
+    }
+  }, [inviteToken]);
 
   // Cooldown timer to prevent spam
   useEffect(() => {
@@ -51,7 +77,7 @@ export function LoginForm() {
   }, [code, email, isPending, router]);
 
   async function handleGoogleSignIn() {
-    const result = await signInWithOAuth('google');
+    const result = await signInWithOAuth('google', inviteToken || undefined);
     if (result?.error) {
       setMessage(result.error);
     }
@@ -63,8 +89,8 @@ export function LoginForm() {
 
     setMessage(null);
     startTransition(async () => {
-      // Pass captchaToken to server action (following Supabase docs pattern)
-      const result = await sendOtpCode(email, captchaToken || undefined);
+      // Pass captchaToken and inviteToken to server action
+      const result = await sendOtpCode(email, captchaToken || undefined, inviteToken || undefined);
 
       if (!result.success) {
         setMessage(result.error);
@@ -101,7 +127,20 @@ export function LoginForm() {
 
   return (
     <div className="w-full space-y-6">
-      <h1 className="text-2xl font-bold">Log In</h1>
+      {invitationInfo ? (
+        <div className="rounded-lg bg-muted p-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <IconUserPlus className="h-4 w-4" />
+            <span>You've been invited!</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Join <strong>{invitationInfo.organizationName}</strong> as a{' '}
+            <strong>{invitationInfo.role}</strong>
+          </p>
+        </div>
+      ) : (
+        <h1 className="text-2xl font-bold">Log In</h1>
+      )}
 
       {step === 'email' ? (
         <>

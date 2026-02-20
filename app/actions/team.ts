@@ -5,6 +5,7 @@ import { getCurrentUser, requireRole } from '@/lib/auth-utils';
 import { revalidatePath } from 'next/cache';
 import { UserRole } from '@prisma/client';
 import crypto from 'crypto';
+import { sendInvitationEmail as sendInviteEmail } from '@/lib/email';
 
 type ActionResult<T = void> = { success: true; data?: T } | { success: false; error: string };
 
@@ -24,36 +25,7 @@ function getExpirationDate(): Date {
   return date;
 }
 
-/**
- * Send invitation email to user
- * TODO: Implement actual email sending (Resend, SendGrid, etc.)
- */
-async function sendInvitationEmail(
-  email: string,
-  token: string,
-  organizationName: string,
-  inviterName: string,
-  role: UserRole,
-): Promise<void> {
-  const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/login?token=${token}`;
-
-  // TODO: Replace with actual email service
-  console.log('📧 INVITATION EMAIL');
-  console.log('To:', email);
-  console.log("Subject: You've been invited to join", organizationName);
-  console.log('Body:');
-  console.log(`
-${inviterName} has invited you to join ${organizationName} as a ${role}.
-
-Click the link below to accept your invitation:
-${inviteUrl}
-
-This invitation will expire in 7 days.
-  `);
-
-  // For now, just log. In production, use:
-  // await sendEmail({ to: email, subject, html });
-}
+// Import removed - using lib/email.ts instead
 
 /**
  * Invite a user to join the organization
@@ -135,13 +107,14 @@ export async function inviteUser(
     });
 
     // Send invitation email
-    await sendInvitationEmail(
-      email,
-      token,
-      invitation.entity.name,
-      currentUser.name || currentUser.email,
+    const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/login?token=${token}`;
+    await sendInviteEmail({
+      to: email,
+      organizationName: invitation.entity.name,
+      inviterName: currentUser.name || currentUser.email,
       role,
-    );
+      inviteUrl,
+    });
 
     revalidatePath('/settings/organization');
 
@@ -542,5 +515,99 @@ export async function validateInvitationToken(token: string): Promise<
   } catch (error) {
     console.error('Error validating invitation:', error);
     return { success: false, error: 'Failed to validate invitation.' };
+  }
+}
+
+/**
+ * Accept an invitation and join an organization
+ * Must be called by authenticated user whose email matches invitation
+ */
+export async function acceptInvitation(token: string): Promise<ActionResult<void>> {
+  try {
+    const currentUser = await getCurrentUser();
+
+    return await prisma.$transaction(async (tx) => {
+      // Fetch and lock invitation
+      const invitation = await tx.invitation.findUnique({
+        where: { token },
+        include: {
+          entity: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      if (!invitation) {
+        return { success: false, error: 'Invalid invitation link.' };
+      }
+
+      if (invitation.accepted) {
+        return { success: false, error: 'This invitation has already been used.' };
+      }
+
+      if (invitation.expiresAt < new Date()) {
+        return { success: false, error: 'This invitation has expired.' };
+      }
+
+      // Verify email matches
+      if (invitation.email.toLowerCase() !== currentUser.email.toLowerCase()) {
+        return {
+          success: false,
+          error: 'This invitation was sent to a different email address.',
+        };
+      }
+
+      // Atomically mark invitation as accepted (race-safe)
+      const updateResult = await tx.invitation.updateMany({
+        where: {
+          id: invitation.id,
+          accepted: false, // Only update if still not accepted
+        },
+        data: {
+          accepted: true,
+          acceptedAt: new Date(),
+        },
+      });
+
+      if (updateResult.count === 0) {
+        // Another request already accepted this invitation
+        return { success: false, error: 'This invitation has already been used.' };
+      }
+
+      // Create membership (idempotent via unique constraint)
+      await tx.userOrganisation.upsert({
+        where: {
+          userId_organisationId: {
+            userId: currentUser.id,
+            organisationId: invitation.entityId,
+          },
+        },
+        create: {
+          userId: currentUser.id,
+          organisationId: invitation.entityId,
+          role: invitation.role,
+          joinedAt: new Date(),
+        },
+        update: {
+          role: invitation.role, // Update role if membership already exists
+        },
+      });
+
+      // If user has no active org, set this as active
+      if (!currentUser.activeOrganisationId) {
+        await tx.user.update({
+          where: { id: currentUser.id },
+          data: { activeOrganisationId: invitation.entityId },
+        });
+      }
+
+      revalidatePath('/');
+      
+      // Note: No redirect here - callback route will handle redirect to /welcome?from=invitation
+      return { success: true };
+    });
+  } catch (error) {
+    console.error('Error accepting invitation:', error);
+    return { success: false, error: 'Failed to accept invitation.' };
   }
 }

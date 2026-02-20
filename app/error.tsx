@@ -22,6 +22,7 @@ export default function Error({
   // Check for specific error scenarios
   const isUserNotFound = error.message === 'USER_NOT_IN_DB' || error.message.includes('User not found');
   const isNotAuthenticated = error.message.includes('Not authenticated');
+  const hasNoOrganisations = error.message === 'USER_HAS_NO_ORGANISATIONS';
 
   if (isUserNotFound) {
     // Redirect to sync session page
@@ -35,6 +36,14 @@ export default function Error({
     // Redirect to login
     if (typeof window !== 'undefined') {
       window.location.href = '/auth/login';
+    }
+    return null;
+  }
+
+  if (hasNoOrganisations) {
+    // Redirect to no organization page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/no-organization';
     }
     return null;
   }

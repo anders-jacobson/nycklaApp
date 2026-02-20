@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
+import { acceptInvitation } from '@/app/actions/team';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -38,6 +39,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL('/auth/login?error=no_email', req.url));
     }
 
+    // Extract invitation token (from user_metadata or query params)
+    const inviteToken =
+      searchParams.get('inviteToken') || user.user_metadata?.inviteToken;
+
     // Note: Password reset flow removed - using passwordless auth only
 
     // ALWAYS upsert user (new or returning)
@@ -67,6 +72,19 @@ export async function GET(req: NextRequest) {
         },
       },
     });
+
+    // If invitation token present, auto-accept invitation
+    if (inviteToken) {
+      const inviteResult = await acceptInvitation(inviteToken);
+      if (!inviteResult.success) {
+        // Invitation acceptance failed (expired, invalid, wrong email, etc.)
+        return NextResponse.redirect(
+          new URL(`/auth/complete-profile?error=${encodeURIComponent(inviteResult.error)}`, req.url),
+        );
+      }
+      // Invitation accepted successfully - redirect to welcome screen
+      return NextResponse.redirect(new URL('/welcome?from=invitation', req.url));
+    }
 
     // Check membership count (this is authorization, not authentication)
     const membershipCount = userRecord.organisations.length;

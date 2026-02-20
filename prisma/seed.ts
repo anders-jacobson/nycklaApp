@@ -1,5 +1,5 @@
 /**
- * Database Seed Script for Key Management System
+ * Database Seed Script for Key Management System Nyckla
  *
  * This script generates comprehensive test data for the key management application:
  *

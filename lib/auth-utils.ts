@@ -21,6 +21,70 @@ export interface CurrentUser {
   }>;
 }
 
+export interface AuthUserSafe {
+  id: string;
+  email: string;
+  name: string | null;
+  activeOrganisationId: string | null;
+  organisations: Array<{
+    organisationId: string;
+    role: UserRole;
+  }>;
+}
+
+/**
+ * Get authenticated user WITHOUT requiring organisation membership
+ * Returns null instead of throwing - safe for pages where user might not have orgs yet
+ * 
+ * ⚠️ USE THIS INSTEAD OF getCurrentUser() for:
+ * - /no-organization page
+ * - /onboarding/keys page
+ * - /create-organization action
+ * - Any page where user might not have organisations yet
+ * 
+ * @returns User data or null if not authenticated or not found
+ * @throws Never throws - returns null on any error
+ */
+export const getCurrentUserOrNull = cache(async (): Promise<AuthUserSafe | null> => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      activeOrganisationId: true,
+      organisations: {
+        select: {
+          organisationId: true,
+          role: true,
+        },
+        orderBy: { joinedAt: 'asc' }, // Deterministic ordering
+      },
+    },
+  });
+
+  if (!dbUser) {
+    return null;
+  }
+
+  return {
+    id: dbUser.id,
+    email: dbUser.email,
+    name: dbUser.name,
+    activeOrganisationId: dbUser.activeOrganisationId,
+    organisations: dbUser.organisations,
+  };
+});
+
 /**
  * Get the currently authenticated user with multi-organisation context
  * Use this in all server actions to get user identity and organisation membership
@@ -28,8 +92,10 @@ export interface CurrentUser {
  * Uses React.cache() to deduplicate calls within the same request
  * Multiple getCurrentUser() calls = single DB query per request
  *
+ * ⚠️ THROWS if user has no organisations - use getCurrentUserOrNull() for edge cases
+ *
  * @returns Current user with active organisation and all memberships
- * @throws Error if not authenticated or user not found
+ * @throws Error if not authenticated, user not found, or no organisations
  */
 export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   const supabase = await createClient();

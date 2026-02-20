@@ -1,6 +1,6 @@
-# Supabase Auth + Resend Testing Guide
+# Passwordless Auth Testing Guide
 
-This guide provides a comprehensive testing checklist for the Supabase Auth implementation with Resend SMTP, Google OAuth, and password reset functionality.
+This guide provides a comprehensive testing checklist for the passwordless authentication implementation with Supabase Auth, Resend (for magic links and invitation emails), Google OAuth, and Turnstile CAPTCHA.
 
 ## Prerequisites
 
@@ -14,12 +14,13 @@ Before testing, ensure:
 
 ## Test Scenarios
 
-### 1. Email/Password Registration Flow
+### 1. Magic Link Login Flow
 
-**Test Case 1.1: Successful Registration**
-- [ ] Navigate to `/auth/register`
-- [ ] Fill in email, password, and organization name
-- [ ] Click "Register"
+**Test Case 1.1: Successful Magic Link Login**
+- [ ] Navigate to `/auth/login`
+- [ ] Enter valid email address
+- [ ] Complete CAPTCHA (or use test mode)
+- [ ] Click "Continue with email"
 - [ ] Verify success message appears
 - [ ] Check email inbox for confirmation email (from Resend)
 - [ ] Verify email contains confirmation link

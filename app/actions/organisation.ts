@@ -2,7 +2,9 @@
 
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth-utils';
+import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import type { UserRole } from '@prisma/client';
 import { generateEntityKey, encryptEntityKey } from '@/lib/entity-encryption';
 
@@ -205,7 +207,16 @@ export async function createOrganisation(
   name: string,
 ): Promise<ActionResult<{ organisationId: string }>> {
   try {
-    const user = await getCurrentUser();
+    // Don't use getCurrentUser() here - it throws for users with no orgs
+    // Use Supabase auth directly instead
+    const supabase = await createClient();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+
+    if (!authUser) {
+      return { success: false, error: 'Not authenticated.' };
+    }
 
     // Validate name
     if (!name || name.trim().length < 2) {
@@ -216,9 +227,14 @@ export async function createOrganisation(
       return { success: false, error: 'Organisation name must be less than 200 characters.' };
     }
 
-    // Check if organisation name already exists
-    const existing = await prisma.entity.findUnique({
-      where: { name: name.trim() },
+    // Check if organisation name already exists (case-insensitive)
+    const existing = await prisma.entity.findFirst({
+      where: { 
+        name: {
+          equals: name.trim(),
+          mode: 'insensitive', // Case-insensitive check
+        }
+      },
     });
 
     if (existing) {
@@ -239,19 +255,27 @@ export async function createOrganisation(
         },
       });
 
-      // Create membership as OWNER
-      await tx.userOrganisation.create({
-        data: {
-          userId: user.id,
-          organisationId: organisation.id,
-          role: 'OWNER',
+      // Ensure user record exists and set as active organisation
+      await tx.user.upsert({
+        where: { id: authUser.id },
+        create: {
+          id: authUser.id,
+          email: authUser.email!,
+          name: authUser.user_metadata?.full_name || null,
+          activeOrganisationId: organisation.id,
+        },
+        update: {
+          activeOrganisationId: organisation.id,
         },
       });
 
-      // Set as active organisation
-      await tx.user.update({
-        where: { id: user.id },
-        data: { activeOrganisationId: organisation.id },
+      // Create membership as OWNER
+      await tx.userOrganisation.create({
+        data: {
+          userId: authUser.id,
+          organisationId: organisation.id,
+          role: 'OWNER',
+        },
       });
 
       return organisation;
@@ -262,9 +286,21 @@ export async function createOrganisation(
     revalidatePath('/active-loans');
     revalidatePath('/keys');
 
-    return { success: true, data: { organisationId: result.id } };
+    // Redirect to welcome screen for new org
+    redirect('/welcome?from=create');
   } catch (error) {
+    // Re-throw redirect errors (they're not real errors - just Next.js redirect mechanism)
+    if ((error as any)?.digest?.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+    
     console.error('Error creating organisation:', error);
+    
+    // Handle Prisma unique constraint violation
+    if ((error as any)?.code === 'P2002') {
+      return { success: false, error: 'An organisation with this name already exists.' };
+    }
+    
     return { success: false, error: 'Failed to create organisation.' };
   }
 }

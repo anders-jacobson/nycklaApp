@@ -2,150 +2,184 @@
 
 ## Implementation Summary
 
-All code has been successfully implemented for production-ready Supabase Auth with Resend SMTP and Google OAuth.
+**Authentication Method**: Passwordless (Magic Link + OTP Code + Google OAuth)
 
-### Files Created
+All code has been successfully implemented for production-ready passwordless authentication with Supabase Auth, Resend (custom invitation emails), and Google OAuth.
 
-1. **`proxy.ts`** - Updated proxy for session management and route protection (Next.js 16)
-2. **`app/auth/forgot-password/page.tsx`** - Password reset request page
-3. **`app/auth/reset-password/page.tsx`** - New password form page
-4. **`docs/development/AUTH-TESTING-GUIDE.md`** - Comprehensive testing guide
+### Core Implementation
 
-### Files Modified
+1. **`app/actions/auth.ts`** - `sendOtpCode()`, `verifyOtpCode()`, `signInWithOAuth()`, with invitation token support
+2. **`app/actions/team.ts`** - `inviteUser()`, `acceptInvitation()`, `validateInvitationToken()`
+3. **`lib/email.ts`** - Resend integration for custom invitation emails
+4. **`components/root/login-form.tsx`** - Passwordless login with invitation support
+5. **`app/auth/callback/route.ts`** - Handles magic link, OAuth, and invitation token processing
+6. **`app/no-organization/content.tsx`** - Join via invitation code option
+7. **`middleware.ts`** - Route protection and token refresh
 
-1. **`app/actions/auth.ts`** - Added `requestPasswordReset()` and `resetPassword()` actions
-2. **`components/root/login-form.tsx`** - Added "Forgot password?" link
-3. **`app/auth/callback/route.ts`** - Enhanced to handle password reset and email confirmation tokens
+## Configuration Requirements
 
-## Next Steps (Manual Configuration Required)
+### 1. Supabase Auth Configuration
 
-### 1. Configure Resend SMTP in Supabase
+**Enable Email OTP (Passwordless)**:
 
-Follow the steps in the plan file (`supab.plan.md`, section 2) to:
+1. Go to Supabase Dashboard → Authentication → Providers → Email
+2. Enable "Email provider"
+3. Toggle "Confirm email" based on needs (OFF for immediate access)
 
-1. **Create Resend Account**: https://resend.com/signup
-   - Verify your email
-   - Add and verify your domain (or use sandbox for testing)
+**Enable CAPTCHA (Turnstile)**:
 
-2. **Get API Key**:
-   - Go to Resend Dashboard → API Keys
-   - Create new key with "Sending access"
-   - Copy the key (starts with `re_`)
+1. Go to Authentication → Attack Protection
+2. Enable Captcha protection, choose "Turnstile"
+3. For dev: use test key `1x0000000000000000000000000000000AA`
+4. For prod: Get real secret key from Cloudflare Dashboard
 
-3. **Configure in Supabase**:
-   - Go to Supabase Dashboard → Authentication → Email Templates → Settings
-   - Set SMTP:
-     - Host: `smtp.resend.com`
-     - Port: `465` (or `587`)
-     - Username: `resend`
-     - Password: [Your Resend API key]
-     - Sender email: `noreply@yourdomain.com` (must be verified in Resend)
-     - Sender name: `Your App Name`
+**Configure Rate Limits**:
 
-4. **Customize Email Templates** (recommended):
-   - Confirmation email
-   - Password reset email
-   - Magic link email (if used)
+- Email sign-in: 4 requests/hour per email
+- Per IP: 6 requests/hour
 
-### 2. Configure Google OAuth in Supabase
+### 2. Resend Configuration
 
-Since you have Google OAuth credentials:
+**For Supabase Auth Emails (Magic Link + OTP)**:
 
-1. Go to Supabase Dashboard → Authentication → Providers
-2. Enable Google provider
-3. Enter your Client ID and Client Secret
-4. Copy the callback URL: `https://[your-project].supabase.co/auth/v1/callback`
-5. Add this callback URL to Google Cloud Console → Credentials → OAuth 2.0 Client → Authorized redirect URIs
-6. Save settings
+1. Get Resend API key from https://resend.com
+2. Configure SMTP in Supabase Dashboard:
+   - Host: `smtp.resend.com`
+   - Port: `465`
+   - Username: `resend`
+   - Password: [Your Resend API key]
+   - Sender: `noreply@yourdomain.com` (must be verified in Resend)
 
-### 3. Verify Environment Variables
+**For Custom Invitation Emails**:
 
-Ensure these are set in `.env.local`:
+Add to `.env.local`:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://[project].supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJ...
-NEXT_PUBLIC_SITE_URL=http://localhost:3000  # or production URL
-DATABASE_URL=postgresql://...
-MASTER_KEY=...
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=onboarding@yourdomain.com
 ```
 
-### 4. Test the Implementation
+### 3. Google OAuth (Optional)
 
-Follow the comprehensive testing guide in:
-📄 `docs/development/AUTH-TESTING-GUIDE.md`
+1. Go to Supabase Dashboard → Authentication → Providers → Google
+2. Enable Google provider
+3. Enter Client ID and Client Secret from Google Cloud Console
+4. Add callback URL to Google: `https://[your-project].supabase.co/auth/v1/callback`
+
+### 4. Environment Variables
+
+Required in `.env.local`:
+
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://[project].supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJ...
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Database
+DATABASE_URL=postgresql://...
+MASTER_KEY=...
+
+# Turnstile CAPTCHA (client-side)
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+
+# Resend (for invitation emails)
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=onboarding@yourdomain.com
+```
+
+### 5. Test the Implementation
 
 Key test flows:
-- ✅ Email/password registration with confirmation
-- ✅ Login with confirmed account
-- ✅ Google OAuth (new user + existing user)
-- ✅ Password reset flow
-- ✅ Email delivery via Resend
+- ✅ Magic link login (email click)
+- ✅ OTP code login (6-digit code)
+- ✅ Google OAuth (new + existing users)
+- ✅ Invitation acceptance via email link
+- ✅ Invitation acceptance via code entry
+- ✅ Rate limiting and CAPTCHA
 - ✅ Middleware route protection
 - ✅ Session persistence and token refresh
+
+See: `docs/auth/PASSWORDLESS-AUTH-SETUP.md` for detailed testing guide
 
 ## What's Working Now
 
 ### Code Implementation ✅
-- Root middleware for auth protection
-- Password reset request and update actions
-- Forgot password page with email form
-- Reset password page with new password form
-- Enhanced callback handler for all token types
-- Forgot password link in login form
-- Comprehensive testing documentation
+- Passwordless auth (Magic Link + OTP)
+- Google OAuth with invitation support
+- Custom invitation emails via Resend
+- Invitation acceptance (email link + manual code)
+- Multi-organization user management
+- Enhanced callback handler for all auth flows
+- Route protection middleware
+- Comprehensive auth utilities
 
 ### Needs Manual Configuration ⏳
-- Resend SMTP setup in Supabase Dashboard
-- Google OAuth configuration in Supabase Dashboard
-- Email template customization (optional but recommended)
+- Resend SMTP setup in Supabase Dashboard (for magic links)
+- Resend API key in `.env.local` (for invitation emails)
+- Turnstile CAPTCHA keys (dev test keys work by default)
+- Google OAuth (optional)
 
 ## Architecture Highlights
 
 ### Middleware Flow
 ```
-User Request → proxy.ts
+User Request → middleware.ts
                ↓
-            updateSession() (refresh tokens)
+            Refresh auth tokens
                ↓
             Check if authenticated
                ↓
     Yes: Allow access         No: Redirect to /auth/login
 ```
 
-### Password Reset Flow
+### Passwordless Login Flow
 ```
-1. User clicks "Forgot password?" → /auth/forgot-password
-2. Enters email → requestPasswordReset() server action
-3. Supabase sends email via Resend SMTP
-4. User clicks link → /auth/callback?type=recovery
-5. Redirects to /auth/reset-password
-6. User sets new password → resetPassword() server action
-7. Success → Redirects to login
+1. User enters email → sendOtpCode()
+2. Supabase sends email via Resend (magic link + 6-digit code)
+3a. Magic link: Click in email → /auth/callback
+3b. OTP code: Enter 6 digits → verifyOtpCode()
+4. Session established
+5. Callback checks membership:
+   - Has org → /active-loans
+   - No org → /auth/complete-profile
+```
+
+### Invitation Flow
+```
+1. Admin invites user → inviteUser() creates Invitation record
+2. sendInvitationEmail() sends email with token
+3. User clicks invite link → /auth/login?token=...
+4. LoginForm validates token, pre-fills email
+5. User authenticates (magic link or OTP)
+6. Callback extracts inviteToken → acceptInvitation()
+7. Creates UserOrganisation membership
+8. Redirects to /active-loans
 ```
 
 ### OAuth Flow
 ```
 1. User clicks "Sign in with Google"
-2. signInWithOAuth() redirects to Google
+2. signInWithOAuth() redirects to Google (with inviteToken if present)
 3. User authorizes
 4. Google redirects to /auth/callback?code=...
-5. Exchange code for session
-6. Check if user exists in DB
-   - Yes: Redirect to /active-loans
-   - No: Redirect to /auth/complete-profile
+5. Exchange code for session, check inviteToken
+6. If inviteToken: acceptInvitation(), redirect to /active-loans
+7. Else: Check membership → /active-loans or /auth/complete-profile
 ```
 
 ## Security Features
 
+✅ Passwordless authentication (no password storage)
+✅ Server-side CAPTCHA (Turnstile, invisible to users)
+✅ Rate limiting (4/hour per email, 6/hour per IP)
+✅ Token expiry (magic links: 1h, OTP: 10min)
+✅ Atomic invitation consumption (prevents double-use)
+✅ Email verification for invitations
 ✅ Route protection via middleware
-✅ Email confirmation required before login
-✅ Password minimum length (8 characters)
-✅ Secure token exchange in callback
 ✅ Automatic session refresh
 ✅ HTTPS-only cookies in production
 ✅ CSRF protection via Supabase
-✅ Rate limiting (Supabase default)
 
 ## Development Commands
 
@@ -157,28 +191,29 @@ npm run dev
 http://localhost:3000
 
 # Test flows
-- Registration: http://localhost:3000/auth/register
 - Login: http://localhost:3000/auth/login
-- Forgot Password: http://localhost:3000/auth/forgot-password
+- No Organization: http://localhost:3000/no-organization
+- Create Organization: http://localhost:3000/create-organization
 ```
 
 ## Troubleshooting
 
 If you encounter issues, refer to:
-- 📄 `docs/development/AUTH-TESTING-GUIDE.md` (Troubleshooting section)
-- 📄 `docs/development/ENVIRONMENT-VARIABLES.md` (Environment setup)
+- 📄 `docs/auth/PASSWORDLESS-AUTH-SETUP.md` (Complete setup and testing guide)
+- 📄 `docs/development/AUTH-PRISMA-ALIGNMENT.md` (User and org architecture)
 - 📄 `.cursor/rules/auth-rules.mdc` (Implementation patterns)
 
 ## Support Resources
 
 - [Supabase Auth SSR Docs](https://supabase.com/docs/guides/auth/server-side/nextjs)
+- [Supabase Passwordless Auth](https://supabase.com/docs/guides/auth/passwordless-login)
 - [Resend Documentation](https://resend.com/docs/introduction)
-- [Google OAuth Setup](https://developers.google.com/identity/protocols/oauth2)
+- [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/)
 
 ---
 
 **Status**: ✅ Code implementation complete
-**Next**: Manual configuration of Resend + Google OAuth in Supabase Dashboard
-**Then**: Run tests from AUTH-TESTING-GUIDE.md
+**Next**: Configure Resend SMTP + API key, Turnstile CAPTCHA
+**Then**: Test all flows from PASSWORDLESS-AUTH-SETUP.md
 
 
