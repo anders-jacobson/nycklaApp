@@ -18,116 +18,40 @@ const data = await prisma.keyType.findMany({ where: { userId } });
 const { data } = await supabase.from('KeyType')...
 ```
 
-### 2. Auth → getCurrentUser() with Multi-Organisation Support
+### 2. Auth → getCurrentUser() + Supabase SSR
 
-```typescript
-// Standard pattern used in ALL server actions
-import { getCurrentUser } from '@/lib/auth-utils';
-
-// Returns: { id, email, activeOrganisationId, roleInActiveOrg, allOrganisations[] }
-const user = await getCurrentUser();
-
-// Use activeOrganisationId for data filtering
-const keys = await prisma.keyType.findMany({
-  where: { entityId: user.activeOrganisationId },
-});
-```
+Use `getCurrentUser()` from `@/lib/auth-utils` in server actions; returns `{ id, email, activeOrganisationId, roleInActiveOrg, allOrganisations[] }`. Use that for data filtering. For Supabase Auth SSR, middleware, or cookie handling, use the **supabase-auth-ssr** skill.
 
 ### 3. UI → shadcn/ui + Tabler Icons + ResponsiveDialog
 
-```typescript
-// ❌ NEVER plain HTML
-<button>Click</button>
+No plain HTML buttons/forms. Use `@/components/ui/*` and `@tabler/icons-react`. User-facing dialogs: `ResponsiveDialog` from `@/components/ui/responsive-dialog` (Dialog on desktop, Drawer on mobile). See `docs/development/UI-COMPONENTS.md`.
 
-// ✅ ALWAYS use shadcn/ui + Tabler Icons
-import { Button } from '@/components/ui/button';
-import { IconPlus } from '@tabler/icons-react';
+### 4. Server Actions → ActionResult<T>
 
-<Button><IconPlus className="h-4 w-4" />Add</Button>
+`type ActionResult<T> = { success: true; data?: T } | { success: false; error: string }`. Use `getCurrentUserId()` or `getCurrentUser()`, filter by org, use `prisma.$transaction` for multi-step ops, `revalidatePath` then return.
 
-// ✅ Use ResponsiveDialog for user-facing dialogs (auto mobile/desktop)
-import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
+### 5. Data Isolation
 
-<ResponsiveDialog
-  open={isOpen}
-  onOpenChange={setIsOpen}
-  title="Dialog Title"
-  footer={<Button>Save</Button>}
->
-  <div>Content</div>
-</ResponsiveDialog>
-```
-
-### 4. Server Actions → Standard Result Type
-
-```typescript
-'use server';
-type ActionResult<T> = { success: true; data?: T } | { success: false; error: string };
-
-export async function action(formData: FormData): Promise<ActionResult<any>> {
-  try {
-    const userId = await getCurrentUserId();
-    // Always filter by userId for data isolation
-    const result = await prisma.$transaction(async (tx) => {
-      // Multi-step operations in transactions
-    });
-    revalidatePath('/path');
-    return { success: true, data: result };
-  } catch (error) {
-    return { success: false, error: 'Operation failed' };
-  }
-}
-```
-
-### 5. Data Isolation → Always Filter by activeOrganisationId
-
-```typescript
-const user = await getCurrentUser();
-
-// ✅ ALWAYS filter by activeOrganisationId for multi-tenant isolation
-where: { entityId: user.activeOrganisationId, ...otherConditions }
-
-// ❌ NEVER query without organisation filter (security risk)
-where: { id } // Missing entityId filter!
-```
+Always filter by `entityId: user.activeOrganisationId` (or equivalent). Never query by `id` alone without org scope.
 
 ### 6. Documentation → Only in docs/ Directory
 
 - ✅ `docs/security/`, `docs/development/`, `docs/product/`
 - ❌ NEVER create `.md` files in project root (except README.md)
 
-## 📊 Project Schema (Quick Reference)
+## Schema (see `prisma/schema.prisma`)
 
-```typescript
-User { id, email (unique), activeOrganisationId? }
-UserOrganisation { userId, organisationId, role, joinedAt }
-Entity { id, name, encryptionKey } // "Organisation" in UI
-KeyType { label, function, entityId }
-KeyCopy { copyNumber, status, keyTypeId }
-Borrower { name, email, entityId }
-IssueRecord { issuedDate, returnedDate?, keyCopyId, borrowerId, userId }
+User, UserOrganisation, Entity (org in UI), KeyType, KeyCopy, Borrower, IssueRecord. Multi-tenant: filter by `user.activeOrganisationId` / `entityId`.
 
-// User can belong to multiple organisations (via UserOrganisation)
-// activeOrganisationId tracks which org user is currently working in
-```
+## Imports
 
-## 🔧 Standard Imports
+`prisma` from `@/lib/prisma`; Supabase from `@/lib/supabase/server` (auth only); UI from `@/components/ui/*`, `@tabler/icons-react`.
 
-```typescript
-import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server'; // Server only for auth
-import { Button } from '@/components/ui/button';
-import { ResponsiveDialog } from '@/components/ui/responsive-dialog'; // User dialogs
-import { IconPlus } from '@tabler/icons-react';
-```
+## Reference
 
-## 📚 Reference
-
-- **More patterns**: `.cursor/rules/patterns.mdc` (context-based)
-- **UI Components**: `docs/development/UI-COMPONENTS.md` (ResponsiveDialog guide)
-- **Project context**: `.cursor/rules/project-context.mdc`
-- **Features**: `.cursor/rules/key-features.mdc`
-- **Actual schema**: `prisma/schema.prisma`
+- **Supabase Auth SSR**: `.cursor/skills/supabase-auth-ssr/SKILL.md` (cookie/middleware patterns)
+- **Patterns**: `.cursor/rules/patterns.mdc` | **Context**: `.cursor/rules/project-context.mdc` | **Features**: `.cursor/rules/key-features.mdc`
+- **UI**: `docs/development/UI-COMPONENTS.md` | **Schema**: `prisma/schema.prisma`
 
 ## ✅ Checklist
 

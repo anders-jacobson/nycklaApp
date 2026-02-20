@@ -1,87 +1,23 @@
+---
+description: Where to create documentation; docs only in docs/ subdirs, never in project root.
+alwaysApply: false
+---
+
 # File Organization Rules
 
-## 🚨 CRITICAL: Documentation Location Rules
+**NEVER create markdown documentation files in the project root.** Only `README.md` is allowed at root.
 
-**NEVER create markdown documentation files in the project root.**
+## Locations
 
-### Correct Documentation Locations
+| Content Type               | Location            |
+| -------------------------- | ------------------- |
+| Implementation, testing, migrations, ADRs | `docs/development/` |
+| Security, auth, encryption | `docs/security/`   |
+| Requirements, user guides | `docs/product/`    |
 
-```
-docs/
-├── security/          # Security, encryption, auth documentation
-├── development/       # Implementation, testing, architecture docs
-└── product/          # Requirements, user guides
-```
+## Conventions
 
-### File Placement Rules
+- **kebab-case** filenames; descriptive (e.g. `multi-tenant-implementation.md`).
+- When creating docs: pick the correct `docs/` subdir, create there, update section README if needed.
 
-| Content Type                 | Location            | Examples                                         |
-| ---------------------------- | ------------------- | ------------------------------------------------ |
-| **Implementation summaries** | `docs/development/` | Migration status, feature implementations        |
-| **Testing documents**        | `docs/development/` | Test checklists, test summaries, testing guides  |
-| **Security documentation**   | `docs/security/`    | Auth guides, encryption specs, security policies |
-| **Product requirements**     | `docs/product/`     | Requirements, user stories, feature specs        |
-| **Database migrations**      | `docs/development/` | Migration guides, database changes               |
-| **Architecture decisions**   | `docs/development/` | ADRs, design decisions                           |
-
-### Allowed Root Files
-
-**ONLY these markdown files belong in the project root:**
-
-- `README.md` - Project overview and quick start
-- `.cursorignore` - Cursor settings (not markdown)
-- `.gitignore` - Git settings (not markdown)
-
-### Naming Conventions
-
-- Use **kebab-case**: `multi-tenant-implementation.md`
-- Be **descriptive**: `testing-checklist-multi-tenant.md` not `tests.md`
-- Include **context**: `database-migration-placeholder-emails.md`
-
-## 🔧 When Creating Documentation
-
-**Before creating any markdown file:**
-
-1. ✅ **Determine category**: Is it security, development, or product?
-2. ✅ **Choose location**: Place in correct `docs/` subdirectory
-3. ✅ **Name properly**: Use kebab-case with descriptive name
-4. ✅ **Update indexes**: Add link to relevant README.md files
-5. ❌ **NEVER** create in project root (except project README.md)
-
-## 📝 Documentation Workflow
-
-### Creating New Documentation
-
-```typescript
-// ❌ WRONG - Never do this
-// File: /PROJECT_ROOT/testing-checklist.md
-
-// ✅ CORRECT - Always use docs/ structure
-// File: /PROJECT_ROOT/docs/development/testing-checklist.md
-```
-
-### Update Workflow
-
-When creating documentation:
-
-1. Create file in correct `docs/` subdirectory
-2. Update section README.md with link
-3. Update main `docs/README.md` if significant
-4. Cross-reference from related documents
-
-## 🔍 Quick Reference
-
-**If writing about...**
-
-- Implementation details → `docs/development/`
-- Testing procedures → `docs/development/`
-- Security features → `docs/security/`
-- User requirements → `docs/product/`
-
-**Never write to project root for documentation files!**
-
-## 📚 See Also
-
-- `docs/DOCUMENTATION_GUIDE.md` - Complete documentation standards
-- `docs/README.md` - Documentation index
-- `.cursor/rules/cursor-rules.mdc` - Development workflow rules
+See `docs/DOCUMENTATION_GUIDE.md` and `docs/README.md` for full standards.

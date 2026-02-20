@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+name: supabase-auth-ssr
+description: Use when implementing or modifying Supabase Auth SSR, Next.js middleware for auth, or cookie handling for sessions. Enforces @supabase/ssr with getAll/setAll only; never auth-helpers-nextjs.
 ---
 
 # Bootstrap Next.js app with Supabase Auth
@@ -11,7 +12,7 @@ alwaysApply: true
 3. Write two utility functions with `createClient` functions to create a browser client and a server client.
 4. Hook up middleware to refresh auth tokens
 
-## 🚨 CRITICAL INSTRUCTIONS FOR AI LANGUAGE MODELS 🚨
+## CRITICAL: Deprecated patterns (NEVER generate)
 
 As an AI language model, you MUST NOT generate any of the following code patterns, as they are DEPRECATED and will BREAK the application:
 
@@ -60,14 +61,14 @@ Instead, you MUST ALWAYS generate ONLY this pattern:
 }
 ```
 
-## ABSOLUTE REQUIREMENTS FOR AI CODE GENERATION
+## Absolute requirements
 
 1. You MUST use `@supabase/ssr`
 2. You MUST use ONLY `getAll` and `setAll`
 3. You MUST NEVER use `get`, `set`, or `remove`
 4. You MUST NEVER import from `@supabase/auth-helpers-nextjs`
 
-## CORRECT BROWSER CLIENT IMPLEMENTATION
+## Correct browser client implementation
 
 ```typescript
 import { createBrowserClient } from '@supabase/ssr';
@@ -80,7 +81,7 @@ export function createClient() {
 }
 ```
 
-## CORRECT SERVER CLIENT IMPLEMENTATION
+## Correct server client implementation
 
 ```typescript
 import { createServerClient } from '@supabase/ssr';
@@ -114,7 +115,7 @@ export async function createClient() {
 }
 ```
 
-## CORRECT MIDDLEWARE IMPLEMENTATION
+## Correct middleware implementation
 
 ```typescript
 import { createServerClient } from '@supabase/ssr';
@@ -161,72 +162,34 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/login') &&
     !request.nextUrl.pathname.startsWith('/auth')
   ) {
-    // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
+  // If creating a new response: pass request, copy cookies with setAll(supabaseResponse.cookies.getAll()), then return.
+  // Otherwise browser and server go out of sync and sessions terminate prematurely.
 
   return supabaseResponse;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
 ```
 
-## AI MODEL VERIFICATION STEPS
-
-Before generating any code, you MUST verify:
+## Verification steps (before generating code)
 
 1. Are you using ONLY `getAll` and `setAll`? If not, STOP and FIX.
 2. Are you importing from `@supabase/ssr`? If not, STOP and FIX.
 3. Do you see ANY instance of `get`, `set`, or `remove`? If yes, STOP and FIX.
 4. Are you importing from `auth-helpers-nextjs`? If yes, STOP and FIX.
 
-## CONSEQUENCES OF INCORRECT IMPLEMENTATION
+## Consequences of incorrect implementation
 
-If you generate code using:
+Using individual cookie methods or `auth-helpers-nextjs` will: break in production, fail to maintain session state, cause auth loops, and create security vulnerabilities.
 
-- Individual cookie methods (`get`/`set`/`remove`)
-- `auth-helpers-nextjs` package
-
-The implementation will:
-
-1. Break in production
-2. Fail to maintain session state
-3. Cause authentication loops
-4. Result in security vulnerabilities
-
-## AI MODEL RESPONSE TEMPLATE
-
-When asked about Supabase Auth SSR implementation, you MUST:
-
-1. ONLY use code from this guide
-2. NEVER suggest deprecated approaches
-3. ALWAYS use the exact cookie handling shown above
-4. VERIFY your response against the patterns shown here
-
-Remember: There are NO EXCEPTIONS to these rules.
+There are NO EXCEPTIONS to these rules.
