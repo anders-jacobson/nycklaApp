@@ -116,11 +116,6 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
                 );
               })}
             </div>
-
-            {/* Step counter */}
-            <div className="text-center mt-2 text-sm text-muted-foreground">
-              Step {currentStepIndex + 1} of {STEPS.length}
-            </div>
           </div>
         </div>
       )}
