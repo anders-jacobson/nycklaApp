@@ -8,19 +8,9 @@ interface TurnstileProps {
   onError?: () => void;
 }
 
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (element: HTMLElement, options: any) => string;
-      reset: (widgetId: string) => void;
-      remove: (widgetId: string) => void;
-    };
-  }
-}
-
 export function Turnstile({ siteKey, onSuccess, onError }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const widgetIdRef = useRef<string | null>(null);
+  const widgetIdRef = useRef<string | null | undefined>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -53,7 +43,7 @@ export function Turnstile({ siteKey, onSuccess, onError }: TurnstileProps) {
     }
 
     return () => {
-      if (widgetIdRef.current && window.turnstile) {
+      if (widgetIdRef.current != null && window.turnstile) {
         window.turnstile.remove(widgetIdRef.current);
       }
     };

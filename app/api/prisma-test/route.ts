@@ -9,8 +9,8 @@ export async function GET() {
       where: { email },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         email,
-        // cooperative field removed - now using Entity model
         name: 'Initial Name',
       },
     });

@@ -9,7 +9,8 @@ export function Toaster() {
   const [items, setItems] = useState<ToastItem[]>([]);
 
   useEffect(() => {
-    return subscribe(setItems);
+    const unsub = subscribe(setItems);
+    return () => { unsub(); };
   }, []);
 
   return (

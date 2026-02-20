@@ -3,14 +3,15 @@
  * Verifies that data is properly filtered by entityId when switching organisations
  */
 
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth-utils';
 
 // Mock Supabase auth
-jest.mock('@/lib/supabase/server', () => ({
-  createClient: jest.fn(() => ({
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(() => ({
     auth: {
-      getUser: jest.fn(),
+      getUser: vi.fn(),
     },
   })),
 }));
@@ -28,6 +29,7 @@ describe('Multi-tenant data isolation', () => {
     // Create test user
     const user = await prisma.user.create({
       data: {
+        id: crypto.randomUUID(),
         email: 'test-isolation@example.com',
         name: 'Test User',
       },
@@ -200,7 +202,7 @@ describe('Multi-tenant data isolation', () => {
       const { createClient } = require('@/lib/supabase/server');
       const mockSupabase = {
         auth: {
-          getUser: jest.fn().mockResolvedValue({
+          getUser: vi.fn().mockResolvedValue({
             data: { user: { email: 'test-isolation@example.com' } },
             error: null,
           }),

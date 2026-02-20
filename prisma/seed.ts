@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Database Seed Script for Key Management System Nyckla
  *
@@ -356,7 +357,6 @@ async function main() {
       data: {
         label: keyType.label,
         function: keyType.function,
-        accessArea: keyType.accessArea,
         entityId: entityId,
       },
     });

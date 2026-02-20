@@ -107,7 +107,7 @@ async function encryptFields(data: any, modelName: ModelName, prisma: any): Prom
   if (!data) return data;
   
   const fieldsToEncrypt = ENCRYPTION_FIELDS[modelName];
-  if (!fieldsToEncrypt || fieldsToEncrypt.length === 0) {
+  if (!fieldsToEncrypt) {
     return data;
   }
   
@@ -147,7 +147,7 @@ async function decryptFields(result: any, modelName: ModelName, prisma: any): Pr
   if (!result) return result;
   
   const fieldsToDecrypt = ENCRYPTION_FIELDS[modelName];
-  if (!fieldsToDecrypt || fieldsToDecrypt.length === 0) {
+  if (!fieldsToDecrypt) {
     return result;
   }
   

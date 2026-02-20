@@ -43,8 +43,12 @@ async function getKeyTypes() {
                 select: {
                   id: true,
                   affiliation: true,
-                  residentBorrower: true, // Get full record for decryption
-                  externalBorrower: true, // Get full record for decryption
+                  createdAt: true,
+                  entityId: true,
+                  residentBorrowerId: true,
+                  externalBorrowerId: true,
+                  residentBorrower: true,
+                  externalBorrower: true,
                 },
               },
             },

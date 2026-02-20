@@ -79,7 +79,7 @@ export default function OverdueChart({
                       <div className="grid gap-2">
                         <div className="grid gap-1">
                           {payload
-                            .filter((entry) => entry.value && entry.value > 0)
+                            .filter((entry) => typeof entry.value === 'number' && entry.value > 0)
                             .map((entry, index) => (
                               <div key={index} className="flex items-center gap-2 text-sm">
                                 <div

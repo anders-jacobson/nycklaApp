@@ -36,7 +36,6 @@ export async function createKeyType(formData: FormData): Promise<ActionResult<{ 
         data: {
           label,
           function: name,
-          accessArea: accessArea || undefined,
           entityId,
         },
         select: { id: true },

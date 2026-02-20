@@ -24,7 +24,7 @@ interface KeyType {
   id: string;
   label: string;
   function: string;
-  accessArea: string | null;
+  accessArea?: string | null;
   totalCopies: number;
   availableCopies: number;
   availableCopyDetails?: Array<{ id: string; copyNumber: number }>;

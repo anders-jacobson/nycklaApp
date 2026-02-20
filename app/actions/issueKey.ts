@@ -21,7 +21,6 @@ export async function getAvailableKeyTypes(): Promise<
       id: string;
       label: string;
       function: string;
-      accessArea: string | null;
       totalCopies: number;
       availableCopies: number;
       availableCopyDetails: Array<{ id: string; copyNumber: number }>;
@@ -45,7 +44,6 @@ export async function getAvailableKeyTypes(): Promise<
       id: kt.id,
       label: kt.label,
       function: kt.function,
-      accessArea: kt.accessArea,
       totalCopies: kt.keyCopies.length,
       availableCopies: kt.keyCopies.filter((copy) => copy.status === 'AVAILABLE').length,
       availableCopyDetails: kt.keyCopies

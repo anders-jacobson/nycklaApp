@@ -15,9 +15,9 @@ export const basePrisma = globalForPrisma.prisma ?? new PrismaClient({
   },
   // Add query timeout (10 seconds)
   // This helps fail fast on unstable connections rather than hanging
+  // @ts-ignore - __internal is not in Prisma's public types
   __internal: {
     engine: {
-      // @ts-ignore - Internal Prisma configuration
       connectTimeout: 10000, // 10 seconds to establish connection
       queryTimeout: 10000,   // 10 seconds for query execution
     },

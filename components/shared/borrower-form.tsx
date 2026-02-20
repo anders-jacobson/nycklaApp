@@ -146,8 +146,8 @@ export function BorrowerForm({
             id: b.id,
             name: b.name,
             email: b.email,
-            phone: b.phone,
-            company: b.company,
+            phone: b.phone ?? undefined,
+            company: b.company ?? undefined,
           })),
         );
       } catch {}
@@ -199,7 +199,7 @@ export function BorrowerForm({
 
   // Validate form data whenever it changes
   useEffect(() => {
-    const result = validateBorrowerData({ ...formData, affiliation });
+    const result = validateBorrowerData({ name: formData.name, email: formData.email, phone: formData.phone, company: formData.company, borrowerPurpose: formData.borrowerPurpose });
     setValidation(result);
   }, [formData, affiliation]);
 
@@ -237,7 +237,7 @@ export function BorrowerForm({
         email: validation.sanitized.email,
         phone: validation.sanitized.phone,
         company: affiliation === 'EXTERNAL' ? validation.sanitized.company : undefined,
-        address: affiliation === 'EXTERNAL' ? validation.sanitized.address : undefined,
+        address: affiliation === 'EXTERNAL' ? formData.address : undefined,
         borrowerPurpose:
           affiliation === 'EXTERNAL' ? validation.sanitized.borrowerPurpose : undefined,
       });

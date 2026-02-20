@@ -3,18 +3,18 @@
  * Verifies that role permissions are correctly enforced across all server actions
  */
 
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
 import { updateKeyType, deleteKeyType, addKeyCopy, markAvailableCopyLost, markLostCopyFound } from '@/app/actions/keyTypes';
 import { markKeyLost } from '@/app/actions/issueKey';
 import { inviteUser, changeUserRole, removeUser } from '@/app/actions/team';
 import { updateOrganisationName } from '@/app/actions/organisation';
 
 // Mock Supabase auth
-jest.mock('@/lib/supabase/server', () => ({
-  createClient: jest.fn(() => ({
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(() => ({
     auth: {
-      getUser: jest.fn(),
+      getUser: vi.fn(),
     },
   })),
 }));
@@ -39,9 +39,11 @@ describe('Role-Based Access Control', () => {
     orgId = org.id;
 
     // Create three users with different roles
+    const ts = Date.now();
     const ownerUser = await prisma.user.create({
       data: {
-        email: `owner-${Date.now()}@example.com`,
+        id: crypto.randomUUID(),
+        email: `owner-${ts}@example.com`,
         name: 'Test Owner',
         activeOrganisationId: orgId,
       },
@@ -50,7 +52,8 @@ describe('Role-Based Access Control', () => {
 
     const adminUser = await prisma.user.create({
       data: {
-        email: `admin-${Date.now()}@example.com`,
+        id: crypto.randomUUID(),
+        email: `admin-${ts}@example.com`,
         name: 'Test Admin',
         activeOrganisationId: orgId,
       },
@@ -59,7 +62,8 @@ describe('Role-Based Access Control', () => {
 
     const memberUser = await prisma.user.create({
       data: {
-        email: `member-${Date.now()}@example.com`,
+        id: crypto.randomUUID(),
+        email: `member-${ts}@example.com`,
         name: 'Test Member',
         activeOrganisationId: orgId,
       },
@@ -125,7 +129,7 @@ describe('Role-Based Access Control', () => {
     const { createClient } = require('@/lib/supabase/server');
     const mockSupabase = {
       auth: {
-        getUser: jest.fn().mockResolvedValue({
+        getUser: vi.fn().mockResolvedValue({
           data: { user: { email } },
           error: null,
         }),

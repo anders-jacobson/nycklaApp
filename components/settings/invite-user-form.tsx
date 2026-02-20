@@ -56,7 +56,7 @@ export function InviteUserForm({ userRole }: { userRole: UserRole }) {
         </div>
       </div>
 
-      {state.error && <p className="text-sm text-destructive">{state.error}</p>}
+      {!state.success && state.error && <p className="text-sm text-destructive">{state.error}</p>}
 
       {state.success && <p className="text-sm text-green-600">✓ Invitation sent successfully!</p>}
 

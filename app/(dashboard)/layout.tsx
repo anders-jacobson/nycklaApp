@@ -59,6 +59,11 @@ async function Layout({ children }: { children: React.ReactNode }) {
           email: profile.email,
         };
 
+        // Users with no org memberships must set one up before accessing dashboard
+        if (organisations.length === 0) {
+          redirect('/no-organization');
+        }
+
         // Check if onboarding is needed
         if (activeEntityId) {
           const needsOnboarding = await shouldShowOnboarding(activeEntityId);

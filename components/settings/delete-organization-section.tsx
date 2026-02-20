@@ -37,7 +37,7 @@ export function DeleteOrganizationSection({
       setStats(result.data);
       setDialogOpen(true);
     } else {
-      toastError(result.error || 'Failed to load organization statistics');
+      toastError(!result.success ? result.error : 'Failed to load organization statistics');
     }
   };
 

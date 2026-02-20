@@ -565,7 +565,6 @@ export async function acceptInvitation(token: string): Promise<ActionResult<void
         },
         data: {
           accepted: true,
-          acceptedAt: new Date(),
         },
       });
 
@@ -594,10 +593,10 @@ export async function acceptInvitation(token: string): Promise<ActionResult<void
       });
 
       // If user has no active org, set this as active
-      if (!currentUser.activeOrganisationId) {
+      if (!currentUser.entityId) {
         await tx.user.update({
           where: { id: currentUser.id },
-          data: { activeOrganisationId: invitation.entityId },
+          data: { activeOrganisationId: invitation.entityId }, // set active org on first join
         });
       }
 
