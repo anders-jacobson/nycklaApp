@@ -171,8 +171,7 @@ export async function rotateEntityKey(entityId: string): Promise<string> {
   // 2. Decrypt PII with old key
   // 3. Re-encrypt PII with new key
   // 4. Update records
-  
-  console.log(`Entity key rotated for entity ${entityId}`);
+
   return encryptedNewKey;
 }
 

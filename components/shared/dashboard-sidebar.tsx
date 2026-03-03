@@ -2,16 +2,10 @@
 
 import * as React from 'react';
 import {
-  IconBuilding,
-  IconCamera,
   IconDashboard,
-  IconFileAi,
-  IconFileDescription,
   IconHelp,
   IconListDetails,
-  IconSearch,
   IconSettings,
-  IconUsers,
 } from '@tabler/icons-react';
 
 import { NavMain } from './nav-main';
@@ -56,54 +50,6 @@ const data = {
       title: 'Support',
       url: '#',
       icon: IconHelp,
-    },
-  ],
-  navClouds: [
-    {
-      title: 'Capture',
-      icon: IconCamera,
-      isActive: true,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Proposal',
-      icon: IconFileDescription,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Prompts',
-      icon: IconFileAi,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
     },
   ],
   navSecondary: [],

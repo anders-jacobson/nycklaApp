@@ -5,6 +5,13 @@
 
 import { Resend } from 'resend';
 
+if (!process.env.RESEND_API_KEY) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('RESEND_API_KEY environment variable is required in production.');
+  }
+  console.warn('⚠️  RESEND_API_KEY not set — email sending will fail at runtime.');
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
@@ -14,15 +21,15 @@ const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
  */
 export async function sendInvitationEmail(params: {
   to: string;
-  organizationName: string;
+  organisationName: string;
   inviterName: string;
   role: string;
   inviteUrl: string;
 }): Promise<void> {
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: FROM_EMAIL,
     to: params.to,
-    subject: `You've been invited to join ${params.organizationName}`,
+    subject: `You've been invited to join ${params.organisationName}`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -35,8 +42,8 @@ export async function sendInvitationEmail(params: {
           <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
             <h2 style="margin: 0 0 16px 0; color: #1a1a1a;">You've been invited!</h2>
             <p style="margin: 0; font-size: 16px;">
-              <strong>${params.inviterName}</strong> has invited you to join 
-              <strong>${params.organizationName}</strong> as a <strong>${params.role}</strong>.
+              <strong>${params.inviterName}</strong> has invited you to join
+              <strong>${params.organisationName}</strong> as a <strong>${params.role}</strong>.
             </p>
           </div>
 
@@ -56,4 +63,8 @@ export async function sendInvitationEmail(params: {
       </html>
     `,
   });
+
+  if (error) {
+    throw new Error(`Failed to send invitation email: ${error.message}`);
+  }
 }

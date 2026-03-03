@@ -312,6 +312,10 @@ export async function getAvailableKeyCopy(keyTypeId: string): Promise<
 /**
  * Return a key: mark issue as returned and set the key copy back to AVAILABLE.
  * If the borrower has no other active loans, delete the borrower (GDPR cleanup).
+ *
+ * Authorization: intentionally open to all roles (MEMBER, ADMIN, OWNER).
+ * Any staff member should be able to accept a key return at the front desk.
+ * Contrast with markKeyLost() which is restricted to OWNER/ADMIN.
  */
 export async function returnKey(issueRecordId: string): Promise<ActionResult<undefined>> {
   try {

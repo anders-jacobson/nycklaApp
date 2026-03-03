@@ -6,8 +6,8 @@
  *
  * WHAT IT CREATES:
  * - Entity: "Testgården Bostadsrättsförening" with encryption keys
- * - User: anders.ebrev@gmail.com (ADMIN role)
- * - Supabase Auth user with password: TestPassword123!
+ * - User: from SEED_TEST_EMAIL env var (ADMIN role)
+ * - Supabase Auth user with password: from SEED_TEST_PASSWORD env var
  * - 6 Key Types: C (Fastighetsskötare), E (Sophämtning), G (Husmorsnyckel),
  *                L (Tvättstuga), M (Förråd Gökärtsvägen), N (Förråd Pilvägen)
  * - ~95 Key Copies with realistic status distribution (75% out, 20% available, 5% lost)
@@ -29,9 +29,7 @@
  * USAGE:
  *   npx prisma db seed
  *
- * After running, login with:
- *   Email: anders.ebrev@gmail.com
- *   Password: TestPassword123!
+ * After running, login with the credentials set in SEED_TEST_EMAIL / SEED_TEST_PASSWORD.
  */
 
 import { prisma } from '../lib/prisma';
@@ -237,8 +235,11 @@ async function main() {
     console.log('   Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY to .env.local');
   }
 
-  const testEmail = 'anders.ebrev@gmail.com';
-  const testPassword = 'TestPassword123!'; // Default password
+  const testEmail = process.env.SEED_TEST_EMAIL;
+  const testPassword = process.env.SEED_TEST_PASSWORD;
+  if (!testEmail || !testPassword) {
+    throw new Error('SEED_TEST_EMAIL and SEED_TEST_PASSWORD env vars are required to run the seed script.');
+  }
 
   // Create or update Supabase Auth user
   if (supabaseUrl && supabaseSecretKey) {

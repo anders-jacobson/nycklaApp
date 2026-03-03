@@ -6,7 +6,9 @@ import { acceptInvitation } from '@/app/actions/team';
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/active-loans';
+  // Validate `next` is a relative path to prevent open redirect attacks
+  const rawNext = searchParams.get('next') ?? '/active-loans';
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/active-loans';
   const type = searchParams.get('type'); // email confirmation, password reset, etc.
 
   if (code) {

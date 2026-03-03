@@ -2,9 +2,11 @@
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 
-export async function updateUser({ email, name }: { email: string; name?: string }) {
+type ActionResult = { success: true } | { success: false; error: string };
+
+export async function updateUser({ email, name }: { email: string; name?: string }): Promise<ActionResult> {
   if (!email) {
-    return { error: 'Email is required.' };
+    return { success: false, error: 'Email is required.' };
   }
 
   try {
@@ -16,7 +18,7 @@ export async function updateUser({ email, name }: { email: string; name?: string
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return { error: 'Not authenticated.' };
+      return { success: false, error: 'Not authenticated.' };
     }
 
     // Update user profile - entity cannot be changed after registration
@@ -29,8 +31,7 @@ export async function updateUser({ email, name }: { email: string; name?: string
 
     return { success: true };
   } catch (error: unknown) {
-    let message = 'Något gick fel vid uppdatering.';
-    if (error instanceof Error) message = error.message;
-    return { error: message };
+    const message = error instanceof Error ? error.message : 'Något gick fel vid uppdatering.';
+    return { success: false, error: message };
   }
 }

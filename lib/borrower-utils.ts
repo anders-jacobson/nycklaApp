@@ -240,8 +240,7 @@ export async function createBorrowerWithAffiliation(
     isExternal?: boolean;
   },
   entityId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tx?: any, // Accepts both base and extended Prisma transaction clients
+  tx?: Prisma.TransactionClient,
 ) {
   const prismaClient = tx || prisma;
   const { name, email, phone, company, address, borrowerPurpose, isExternal } = data;

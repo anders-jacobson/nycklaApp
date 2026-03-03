@@ -123,9 +123,12 @@ async function encryptFields(data: any, modelName: ModelName, prisma: any): Prom
   }
   
   if (!entityId) {
-    return data; // Skip encryption if no entity context
+    throw new Error(
+      `Cannot encrypt PII for model "${modelName}": entityId could not be resolved from the data context. ` +
+      'Ensure entityId is present in the write data or accessible via the borrower relation.',
+    );
   }
-  
+
   const entityKey = await getEntityKey(entityId);
   const encrypted = { ...data };
   

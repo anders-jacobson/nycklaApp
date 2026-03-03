@@ -11,18 +11,23 @@ export default async function Page({
   const params = await searchParams;
   
   // Fetch data for chart and table
-  const [borrowersData, overdueSummary] = await Promise.all([
+  const [borrowersResult, overdueResult] = await Promise.all([
     getBorrowersWithKeysGrouped(),
     getOverdueSummary(),
   ]);
+
+  const borrowersData = borrowersResult.success ? borrowersResult.data : [];
+  const overdueSummary = overdueResult.success ? overdueResult.data : null;
 
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-          <div className="px-4 lg:px-6">
-            <OverdueChart data={overdueSummary} />
-          </div>
+          {overdueSummary && (
+            <div className="px-4 lg:px-6">
+              <OverdueChart data={overdueSummary} />
+            </div>
+          )}
           <div className="px-4 lg:px-6">
             <DataTable data={borrowersData} highlightBorrowerId={params.borrowerId} />
           </div>

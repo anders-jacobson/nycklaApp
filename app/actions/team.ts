@@ -107,10 +107,14 @@ export async function inviteUser(
     });
 
     // Send invitation email
-    const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/login?token=${token}`;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (!siteUrl) {
+      return { success: false, error: 'NEXT_PUBLIC_SITE_URL is not configured.' };
+    }
+    const inviteUrl = `${siteUrl}/auth/login?token=${token}`;
     await sendInviteEmail({
       to: email,
-      organizationName: invitation.entity.name,
+      organisationName: invitation.entity.name,
       inviterName: currentUser.name || currentUser.email,
       role,
       inviteUrl,

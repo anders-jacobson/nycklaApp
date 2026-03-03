@@ -48,7 +48,6 @@ async function Layout({ children }: { children: React.ReactNode }) {
       });
 
       if (profile) {
-        activeEntityId = profile.activeOrganisationId || undefined;
         organisations = profile.organisations.map((o) => ({
           id: o.organisation.id,
           name: o.organisation.name,
@@ -64,12 +63,21 @@ async function Layout({ children }: { children: React.ReactNode }) {
           redirect('/no-organization');
         }
 
+        // Mirror getCurrentUser() fallback: if activeOrganisationId is null or no longer
+        // a valid membership, fall back to the first org (deterministic due to orderBy asc).
+        const isActiveOrgValid =
+          profile.activeOrganisationId &&
+          profile.organisations.some(
+            (o) => o.organisationId === profile.activeOrganisationId,
+          );
+        activeEntityId = isActiveOrgValid
+          ? profile.activeOrganisationId!
+          : profile.organisations[0].organisationId;
+
         // Check if onboarding is needed
-        if (activeEntityId) {
-          const needsOnboarding = await shouldShowOnboarding(activeEntityId);
-          if (needsOnboarding) {
-            redirect('/onboarding/keys');
-          }
+        const needsOnboarding = await shouldShowOnboarding(activeEntityId);
+        if (needsOnboarding) {
+          redirect('/onboarding/keys');
         }
       }
     } catch (error) {

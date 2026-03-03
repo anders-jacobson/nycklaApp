@@ -62,7 +62,8 @@ await prisma.keyType.findMany({
 ### Role checks
 ```ts
 import { requireRole } from '@/lib/auth-utils';
-await requireRole(user, entityId, 'ADMIN'); // throws if insufficient role
+await requireRole('ADMIN'); // throws if current user's role is below ADMIN
+// Role hierarchy: OWNER > ADMIN > MEMBER
 ```
 
 ### Server action shape
@@ -84,7 +85,7 @@ const plaintext = decryptWithEntityKey(encrypted, entityKey);
 ```ts
 // Polymorphic — use lib/borrower-utils.ts helpers, never access residentBorrower/externalBorrower directly
 import { getBorrowerDetails, createBorrowerWithAffiliation } from '@/lib/borrower-utils';
-const details = getBorrowerDetails(borrower); // returns unified decrypted object
+const details = await getBorrowerDetails(borrower, entityId); // returns unified decrypted object
 ```
 
 ### UI
