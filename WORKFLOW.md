@@ -108,11 +108,23 @@
 
 ---
 
-## Worktrees
+## Parallel Sessions (Worktrees)
 
 Run multiple Claude sessions on different branches simultaneously — each worktree is a full independent checkout.
 
-Useful when you have two independent things to work on at the same time — but only worth it when you actually do.
+Only worth it when you genuinely have two independent things to work on. Don't force it.
+
+**Daily habit when you do have parallel work**
+```bash
+# Tab 1 — already open, main feature
+# (no change needed)
+
+# Tab 2 — Cmd+T → new tab → cd into worktree → start Claude
+cd ~/Documents/Firma/Projects/Nyckla/worktrees/feat-my-feature
+claude
+```
+
+Ghostty tab titles automatically show the directory name so you always know which branch you're in.
 
 **Create and launch a worktree**
 ```bash
