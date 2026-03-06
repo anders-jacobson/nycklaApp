@@ -105,11 +105,42 @@
 
 ---
 
+## Worktrees
+
+Run multiple Claude sessions on different branches simultaneously — each worktree is a full independent checkout.
+
+**Create a worktree for a feature branch**
+```bash
+# New branch
+git worktree add /Users/Anders/Documents/Firma/Projects/Nyckla/worktrees/feat-my-feature -b feat/my-feature
+
+# Existing branch
+git worktree add /Users/Anders/Documents/Firma/Projects/Nyckla/worktrees/feat-my-feature feat/my-feature
+```
+
+**List all active worktrees**
+```bash
+git worktree list
+```
+
+**Remove a worktree when done**
+```bash
+git worktree remove /Users/Anders/Documents/Firma/Projects/Nyckla/worktrees/feat-my-feature
+```
+
+**Prune stale worktree refs** (if you deleted the folder manually)
+```bash
+git worktree prune
+```
+
+> Open each worktree in a separate Ghostty tab and launch Claude Code inside it — fully isolated sessions, no context bleed.
+
+---
+
 ## Still To Set Up
 
 - [ ] GitHub Actions CI pipeline
 - [ ] Parallel Ghostty sessions (Boris's tip #1)
-- [ ] Worktrees for running multiple Claude sessions simultaneously
 
 ---
 
