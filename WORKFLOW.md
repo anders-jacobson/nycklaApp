@@ -60,7 +60,7 @@
 
 - [ ] **Run code-simplifier subagent**
   ```
-  run code-simplifier on my changes
+  /simplify
   ```
   Cleans up duplication and simplifies logic — without changing functionality
 
@@ -101,6 +101,7 @@
 | Commit + PR | `/commit-push-pr` |
 | Sync with main | `/sync` |
 | Review changes | `/audit` |
+| Simplify code | `/simplify` |
 | Verify before PR | `/verify` |
 | New worktree | `git worktree add ~/…/worktrees/feat-x -b feat/x` |
 | List worktrees | `git worktree list` |
