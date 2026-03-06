@@ -54,7 +54,7 @@
 
 - [ ] **Run code review against CLAUDE.md conventions**
   ```
-  /review
+  /audit
   ```
   Checks for bugs, convention violations, and CLAUDE.md issues before committing
 
@@ -100,7 +100,7 @@
 | Open project in Cursor | `cursor .` |
 | Commit + PR | `/commit-push-pr` |
 | Sync with main | `/sync` |
-| Review changes | `/review` |
+| Review changes | `/audit` |
 | Verify before PR | `/verify` |
 | New worktree | `git worktree add ~/…/worktrees/feat-x -b feat/x` |
 | List worktrees | `git worktree list` |
