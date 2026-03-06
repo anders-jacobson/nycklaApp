@@ -153,7 +153,8 @@ async function markFoundAction(formData: FormData) {
 
 export default async function Page() {
   // Fetch both key types and key status data
-  const [keyTypes, keyChartData] = await Promise.all([getKeyTypes(), getKeyStatusSummary()]);
+  const [keyTypes, keyChartResult] = await Promise.all([getKeyTypes(), getKeyStatusSummary()]);
+  const keyChartData = keyChartResult.success ? keyChartResult.data : [];
 
   // Show empty state for new organisations
   if (keyTypes.length === 0) {

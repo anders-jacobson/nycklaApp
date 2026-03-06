@@ -75,6 +75,16 @@ type ActionResult<T> = { success: true; data?: T } | { success: false; error: st
 // Pattern: getCurrentUser() → validate → db operation (transaction if multi-step) → revalidatePath → return
 ```
 
+**Always unwrap ActionResult before passing data to components.** Never pass the raw result object to a component that expects a plain value.
+```ts
+// Correct
+const result = await getKeyStatusSummary();
+const chartData = result.success ? result.data : [];
+
+// Wrong — passes { success, data } object where array is expected
+<KeyChart data={result} />
+```
+
 ### Encryption
 ```ts
 import { encryptWithEntityKey, decryptWithEntityKey, getEntityKey } from '@/lib/entity-encryption';
