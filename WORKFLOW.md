@@ -157,6 +157,34 @@ git worktree prune
 
 ---
 
+## Working with Cursor
+
+Cursor and Claude Code share the same git repo — no special setup needed.
+
+**How conventions load:**
+- Claude Code reads `CLAUDE.md` (always loaded)
+- Cursor reads `.cursor/rules/cursor-rules.mdc` (always applied), which references `@CLAUDE.md` directly
+- Both tools follow the exact same conventions from the same file
+
+**When to use which:**
+- **Cursor** — quick edits, inline suggestions, staying in the editor, single-file changes
+- **Claude Code** — multi-file plans, security audits, large refactors, the plan-mode workflow
+
+**Cursor slash commands:**
+| Command | Purpose |
+|---|---|
+| `/code-review` | Review against conventions ≈ Claude Code's `/audit` |
+| `/check-entity-isolation` | Verify entityId scoping on changed files |
+| `/feature-workflow` | Step-by-step checklist for a feature branch |
+
+**Switching tools mid-feature:**
+Commit before switching. Both tools then see the same state.
+
+**Keeping conventions up to date:**
+Update `CLAUDE.md` only — Cursor picks it up automatically via `@CLAUDE.md` in the always-apply rule.
+
+---
+
 ## Still To Set Up
 
 - [ ] GitHub Actions CI pipeline

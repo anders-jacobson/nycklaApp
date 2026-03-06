@@ -14,7 +14,7 @@ This is a Swedish housing cooperative key management app for nyckelansvariga (ke
 - Track physical keys, borrowers, and lending records
 - Swedish context: pensioner-friendly UI, GDPR compliance
 - Authentication: Email + Google OAuth via Supabase Auth (cooperative name required during signup)
-- Data Isolation: Row Level Security ensures each cooperative's data is separate
+- Data isolation: per-entity `entityId` scoping + per-entity AES-256 encryption (not RLS)
 - UI: Tailwind CSS + shadcn/ui components with accessibility focus
 
 ## Core Features
@@ -33,31 +33,7 @@ This is a Swedish housing cooperative key management app for nyckelansvariga (ke
 
 ## Technical Constraints
 
-- No localStorage/sessionStorage (not supported in artifacts)
 - EU data storage (GDPR compliance)
 - Mobile-first responsive design
 - Online-only (no offline capability)
 - Server-side rendering for better performance
-
-## Architecture
-
-- **Next.js 15 App Router** for file-based routing
-- **Server Components** by default for optimal performance
-- **Prisma ORM** for type-safe database operations
-- **Server Actions** for form submissions and mutations
-- **Supabase** for PostgreSQL database and authentication
-
-## Supabase Configuration
-
-- **Organization**: test-ai-build (`pxskhfvbsxtaaulctibz`)
-- **Project**: anders.ebrev@gmail.com's Project (`fxrmufcdhibqojyodrdu`)
-- **Region**: EU North (Stockholm) - GDPR compliant
-- **Database**: PostgreSQL 17.4
-- **Status**: Active and healthy
-
-Reference: @PRD.md for complete requirements
-
-## Supabase Organization
-
-- All Supabase-related development, automation, and database operations must use the organization **test-ai-build** (ID: pxskhfvbsxtaaulctibz).
-- Do not use other organizations unless explicitly instructed.

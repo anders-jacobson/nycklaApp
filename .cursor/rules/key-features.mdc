@@ -30,7 +30,7 @@ Create a dashboard showing:
 2. Select key to return
 3. Mark as returned (clears lending record)
 4. Key becomes available again
-5. Keep borrower record for future use
+5. Borrower record is auto-deleted when they have no remaining active loans (GDPR cleanup)
 
 ## Key Copy Management
 
@@ -56,5 +56,3 @@ Create a dashboard showing:
 - Readable text sizes
 - Swipe gestures for tables
 - Bottom navigation for key actions
-
-Reference the complete PRD: @PRD.md
