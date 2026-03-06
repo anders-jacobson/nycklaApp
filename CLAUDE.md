@@ -105,10 +105,23 @@ import { getCurrentUser } from '@/lib/auth-utils';
 ### Transactions
 Use `prisma.$transaction()` for all multi-step writes. Pass `tx` into utility functions that need it (e.g. `createBorrowerWithAffiliation(..., tx)`).
 
+## Required Environment Variables
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `ENCRYPTION_KEY` | Always | Master key for envelope encryption — throws at startup if missing in production |
+| `RESEND_API_KEY` | Always | Email sending — throws at startup if missing in production |
+| `NEXT_PUBLIC_SITE_URL` | Always | Builds invitation URLs — validated before use in `team.ts` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Always | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Always | Supabase anon key |
+| `SEED_TEST_EMAIL` | Seed only | Test user email for `prisma db seed` |
+| `SEED_TEST_PASSWORD` | Seed only | Test user password for `prisma db seed` |
+
 ## Key Files
 
 | File | Purpose |
 |---|---|
+| `middleware.ts` | Edge auth gate — redirects unauthenticated requests on protected routes |
 | `prisma/schema.prisma` | Full data model |
 | `lib/auth-utils.ts` | `getCurrentUser`, role helpers |
 | `lib/entity-encryption.ts` | Per-entity PII encryption |
