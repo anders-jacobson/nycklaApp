@@ -2,6 +2,7 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { getBorrowerDetails } from '@/lib/borrower-utils';
+import { getEntityKey, encryptWithEntityKey } from '@/lib/entity-encryption';
 
 type ActionResult<T = void> = T extends void
   ? { success: true } | { success: false; error: string }
@@ -245,6 +246,7 @@ export async function updateBorrowerPurpose(
 ): Promise<ActionResult> {
   try {
     const { entityId } = await getCurrentUser();
+    const entityKey = await getEntityKey(entityId);
 
     // Find the borrower and ensure it belongs to the current entity
     const borrower = await prisma.borrower.findFirst({
@@ -268,7 +270,7 @@ export async function updateBorrowerPurpose(
         id: borrower.externalBorrower.id,
       },
       data: {
-        borrowerPurpose: purpose.trim() || null,
+        borrowerPurpose: purpose.trim() ? encryptWithEntityKey(purpose.trim(), entityKey) ?? null : null,
       },
     });
 

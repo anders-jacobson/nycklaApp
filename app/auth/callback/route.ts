@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { acceptInvitation } from '@/app/actions/team';
+import { cookies } from 'next/headers';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -41,9 +42,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL('/auth/login?error=no_email', req.url));
     }
 
-    // Extract invitation token (from user_metadata or query params)
+    // Extract invitation token (query params → user_metadata → cookie fallback for OAuth)
+    const cookieStore = await cookies();
+    const cookieToken = cookieStore.get('invite_token')?.value;
     const inviteToken =
-      searchParams.get('inviteToken') || user.user_metadata?.inviteToken;
+      searchParams.get('inviteToken') || user.user_metadata?.inviteToken || cookieToken;
+    if (cookieToken) {
+      cookieStore.delete('invite_token');
+    }
 
     // Note: Password reset flow removed - using passwordless auth only
 

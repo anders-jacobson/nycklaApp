@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 
 // Google OAuth sign-in
 export async function signInWithOAuth(provider: 'google', inviteToken?: string) {
@@ -12,8 +13,6 @@ export async function signInWithOAuth(provider: 'google', inviteToken?: string) 
     provider,
     options: {
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-      // Pass invitation token in query params (OAuth flow)
-      queryParams: inviteToken ? { inviteToken } : undefined,
     },
   });
 
@@ -22,6 +21,17 @@ export async function signInWithOAuth(provider: 'google', inviteToken?: string) 
   }
 
   if (data.url) {
+    // Store inviteToken in a short-lived httpOnly cookie — Google does not forward
+    // unknown query params, so queryParams: { inviteToken } silently drops the token.
+    if (inviteToken) {
+      const cookieStore = await cookies();
+      cookieStore.set('invite_token', inviteToken, {
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 600, // 10 minutes
+        path: '/',
+      });
+    }
     redirect(data.url);
   }
 }

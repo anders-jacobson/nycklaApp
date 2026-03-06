@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { revalidatePath } from 'next/cache';
-import { getEntityKey, encryptWithEntityKey } from '@/lib/entity-encryption';
+import { getEntityKey, encryptWithEntityKey, decryptWithEntityKey } from '@/lib/entity-encryption';
 
 type ActionResult<T> = { success: true; data?: T } | { success: false; error: string };
 
@@ -13,27 +13,29 @@ export async function checkEmailExists(
 ): Promise<ActionResult<{ exists: boolean }>> {
   try {
     const { entityId } = await getCurrentUser();
-
-    // Encrypt the email to match encrypted stored values
     const entityKey = await getEntityKey(entityId);
-    const encryptedEmail = encryptWithEntityKey(email, entityKey);
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (!encryptedEmail) {
-      return { success: false, error: 'Failed to encrypt email for search' };
-    }
-
-    const count = await prisma.borrower.count({
+    // Encrypted fields cannot be compared in SQL — fetch all and decrypt in memory
+    const borrowers = await prisma.borrower.findMany({
       where: {
         entityId,
         id: excludeBorrowerId ? { not: excludeBorrowerId } : undefined,
-        OR: [
-          { residentBorrower: { email: encryptedEmail } },
-          { externalBorrower: { email: encryptedEmail } },
-        ],
+      },
+      include: {
+        residentBorrower: { select: { email: true } },
+        externalBorrower: { select: { email: true } },
       },
     });
 
-    return { success: true, data: { exists: count > 0 } };
+    const exists = borrowers.some((b) => {
+      const encryptedEmail = b.residentBorrower?.email ?? b.externalBorrower?.email;
+      if (!encryptedEmail) return false;
+      const decrypted = decryptWithEntityKey(encryptedEmail, entityKey);
+      return decrypted?.toLowerCase() === normalizedEmail;
+    });
+
+    return { success: true, data: { exists } };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to check email';
     return { success: false, error: message };
@@ -59,11 +61,11 @@ export async function updateBorrowerAffiliation(params: {
     const entityKey = await getEntityKey(entityId);
 
     await prisma.$transaction(async (tx) => {
-      const borrower = await tx.borrower.findFirst({
+      const existing = await tx.borrower.findFirst({
         where: { id: params.borrowerId, entityId },
-        include: { residentBorrower: true, externalBorrower: true },
+        select: { id: true, residentBorrowerId: true, externalBorrowerId: true },
       });
-      if (!borrower) throw new Error('Borrower not found');
+      if (!existing) throw new Error('Borrower not found');
 
       if (params.target === 'EXTERNAL') {
         // Create external entity with encrypted data
@@ -78,13 +80,17 @@ export async function updateBorrowerAffiliation(params: {
           },
         });
         await tx.borrower.update({
-          where: { id: borrower.id },
+          where: { id: existing.id },
           data: {
             affiliation: 'EXTERNAL',
             externalBorrowerId: external.id,
             residentBorrowerId: null,
           },
         });
+        // Delete orphaned old sub-record to prevent PII leakage
+        if (existing.residentBorrowerId) {
+          await tx.residentBorrower.delete({ where: { id: existing.residentBorrowerId } });
+        }
       } else {
         // Create resident entity with encrypted data
         const resident = await tx.residentBorrower.create({
@@ -95,13 +101,17 @@ export async function updateBorrowerAffiliation(params: {
           },
         });
         await tx.borrower.update({
-          where: { id: borrower.id },
+          where: { id: existing.id },
           data: {
             affiliation: 'RESIDENT',
             residentBorrowerId: resident.id,
             externalBorrowerId: null,
           },
         });
+        // Delete orphaned old sub-record to prevent PII leakage
+        if (existing.externalBorrowerId) {
+          await tx.externalBorrower.delete({ where: { id: existing.externalBorrowerId } });
+        }
       }
     });
 
