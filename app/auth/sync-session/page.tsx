@@ -10,10 +10,6 @@ export default function SyncSessionPage() {
   const [status, setStatus] = useState<'checking' | 'mismatch' | 'synced'>('checking');
   const [authEmail, setAuthEmail] = useState<string>('');
 
-  useEffect(() => {
-    checkSession();
-  }, []);
-
   async function checkSession() {
     const supabase = createClient();
     const {
@@ -46,6 +42,11 @@ export default function SyncSessionPage() {
       setStatus('mismatch');
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    checkSession();
+  }, []);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -104,7 +105,7 @@ export default function SyncSessionPage() {
             <p className="mt-2 text-sm text-muted-foreground">This usually happens when:</p>
             <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-muted-foreground">
               <li>The database was reset during development</li>
-              <li>Your registration wasn't completed</li>
+              <li>Your registration wasn&apos;t completed</li>
             </ul>
           </div>
 

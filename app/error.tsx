@@ -12,39 +12,25 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error caught by error boundary:', error);
-    }
-  }, [error]);
-
   // Check for specific error scenarios
   const isUserNotFound = error.message === 'USER_NOT_IN_DB' || error.message.includes('User not found');
   const isNotAuthenticated = error.message.includes('Not authenticated');
   const hasNoOrganisations = error.message === 'USER_HAS_NO_ORGANISATIONS';
 
-  if (isUserNotFound) {
-    // Redirect to sync session page
-    if (typeof window !== 'undefined') {
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error caught by error boundary:', error);
+    }
+    if (isUserNotFound) {
       window.location.href = '/auth/sync-session';
-    }
-    return null;
-  }
-
-  if (isNotAuthenticated) {
-    // Redirect to login
-    if (typeof window !== 'undefined') {
+    } else if (isNotAuthenticated) {
       window.location.href = '/auth/login';
-    }
-    return null;
-  }
-
-  if (hasNoOrganisations) {
-    // Redirect to no organization page
-    if (typeof window !== 'undefined') {
+    } else if (hasNoOrganisations) {
       window.location.href = '/no-organization';
     }
+  }, [error, isUserNotFound, isNotAuthenticated, hasNoOrganisations]);
+
+  if (isUserNotFound || isNotAuthenticated || hasNoOrganisations) {
     return null;
   }
 
