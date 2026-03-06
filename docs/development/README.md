@@ -14,19 +14,115 @@ Technical implementation details, tasks, and development workflows for the Key M
 - Priority ordering for development work
 - Security milestone achievements
 
-### **[Architecture](./architecture.md)** 🏗️
+### **[UI Components Guide](./UI-COMPONENTS.md)** 🎨
 
-**Technical architecture and system design** _(Coming Soon)_
+**ResponsiveDialog and UI component patterns**
 
-- System architecture overview
-- Database schema design
-- API design patterns
-- Component architecture
-- Security architecture integration
+- ResponsiveDialog component (auto mobile/desktop)
+- Built-in pointer-events cleanup
+- shadcn/ui component reference
+- Tabler Icons usage
+- Best practices and examples
+
+### **[Architecture Decision Record](./ARCHITECTURE-DECISION-RECORD.md)** 🏗️
+
+**Multi-tenant entity model architectural decisions**
+
+- Current vs proposed architecture
+- Migration complexity analysis
+- Implementation recommendations
+- Schema impact assessment
+
+### **[Safe Migration Guide](./SAFE-MIGRATION-GUIDE.md)** 🛡️
+
+**Zero-downtime database migration strategies**
+
+- Multi-phase migration approach
+- Data preservation techniques
+- Production migration checklist
+- Rollback procedures
+
+### **[Session Mismatch Handling](./SESSION-MISMATCH-HANDLING.md)** 🔄
+
+**Graceful error handling for auth/database mismatches**
+
+- User-friendly error pages
+- Auto-recovery flows
+- Session sync mechanisms
+- Development best practices
+
+### **[SaaS Workflow Audit](./SAAS-WORKFLOW-AUDIT.md)** 🏢 ⭐ **NEW**
+
+**Multi-tenant SaaS compliance review and roadmap**
+
+- Current state analysis
+- Missing features identification
+- Standard SaaS patterns comparison
+- Implementation roadmap with priorities
+
+### **[Team Management Ready](./TEAM-READY.md)** 🎉 ⭐ **NEW**
+
+**Complete team management implementation guide**
+
+- Invite system with token-based authentication
+- Role-based permissions (OWNER/ADMIN/MEMBER)
+- Team UI with members and invitations
+- Email integration guide (optional)
+
+### **[Multi-Tenant Impact Analysis](./schema-multi-tenant-impact-analysis.md)** 📊 ⭐ **NEW**
+
+**Comprehensive schema migration impact analysis**
+
+- Schema change breakdown
+- 6-phase implementation plan
+- User replacement scenarios
+- Security considerations
+
+### **[Multi-Tenant Implementation Summary](./MULTI-TENANT-IMPLEMENTATION-SUMMARY.md)** 🎉
+
+**Complete multi-tenant entity architecture implementation**
+
+- Entity model with per-entity encryption
+- Migration script and workflow
+- Role-based access control foundation
+- Production deployment guide
+
+### **[Testing Checklist](./TESTING-CHECKLIST.md)** ✅
+
+**Multi-tenant system comprehensive testing guide**
+
+- Organization creation tests
+- Team management workflows
+- Role permission verification
+- Data isolation testing
+
+### **[Testing Summary](./TESTING-SUMMARY.md)** 📊
+
+**Workflow testing setup and results**
+
+- Automated test suite documentation
+- Manual UI testing checklist
+- Database connection troubleshooting
+- Success criteria
+
+### **[Database Migration: Placeholder Emails](./database-migration-placeholder-emails.md)** 📧
+
+**Placeholder email system implementation**
+
+- Migration from paper-based systems
+- Email generation utilities
+- GDPR compliance approach
+- Gradual data collection strategy
 
 ### **Features** ✨
 
+- **[Implementation Status](./IMPLEMENTATION-STATUS.md)** - Current feature status and next steps ⭐ START HERE
 - **[Column Customization](./features/column-customization.md)** - Implementation details and testing checklist
+- **[Key Management](./features/key-management.md)** - Key types, copy management, and expandable rows feature
+- **[Key Workflows](./features/key-workflows.md)** - Issue and return key workflows
+- **[Phase 2: View Borrower](./features/phase-2-view-borrower-link.md)** - Smart navigation with highlight
+- **[Active Loans Improvements](./features/active-loans-improvements.md)** - Overdue tracking, tooltips, and UX enhancements
+- **[Session Summary](./SESSION-SUMMARY.md)** - Latest development session overview and next steps
 
 ## 🚀 **Development Status**
 
@@ -101,13 +197,14 @@ This automatically replaces high-level tasks with detailed sub-tasks.
 
 ## 🔍 **Quick Reference**
 
-| Development Need          | Where to Look                            |
-| ------------------------- | ---------------------------------------- |
-| **Current tasks**         | [Tasks](./tasks.md)                      |
-| **What to work on next**  | [Tasks](./tasks.md) - Priority Order     |
-| **Completed features**    | [Tasks](./tasks.md) - Completed sections |
-| **Technical standards**   | `.cursor/rules/` in project root         |
-| **Security requirements** | `../security/security-overview.md`       |
+| Development Need          | Where to Look                             |
+| ------------------------- | ----------------------------------------- |
+| **Current tasks**         | [Tasks](./tasks.md)                       |
+| **UI Components**         | [UI Components Guide](./UI-COMPONENTS.md) |
+| **What to work on next**  | [Tasks](./tasks.md) - Priority Order      |
+| **Completed features**    | [Tasks](./tasks.md) - Completed sections  |
+| **Technical standards**   | `.cursor/rules/` in project root          |
+| **Security requirements** | `../security/security-overview.md`        |
 
 ## 📝 **Contributing**
 

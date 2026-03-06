@@ -4,7 +4,7 @@ import { updateUser } from '@/app/actions/updateProfile';
 import { createClient } from '@/lib/supabase/client';
 
 export default function CompleteProfilePage() {
-  const [cooperative, setCooperative] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
@@ -32,7 +32,7 @@ export default function CompleteProfilePage() {
       setLoading(false);
       return;
     }
-    const result = await updateUser({ email, cooperative });
+    const result = await updateUser({ email, name });
     if (result.error) {
       setError(result.error);
       setLoading(false);
@@ -58,18 +58,17 @@ export default function CompleteProfilePage() {
         <h1 className="text-2xl font-bold mb-6 text-center">Komplettera din profil</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="cooperative" className="block text-lg font-medium mb-2">
-              Bostadsrättsföreningens namn
+            <label htmlFor="name" className="block text-lg font-medium mb-2">
+              Ditt namn (valfritt)
             </label>
             <input
-              id="cooperative"
-              name="cooperative"
+              id="name"
+              name="name"
               type="text"
-              required
-              value={cooperative}
-              onChange={(e) => setCooperative(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="text-lg py-3 block w-full rounded-md border border-border bg-background px-3 focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Ex: Brf Solrosen"
+              placeholder="Ex: Anna Andersson"
             />
           </div>
           {error && <div className="text-destructive text-sm">{error}</div>}

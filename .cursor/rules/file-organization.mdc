@@ -1,0 +1,23 @@
+---
+description: Where to create documentation; docs only in docs/ subdirs, never in project root.
+alwaysApply: false
+---
+
+# File Organization Rules
+
+**NEVER create markdown documentation files in the project root.** Only `README.md` is allowed at root.
+
+## Locations
+
+| Content Type               | Location            |
+| -------------------------- | ------------------- |
+| Implementation, testing, migrations, ADRs | `docs/development/` |
+| Security, auth, encryption | `docs/security/`   |
+| Requirements, user guides | `docs/product/`    |
+
+## Conventions
+
+- **kebab-case** filenames; descriptive (e.g. `multi-tenant-implementation.md`).
+- When creating docs: pick the correct `docs/` subdir, create there, update section README if needed.
+
+See `docs/DOCUMENTATION_GUIDE.md` and `docs/README.md` for full standards.

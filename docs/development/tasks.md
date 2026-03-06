@@ -270,6 +270,25 @@ Implementation roadmap for the Swedish housing cooperative key management applic
 
 ### ✅ **Recently Completed:**
 
+- [x] **Mark Key as Lost Workflow** ✅ _[COMPLETED: Full implementation with two workflows (mark lost + replace), GDPR cleanup, chart integration]_
+  - [x] Server actions: `markKeyLost()` with transactional operations, replacement copy creation
+  - [x] UI dialogs: Lost key dialog (simple mark lost) + Replace key dialog (create & issue replacement)
+  - [x] Menu integration in Active Loans table with "Mark Key Lost" and "Replace Key" actions
+  - [x] Smart replacement numbering (finds highest copy number, creates next sequential)
+  - [x] GDPR-compliant borrower cleanup when last key marked lost
+  - [x] Dashboard charts updated to include lost key counts
+  - [x] Comprehensive testing documentation with 5 test scenarios
+- [x] **Active Loans Table UX Improvements** ✅ _[COMPLETED: Enhanced sorting, filtering, and responsive design]_
+  - [x] Fixed name column sorting (changed accessorKey to 'borrowerName')
+  - [x] Added affiliation column sorting (residents first, then by company name)
+  - [x] Removed sorting from borrowed keys column
+  - [x] Enhanced search to filter by both borrower name AND company name
+  - [x] Added affiliation filter button with All/Residents/Companies options
+  - [x] Optimized borrowed keys display - shows only labels (e.g., "A1-1") on same row with wrapping
+  - [x] Improved responsive behavior - input min 240px, buttons shrink to icon-only at 768px breakpoint
+  - [x] Created reusable `AffiliationFilter` component
+- [x] **Issue Key Workflow** ✅ _[COMPLETED: 4-step multi-key issue flow with borrower search/create, validation, confirmations]_
+- [x] **Return Key Workflow** ✅ _[COMPLETED: Single/bulk returns with GDPR-compliant borrower cleanup, UI integration in Active Loans]_
 - [x] **Column customization feature** ✅ _[COMPLETED: Full implementation with color-coded badges, localStorage persistence, mobile responsive]_
 - [x] **Database migration endDate → dueDate** ✅ _[COMPLETED: Schema updated, data preserved]_
 - [x] **Color-coded key status badges** ✅ _[COMPLETED: Red=overdue, yellow=warning, gray=normal]_
@@ -278,6 +297,7 @@ Implementation roadmap for the Swedish housing cooperative key management applic
 ### **Priority Order for Development:**
 
 - [x] **Key type CRUD operations with server actions** ✅ _[COMPLETED: Full CRUD with UI, "Add Copy" feature, custom column picker]_
+- [x] **Key lending & return workflows** ✅ _[COMPLETED: Full issue/return implementation with UI, server actions, and validations]_
 
 ### ✅ **Key Type Management System - COMPLETED**
 
@@ -330,13 +350,126 @@ Implementation roadmap for the Swedish housing cooperative key management applic
 - **Accessibility**: Full keyboard navigation, ARIA labels, screen reader support
 - **Mobile**: Responsive design with collapsible columns
 
-- [ ] **Key lending workflow with inline borrower creation** 🔄 _[HIGH PRIORITY: GDPR-compliant approach, no separate borrower tab]_
-- [ ] **Key return workflow implementation** ⏳ _[Ready for breakdown after lending]_
+- [x] **Key lending workflow with inline borrower creation** ✅ _[COMPLETED: Multi-key issue flow, borrower search/create, validation]_
+
+### ✅ **Key Lending & Return Workflows - COMPLETED**
+
+**Issue Key Workflow (Fully Implemented):**
+
+- [x] Multi-step workflow with 4 steps: Select Keys → Borrower Details → Lending Details → Confirm
+- [x] Multi-key selection with copy picker (choose specific copy numbers)
+- [x] Borrower search/create integration with autocomplete
+- [x] Due date setting and ID verification
+- [x] Confirmation screen with summary
+- [x] Server actions: `issueMultipleKeysAction` with transaction support
+- [x] Toast notifications and comprehensive error handling
+- [x] Path revalidation for `/active-loans` and `/keys`
+
+**Return Key Workflow (Fully Implemented):**
+
+- [x] Server action `returnKey` in `app/actions/issueKey.ts` (transactional)
+  - [x] Updates `IssueRecord.returnedDate` to current timestamp
+  - [x] Sets `KeyCopy.status` back to `AVAILABLE`
+  - [x] Deletes borrower if no other active loans (GDPR compliance)
+  - [x] Validates ownership and prevents double returns
+- [x] Wrapper actions in `app/actions/issueKeyWrapper.ts`
+  - [x] `returnKeyAction` for single key returns
+  - [x] `returnMultipleKeysAction` for bulk returns
+- [x] UI integration in Active Loans table (`borrower-columns.tsx`)
+  - [x] Return button in actions dropdown menu
+  - [x] Confirmation dialog with borrower context
+  - [x] Success/error toast notifications
+  - [x] Loading states during return process
+- [x] Path revalidation for `/active-loans` and `/keys`
+
+**Files Involved:**
+
+- `components/workflow/issue-key-workflow.tsx` - Issue workflow UI
+- `app/issue-key/page.tsx` - Issue workflow page
+- `app/actions/issueKey.ts` - Core issue/return logic
+- `app/actions/issueKeyWrapper.ts` - Wrapper actions
+- `components/active-loans/borrower-columns.tsx` - Return UI integration
+- `components/shared/borrower-form.tsx` - Borrower search/create
+- `components/ui/multi-select.tsx` - Multi-key selector
+
+**Key Features:**
+
+- ✅ Transaction safety (all-or-nothing database operations)
+- ✅ Data validation and error handling
+- ✅ GDPR compliance (automatic borrower cleanup)
+- ✅ Real-time UI updates via path revalidation
+- ✅ User-friendly confirmations and feedback
+- ✅ Support for both single and multiple key operations
+
+### ✅ **Mark Key as Lost Workflow - COMPLETED**
+
+**Implementation Summary:**
+
+- [x] **Server Actions (Complete)**
+  - [x] `markKeyLost()` in `app/actions/issueKey.ts` - Transactional operation
+  - [x] Marks `KeyCopy.status` to `LOST`
+  - [x] Sets `IssueRecord.returnedDate` to current timestamp (closes loan)
+  - [x] Optional: Creates replacement copy with smart sequential numbering
+  - [x] Optional: Issues replacement to same borrower (with due date & ID check)
+  - [x] GDPR: Deletes borrower if no other active loans
+  - [x] Revalidates `/active-loans` and `/keys` paths
+  - [x] `markKeyLostAction()` wrapper in `app/actions/issueKeyWrapper.ts`
+- [x] **UI Components (Complete)**
+  - [x] `components/active-loans/dialogs/lost-key-dialog.tsx` - Mark key lost without replacement
+    - [x] Radio button selection for single key
+    - [x] Warning when marking borrower's last key
+    - [x] Toast notifications for success/error
+  - [x] `components/active-loans/dialogs/replace-key-dialog.tsx` - Replace lost key
+    - [x] Radio button selection for key to replace
+    - [x] Due date field (optional)
+    - [x] ID verification checkbox (required)
+    - [x] Creates replacement AND issues to borrower in one transaction
+  - [x] `components/active-loans/borrower-actions-menu.tsx` - Menu integration
+    - [x] "Mark Key Lost" action (IconKeyOff)
+    - [x] "Replace Key" action (IconReplace)
+    - [x] Both only visible when borrower has active keys
+  - [x] `components/active-loans/borrowers-table.tsx` - Dialog state management
+- [x] **Dashboard Integration (Complete)**
+  - [x] Charts display lost key counts in `app/actions/dashboard.ts`
+  - [x] Bar chart shows LOST status alongside AVAILABLE and OUT
+  - [x] Pie chart includes lost keys in total distribution
+- [x] **Testing Documentation (Complete)**
+  - [x] Comprehensive test scenarios in `WORKFLOW-TESTING-GUIDE.md`
+  - [x] Test 10: Mark single key as lost (no replacement)
+  - [x] Test 11: Mark last key as lost (GDPR cleanup)
+  - [x] Test 12: Replace lost key (create + issue)
+  - [x] Test 13: Cancel replace dialog
+  - [x] Test 14: Error handling tests
+
+**Key Features:**
+
+- ✅ Two distinct workflows: Simple mark lost vs. Replace lost key
+- ✅ Smart replacement copy numbering (finds highest, creates next)
+- ✅ Atomic transactions (all-or-nothing operations)
+- ✅ GDPR-compliant borrower cleanup
+- ✅ Real-time chart updates with lost key counts
+- ✅ Clear user warnings and confirmations
+- ✅ ID verification required for replacements
+
+**Files Involved:**
+
+- `app/actions/issueKey.ts` - Core `markKeyLost()` server action
+- `app/actions/issueKeyWrapper.ts` - Client-friendly wrapper
+- `components/active-loans/dialogs/lost-key-dialog.tsx` - Mark lost dialog
+- `components/active-loans/dialogs/replace-key-dialog.tsx` - Replace key dialog
+- `components/active-loans/borrower-actions-menu.tsx` - Actions menu
+- `components/active-loans/borrowers-table.tsx` - Table integration
+- `app/actions/dashboard.ts` - Chart data with lost counts
+- `docs/development/WORKFLOW-TESTING-GUIDE.md` - Testing documentation
 - [ ] **Bulk key copy creation workflow** ⏳ _[Ready for breakdown]_
-- [ ] **Key status tracking (Available/Out/Lost)** ⏳ _[Ready for breakdown]_
+- [x] **Key status tracking (Available/Out/Lost)** ✅ _[COMPLETED: Status badges + charts wired to DB]_
 - [ ] **Form validation with proper error handling** ⏳ _[Ready for breakdown]_
+  - [ ] Add consistent success/error toasts for issue/return flows
+  - [ ] Standardize server action result handling across pages
 - [ ] **Mobile-optimized forms and inputs** ⏳ _[Ready for breakdown]_
+  - [ ] Replace plain inputs in `components/workflow/issue-key-workflow.tsx` with shadcn/ui `Input`, `Checkbox` (and date input via `Input type="date"` wrapper)
 - [ ] **Data import functionality (CSV)** ⏳ _[Lower priority - Ready for breakdown]_
+- [ ] Borrower edit dialog + server action to update contact details
 
 ## Phase 3: Dashboard & Visualization (Week 5-6)
 
@@ -418,6 +551,6 @@ Implementation roadmap for the Swedish housing cooperative key management applic
 
 ### Configuration
 
-- `middleware.ts` - Route protection middleware ✅
+- `proxy.ts` - Route protection proxy ✅ (Next.js 16)
 - `tailwind.config.js` - Tailwind configuration ✅
 - `.cursor/rules/` - Development standards and cursor rules ✅

@@ -47,7 +47,7 @@ export function useColumnPreferences() {
 
   // Save to localStorage whenever preferences change (only after mount)
   useEffect(() => {
-    if (mounted && typeof window !== 'undefined') {
+    if (mounted) {
       try {
         localStorage.setItem(COLUMN_PREFERENCES_KEY, JSON.stringify(columnVisibility));
       } catch (error) {

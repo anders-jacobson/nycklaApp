@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run build:*)"
+    ],
+    "deny": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run format"
+          }
+        ]
+      }
+    ]
+  }
+}

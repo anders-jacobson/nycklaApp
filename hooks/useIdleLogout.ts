@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -8,7 +8,9 @@ const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 export default function useIdleLogout() {
   const timer = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
-  const supabase = createClient();
+  // useMemo ensures the client is created once per component mount, not on every render.
+  // This also prevents the useEffect below from re-running on every render cycle.
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const logout = async () => {
@@ -21,7 +23,6 @@ export default function useIdleLogout() {
       timer.current = setTimeout(logout, IDLE_TIMEOUT);
     };
 
-    // Listen for user activity
     window.addEventListener('mousemove', resetTimer);
     window.addEventListener('keydown', resetTimer);
     window.addEventListener('mousedown', resetTimer);

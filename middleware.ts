@@ -1,42 +1,69 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/auth', '/api', '/'];
+/**
+ * Protected route prefixes — any path matching one of these requires a valid
+ * Supabase session.  Auth pages (/auth/*) and the root (/) remain public.
+ */
+const PROTECTED_PREFIXES = [
+  '/active-loans',
+  '/keys',
+  '/settings',
+  '/onboarding',
+  '/create-organization',
+  '/issue-key',
+  '/welcome',
+  '/no-organization',
+];
 
 export async function middleware(request: NextRequest) {
+  // Build a mutable response so Supabase can refresh session cookies.
+  let response = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          // Propagate updated cookies to both request and response so the
+          // refreshed session is visible to Server Components downstream.
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
+        },
+      },
+    },
+  );
+
+  // getUser() validates the token against the Supabase auth server — safer
+  // than getSession() which only reads the local cookie without revalidation.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { pathname } = request.nextUrl;
 
-  // Allow public paths
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    const { response } = await updateSession(request);
-    return response;
+  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+
+  if (isProtected && !user) {
+    return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
-  // For protected routes, check auth and redirect if needed
-  const { response: supabaseResponse, user } = await updateSession(request);
-
-  // Check if user is authenticated
-  if (!user) {
-    const loginUrl = new URL('/auth/login', request.url);
-    const redirectResponse = NextResponse.redirect(loginUrl);
-    // Copy over any cookies that were set during session update
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
-    });
-    return redirectResponse;
-  }
-
-  return supabaseResponse;
+  return response;
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
+     * Run middleware on all routes except Next.js internals and static assets.
+     * Regex matches everything except paths starting with:
+     *   _next/static, _next/image, favicon.ico, and common image extensions.
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],

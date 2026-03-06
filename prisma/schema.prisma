@@ -8,27 +8,70 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model Entity {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String             @db.VarChar(200)
+  encryptionKey     String             @db.Text // Encrypted with master ENCRYPTION_KEY
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  members           UserOrganisation[] @relation("OrganisationMembers")
+  activeForUsers    User[]             @relation("ActiveOrganisation")
+  borrowers         Borrower[]
+  keyTypes          KeyType[]
+  issueRecords      IssueRecord[]
+  invitations       Invitation[]
+  accessAreas       AccessArea[]
+  onboardingSession OnboardingSession?
+
+  @@unique([name])
+}
+
 model User {
-  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email        String        @unique
-  name         String?
-  cooperative  String
-  createdAt    DateTime      @default(now())
-  auth_id      String?       @db.Uuid
-  borrowers    Borrower[]
-  keyTypes     KeyType[]
-  issueRecords IssueRecord[]
+  id                   String             @id @db.Uuid
+  email                String             @unique
+  name                 String?
+  activeOrganisationId String?            @db.Uuid
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  organisations        UserOrganisation[]
+  activeOrganisation   Entity?            @relation("ActiveOrganisation", fields: [activeOrganisationId], references: [id])
+  issueRecords         IssueRecord[]
+  sentInvitations      Invitation[]
+
+  @@index([activeOrganisationId])
+}
+
+model UserOrganisation {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @db.Uuid
+  organisationId String   @db.Uuid
+  role           UserRole
+  joinedAt       DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organisation   Entity   @relation("OrganisationMembers", fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organisationId])
+  @@index([userId])
+  @@index([organisationId])
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
 }
 
 model KeyType {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  label      String    @db.VarChar(2)
-  function   String    @db.VarChar(100)
-  accessArea String?
-  createdAt  DateTime  @default(now())
-  userId     String    @db.Uuid
-  keyCopies  KeyCopy[]
-  user       User      @relation(fields: [userId], references: [id])
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  label       String              @db.VarChar(50)
+  function    String              @db.VarChar(100)
+  createdAt   DateTime            @default(now())
+  entityId    String              @db.Uuid
+  keyCopies   KeyCopy[]
+  entity      Entity              @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  accessAreas KeyTypeAccessArea[]
+
+  @@index([entityId])
 }
 
 model KeyCopy {
@@ -44,65 +87,73 @@ model KeyCopy {
 }
 
 model Borrower {
-  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  affiliation       BorrowerAffiliation
-  createdAt         DateTime            @default(now())
-  userId            String              @db.Uuid
-  
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  affiliation BorrowerAffiliation
+  createdAt   DateTime            @default(now())
+  entityId    String              @db.Uuid
+
   // Polymorphic relations - only one will be populated based on affiliation
-  residentBorrowerId  String?           @unique @db.Uuid
-  externalBorrowerId  String?           @unique @db.Uuid
-  
-  user              User                @relation(fields: [userId], references: [id])
-  residentBorrower  ResidentBorrower?   @relation(fields: [residentBorrowerId], references: [id], onDelete: Cascade)
-  externalBorrower  ExternalBorrower?   @relation(fields: [externalBorrowerId], references: [id], onDelete: Cascade)
-  issueRecords      IssueRecord[]
-  
+  residentBorrowerId String? @unique @db.Uuid
+  externalBorrowerId String? @unique @db.Uuid
+
+  entity           Entity            @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  residentBorrower ResidentBorrower? @relation(fields: [residentBorrowerId], references: [id], onDelete: Cascade)
+  externalBorrower ExternalBorrower? @relation(fields: [externalBorrowerId], references: [id], onDelete: Cascade)
+  issueRecords     IssueRecord[]
   // GDPR Note: Borrower records automatically deleted when no active lending records
   // Placeholder emails (@placeholder.com) indicate missing real email addresses
+
+  @@index([entityId])
 }
 
 model ResidentBorrower {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String    @db.VarChar(100)
-  email     String    @db.VarChar(255)
-  phone     String?   @db.VarChar(20)
+  // PII fields use larger sizes to accommodate encrypted data blobs
+  name      String    @db.VarChar(500) // Encrypted: AES-256-GCM
+  email     String    @db.VarChar(500) // Encrypted: AES-256-GCM
+  phone     String?   @db.VarChar(200) // Encrypted: AES-256-GCM
   createdAt DateTime  @default(now())
   borrower  Borrower?
-  
+
   // Ensure email uniqueness for residents within the system
   @@unique([email])
 }
 
 model ExternalBorrower {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String    @db.VarChar(100)
-  email          String    @db.VarChar(255)
-  phone          String?   @db.VarChar(20)
-  address        String?   @db.VarChar(200)
-  company        String?   @db.VarChar(100)
-  borrowerPurpose String?   @db.VarChar(500)  // Description of why they need keys
-  createdAt      DateTime  @default(now())
-  borrower       Borrower?
-  
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // PII fields use larger sizes to accommodate encrypted data blobs
+  name            String    @db.VarChar(500) // Encrypted: AES-256-GCM
+  email           String    @db.VarChar(500) // Encrypted: AES-256-GCM
+  phone           String?   @db.VarChar(200) // Encrypted: AES-256-GCM
+  address         String?   @db.VarChar(500) // Encrypted: AES-256-GCM
+  company         String?   @db.VarChar(500) // Encrypted: AES-256-GCM
+  borrowerPurpose String?   @db.VarChar(2000) // Encrypted: AES-256-GCM
+  createdAt       DateTime  @default(now())
+  borrower        Borrower?
+
   // Ensure email uniqueness for external borrowers within the system
   @@unique([email])
 }
 
 model IssueRecord {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  keyCopyId    String    @db.Uuid
-  borrowerId   String    @db.Uuid
-  issuedDate   DateTime  @default(now())
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  keyCopyId    String            @db.Uuid
+  borrowerId   String            @db.Uuid
+  issuedDate   DateTime          @default(now())
   dueDate      DateTime?
-  idChecked    Boolean   @default(false)
+  idChecked    Boolean           @default(false)
   returnedDate DateTime?
-  createdAt    DateTime  @default(now())
-  userId       String    @db.Uuid
-  borrower     Borrower  @relation(fields: [borrowerId], references: [id], onDelete: Cascade)
-  keyCopy      KeyCopy   @relation(fields: [keyCopyId], references: [id], onDelete: Cascade)
-  user         User      @relation(fields: [userId], references: [id])
+  createdAt    DateTime          @default(now())
+  entityId     String            @db.Uuid
+  userId       String?           @db.Uuid
+  borrower     Borrower          @relation(fields: [borrowerId], references: [id], onDelete: Cascade)
+  keyCopy      KeyCopy           @relation(fields: [keyCopyId], references: [id], onDelete: Cascade)
+  entity       Entity            @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   notesArchive IssueRecordNote[]
+
+  @@index([entityId])
+  @@index([userId])
 }
 
 enum KeyStatus {
@@ -117,12 +168,67 @@ enum BorrowerAffiliation {
 }
 
 model IssueRecordNote {
-  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  issueRecordId String      @db.Uuid
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  issueRecordId String   @db.Uuid
   note          String?
-  archivedAt    DateTime    @default(now())
+  archivedAt    DateTime @default(now())
 
   issueRecord IssueRecord @relation(fields: [issueRecordId], references: [id], onDelete: Cascade)
 
   @@index([issueRecordId])
+}
+
+model Invitation {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityId  String   @db.Uuid
+  email     String   @db.VarChar(255)
+  role      UserRole
+  token     String   @unique @db.VarChar(64)
+  expiresAt DateTime
+  accepted  Boolean  @default(false)
+  createdBy String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  entity  Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  inviter User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([entityId])
+  @@index([token])
+  @@index([email])
+}
+
+model AccessArea {
+  id        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityId  String              @db.Uuid
+  name      String              @db.VarChar(100)
+  createdAt DateTime            @default(now())
+  entity    Entity              @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  keyTypes  KeyTypeAccessArea[]
+
+  @@unique([entityId, name])
+  @@index([entityId])
+}
+
+model KeyTypeAccessArea {
+  keyTypeId    String     @db.Uuid
+  accessAreaId String     @db.Uuid
+  keyType      KeyType    @relation(fields: [keyTypeId], references: [id], onDelete: Cascade)
+  accessArea   AccessArea @relation(fields: [accessAreaId], references: [id], onDelete: Cascade)
+
+  @@id([keyTypeId, accessAreaId])
+  @@index([keyTypeId])
+  @@index([accessAreaId])
+}
+
+model OnboardingSession {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityId    String    @unique @db.Uuid
+  step        Int       @default(1)
+  draftJson   Json?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  entity      Entity    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@index([entityId])
 }

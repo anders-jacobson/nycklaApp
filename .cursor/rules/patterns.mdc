@@ -1,0 +1,156 @@
+---
+description: Project-specific integration patterns (not generic library usage)
+globs: ['**/actions/**/*', '**/components/**/*']
+alwaysApply: false
+---
+
+# Project-Specific Patterns
+
+## What This File Is For
+
+This contains **your project's unique patterns**, not generic library usage.
+For generic Next.js/Prisma/React patterns, Claude Sonnet 4 already knows them.
+
+## Unique to This Project
+
+### 1. Multi-Organisation Data Access Pattern
+
+```typescript
+// ✅ STANDARD: Use in ALL server actions & routes with organisation context
+import { getCurrentUser } from '@/lib/auth-utils';
+
+const user = await getCurrentUser(); 
+// Returns: { id, email, entityId, roleInActiveOrg, allOrganisations[] }
+// ⚠️ THROWS if user has no organisations
+
+// All queries filtered by entityId (active organisation)
+const data = await prisma.keyType.findMany({
+  where: { entityId: user.entityId }, // Organisation-level isolation
+});
+
+// ⚠️ EXCEPTION: Use getCurrentUserOrNull() for edge cases
+import { getCurrentUserOrNull } from '@/lib/auth-utils';
+
+const user = await getCurrentUserOrNull();
+// Returns: { id, email, activeOrganisationId, organisations[] } or null
+// NEVER throws - returns null if not authenticated or no orgs:
+//   - /no-organization
+//   - /onboarding/keys
+//   - /create-organization
+```
+
+### 2. Supabase for Auth, Prisma for Data
+
+```typescript
+// ✅ This is the ONLY valid Supabase usage
+const supabase = await createClient();
+const { data: { user } } = await supabase.auth.getUser();
+
+// Then immediately switch to Prisma
+const userRecord = await prisma.user.findUnique({
+  where: { email: user.email }
+});
+
+// ❌ NEVER do this
+const { data } = await supabase.from('User')... // FORBIDDEN
+```
+
+### 3. Placeholder Email System (Unique Feature)
+
+```typescript
+// For paper-based system transitions
+function isPlaceholderEmail(email: string): boolean {
+  return email.endsWith('@placeholder.com');
+}
+
+// Auto-generate from name
+function generatePlaceholderEmail(name: string): string {
+  return `${name
+    .toLowerCase()
+    .replace(/\s+/g, '.')
+    .replace(/å/g, 'a')
+    .replace(/ä/g, 'a')
+    .replace(/ö/g, 'o')}@placeholder.com`;
+}
+```
+
+### 4. ResponsiveDialog for User-Facing Dialogs
+
+```typescript
+// ✅ Use ResponsiveDialog for all user-facing dialogs
+import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
+
+// Automatically renders Dialog on desktop, Drawer on mobile (< 768px)
+// Built-in pointer-events cleanup prevents body from staying locked
+<ResponsiveDialog
+  open={isOpen}
+  onOpenChange={setIsOpen}
+  title="Dialog Title"
+  description="Optional description"
+  trigger={<Button>Open Dialog</Button>}  // Optional
+  footer={<Button>Save</Button>}          // Optional
+>
+  <div>Dialog content</div>
+</ResponsiveDialog>
+
+// ❌ Don't use Dialog directly for user-facing dialogs
+import { Dialog } from '@/components/ui/dialog'; // Only for UI primitives
+```
+
+### 5. Import Paths (Project-Specific Locations)
+
+```typescript
+// Database
+import { prisma } from '@/lib/prisma';
+
+// Auth clients (note: in lib/supabase/, not lib/utils/)
+import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/client';
+
+// Encryption (unique to project)
+import { encryptPII, decryptPII } from '@/lib/encryption';
+import { prismaEncryptionMiddleware } from '@/lib/prisma-encryption';
+
+// UI Components
+import { ResponsiveDialog } from '@/components/ui/responsive-dialog'; // User dialogs
+import { Button } from '@/components/ui/button';
+import { IconPlus } from '@tabler/icons-react'; // ONLY Tabler Icons
+```
+
+### 6. File Structure (Where Things Live)
+
+```
+app/
+├── (root)/              # Landing + auth (not "public")
+├── (dashboard)/         # Protected routes (grouped layout)
+├── actions/             # Server actions (not /api/actions)
+└── auth/
+
+components/
+├── ui/                  # shadcn/ui components + ResponsiveDialog
+├── shared/              # Shared across features
+├── active-loans/        # Feature-specific components
+├── keys/
+└── settings/
+
+lib/
+├── supabase/           # Client factories (not in lib/ root)
+│   ├── server.ts
+│   ├── client.ts
+│   └── middleware.ts
+├── prisma.ts           # Singleton client
+└── encryption.ts       # PII encryption
+
+hooks/
+└── use-mobile.ts       # Mobile detection (< 768px)
+```
+
+## Tech Stack (For Reference)
+
+- Next.js 15 App Router + React 19 + TypeScript
+- Prisma ORM (data) + Supabase (auth only)
+- shadcn/ui + Tabler Icons
+- Tailwind v4 (CSS-first: `@theme` in globals.css)
+
+For **generic patterns** (how to use these libraries), rely on Claude Sonnet 4's built-in knowledge.
+This file only documents **your project's unique conventions**.

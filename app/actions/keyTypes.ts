@@ -1,32 +1,16 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth-utils';
 import { revalidatePath } from 'next/cache';
 
 type ActionResult<T> = { success: true; data?: T } | { success: false; error: string };
 
-async function getCurrentUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  if (error || !user?.email) throw new Error('Not authenticated');
-
-  const dbUser = await prisma.user.findUnique({
-    where: { email: user.email },
-    select: { id: true, cooperative: true },
-  });
-  if (!dbUser) throw new Error('User not found');
-  return dbUser;
-}
-
 export async function createKeyType(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { id: userId } = await getCurrentUser();
+    const { entityId } = await getCurrentUser();
 
-    // Inputs (do NOT accept any cooperative/user identifiers from client)
+    // Inputs (do NOT accept any entity identifiers from client)
     const name = (formData.get('name') as string | null)?.trim() ?? '';
     const labelRaw = (formData.get('label') as string | null)?.trim() ?? '';
     const accessArea = (formData.get('accessArea') as string | null)?.trim() || null;
@@ -52,8 +36,7 @@ export async function createKeyType(formData: FormData): Promise<ActionResult<{ 
         data: {
           label,
           function: name,
-          accessArea: accessArea || undefined,
-          userId,
+          entityId,
         },
         select: { id: true },
       });
@@ -81,7 +64,11 @@ export async function createKeyType(formData: FormData): Promise<ActionResult<{ 
 
 export async function updateKeyType(formData: FormData): Promise<ActionResult<undefined>> {
   try {
-    const { id: userId } = await getCurrentUser();
+    const user = await getCurrentUser();
+    if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
+      return { success: false, error: 'Only owners and admins can update key types.' };
+    }
+    const { entityId } = user;
 
     const keyTypeId = (formData.get('id') as string | null) ?? '';
     const name = (formData.get('name') as string | null)?.trim() ?? undefined;
@@ -89,9 +76,9 @@ export async function updateKeyType(formData: FormData): Promise<ActionResult<un
 
     if (!keyTypeId) return { success: false, error: 'Missing key type id.' };
 
-    // Ensure the key type belongs to the current user (RLS-compatible scoping)
+    // Ensure the key type belongs to the current entity
     const exists = await prisma.keyType.findFirst({
-      where: { id: keyTypeId, userId },
+      where: { id: keyTypeId, entityId },
       select: { id: true },
     });
     if (!exists) return { success: false, error: 'Key type not found.' };
@@ -118,13 +105,17 @@ export async function updateKeyType(formData: FormData): Promise<ActionResult<un
 
 export async function deleteKeyType(formData: FormData): Promise<ActionResult<undefined>> {
   try {
-    const { id: userId } = await getCurrentUser();
+    const user = await getCurrentUser();
+    if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
+      return { success: false, error: 'Only owners and admins can delete key types.' };
+    }
+    const { entityId } = user;
     const keyTypeId = (formData.get('id') as string | null) ?? '';
     if (!keyTypeId) return { success: false, error: 'Missing key type id.' };
 
     // Verify ownership before delete
     const owned = await prisma.keyType.findFirst({
-      where: { id: keyTypeId, userId },
+      where: { id: keyTypeId, entityId },
       select: { id: true },
     });
     if (!owned) return { success: false, error: 'Key type not found.' };
@@ -142,13 +133,17 @@ export async function deleteKeyType(formData: FormData): Promise<ActionResult<un
 
 export async function addKeyCopy(formData: FormData): Promise<ActionResult<undefined>> {
   try {
-    const { id: userId } = await getCurrentUser();
+    const user = await getCurrentUser();
+    if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
+      return { success: false, error: 'Only owners and admins can add key copies.' };
+    }
+    const { entityId } = user;
     const keyTypeId = (formData.get('id') as string | null) ?? '';
     if (!keyTypeId) return { success: false, error: 'Missing key type id.' };
 
     // Verify ownership and get current max copy number
     const keyType = await prisma.keyType.findFirst({
-      where: { id: keyTypeId, userId },
+      where: { id: keyTypeId, entityId },
       include: {
         keyCopies: {
           orderBy: { copyNumber: 'desc' },
@@ -177,6 +172,95 @@ export async function addKeyCopy(formData: FormData): Promise<ActionResult<undef
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to add key copy.';
+    return { success: false, error: message };
+  }
+}
+
+export async function getKeyCopies(keyTypeId: string): Promise<
+  ActionResult<
+    Array<{
+      id: string;
+      copyNumber: number;
+      status: 'AVAILABLE' | 'OUT' | 'LOST';
+    }>
+  >
+> {
+  try {
+    const { entityId } = await getCurrentUser();
+    const keyType = await prisma.keyType.findFirst({
+      where: { id: keyTypeId, entityId },
+      select: {
+        keyCopies: {
+          select: { id: true, copyNumber: true, status: true },
+          orderBy: { copyNumber: 'asc' },
+        },
+      },
+    });
+    if (!keyType) return { success: false, error: 'Key type not found.' };
+    return {
+      success: true,
+      data: keyType.keyCopies as Array<{
+        id: string;
+        copyNumber: number;
+        status: 'AVAILABLE' | 'OUT' | 'LOST';
+      }>,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to fetch key copies.';
+    return { success: false, error: message };
+  }
+}
+
+export async function markAvailableCopyLost(copyId: string): Promise<ActionResult<undefined>> {
+  try {
+    const user = await getCurrentUser();
+    if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
+      return { success: false, error: 'Only owners and admins can mark keys as lost.' };
+    }
+    const { entityId } = user;
+    // Verify ownership and status
+    const copy = await prisma.keyCopy.findFirst({
+      where: { id: copyId, keyType: { entityId } },
+      select: { id: true, status: true },
+    });
+    if (!copy) return { success: false, error: 'Key copy not found.' };
+    if (copy.status !== 'AVAILABLE') {
+      return { success: false, error: 'Only AVAILABLE copies can be marked as lost here.' };
+    }
+
+    await prisma.keyCopy.update({ where: { id: copyId }, data: { status: 'LOST' } });
+    revalidatePath('/keys');
+    revalidatePath('/active-loans');
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to mark copy as lost.';
+    return { success: false, error: message };
+  }
+}
+
+export async function markLostCopyFound(copyId: string): Promise<ActionResult<undefined>> {
+  try {
+    const user = await getCurrentUser();
+    if (!['OWNER', 'ADMIN'].includes(user.roleInActiveOrg)) {
+      return { success: false, error: 'Only owners and admins can mark lost keys as found.' };
+    }
+    const { entityId } = user;
+    // Verify ownership and status
+    const copy = await prisma.keyCopy.findFirst({
+      where: { id: copyId, keyType: { entityId } },
+      select: { id: true, status: true },
+    });
+    if (!copy) return { success: false, error: 'Key copy not found.' };
+    if (copy.status !== 'LOST') {
+      return { success: false, error: 'Only LOST copies can be marked as found.' };
+    }
+
+    await prisma.keyCopy.update({ where: { id: copyId }, data: { status: 'AVAILABLE' } });
+    revalidatePath('/keys');
+    revalidatePath('/active-loans');
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to mark copy as found.';
     return { success: false, error: message };
   }
 }

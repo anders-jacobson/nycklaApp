@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Issue Key - Key Management System',
+  title: 'Issue Key - Nyckla',
   description: 'Issue keys to borrowers',
 };
 

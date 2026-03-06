@@ -2,30 +2,21 @@
 
 import * as React from 'react';
 import {
-  IconCamera,
   IconDashboard,
-  IconFileAi,
-  IconFileDescription,
   IconHelp,
   IconListDetails,
-  IconSearch,
   IconSettings,
 } from '@tabler/icons-react';
 
 import { NavMain } from './nav-main';
 import { NavSecondary } from './nav-secondary';
 import { NavUser } from './nav-user';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
+import { TeamSwitcher } from './team-switcher';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 
 interface DashboardSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  cooperative?: string;
+  organisations: Array<{ id: string; name: string; role: string }>;
+  activeEntityId?: string;
   user?: {
     name: string;
     email: string;
@@ -50,75 +41,26 @@ const data = {
       url: '/keys',
       icon: IconListDetails,
     },
-  ],
-  navClouds: [
-    {
-      title: 'Capture',
-      icon: IconCamera,
-      isActive: true,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Proposal',
-      icon: IconFileDescription,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Prompts',
-      icon: IconFileAi,
-      url: '#',
-      items: [
-        {
-          title: 'Active Proposals',
-          url: '#',
-        },
-        {
-          title: 'Archived',
-          url: '#',
-        },
-      ],
-    },
-  ],
-  navSecondary: [
     {
       title: 'Settings',
-      url: '#',
+      url: '/settings/organization',
       icon: IconSettings,
     },
     {
-      title: 'Get Help',
+      title: 'Support',
       url: '#',
       icon: IconHelp,
     },
-    {
-      title: 'Search',
-      url: '#',
-      icon: IconSearch,
-    },
   ],
+  navSecondary: [],
 };
 
-export function DashboardSidebar({ cooperative, user, ...props }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  organisations,
+  activeEntityId,
+  user,
+  ...props
+}: DashboardSidebarProps) {
   const userData = {
     name: user?.name || 'Loading...',
     email: user?.email || '',
@@ -128,11 +70,9 @@ export function DashboardSidebar({ cooperative, user, ...props }: DashboardSideb
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <span className="text-base font-semibold">{cooperative || 'Loading...'}</span>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {activeEntityId && (
+          <TeamSwitcher organisations={organisations} activeEntityId={activeEntityId} />
+        )}
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

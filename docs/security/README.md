@@ -33,6 +33,25 @@ Comprehensive security information for the Key Management Application.
 - Authentication provider configuration
 - Security best practices
 
+### **[Data Encryption Overview](./ENCRYPTION-README.md)** 🔐
+
+**Complete data encryption implementation guide**
+
+- Two encryption approaches (simple vs advanced)
+- Implementation status and testing
+- Key management and security model
+- Multi-tenant architecture considerations
+
+### **[RBAC Permissions](./rbac-permissions.md)** 🔑 ⭐ **UPDATED**
+
+**Role-Based Access Control system with multi-organisation support**
+
+- Three-tier role hierarchy (OWNER, ADMIN, MEMBER)
+- Complete permission matrix for all actions
+- Multi-organisation support with role switching
+- Team management UI and workflows
+- Security rules and implementation gaps
+
 ## 🚨 **Security Status**
 
 ### **✅ Implemented**
@@ -41,7 +60,10 @@ Comprehensive security information for the Key Management Application.
 - **Server-Side Authentication**: All operations use secure server clients
 - **Route Protection**: Middleware protecting dashboard routes
 - **Idle Timeout**: 15-minute inactivity logout
-- **Data Isolation**: Complete cooperative data separation
+- **Data Isolation**: Complete organisation-level data separation
+- **Multi-Organisation Support**: Users can belong to multiple organisations with different roles
+- **Role-Based Access Control**: OWNER/ADMIN/MEMBER hierarchy with permission inheritance
+- **Team Management**: Invite, promote, and manage team members
 - **EU Data Storage**: GDPR compliant hosting
 
 ### **⚠️ Current Limitations**
@@ -73,6 +95,8 @@ Comprehensive security information for the Key Management Application.
 | ------------------------- | --------------------------------------------- | ------------------------------ |
 | **Authentication setup**  | [Security Overview](./security-overview.md)   | Authentication Flow Security   |
 | **Database security**     | [Security Overview](./security-overview.md)   | RLS Implementation             |
+| **Role permissions**      | [RBAC Permissions](./rbac-permissions.md)     | Permission Matrix              |
+| **Team management**       | [RBAC Permissions](./rbac-permissions.md)     | User Interface                 |
 | **Testing procedures**    | [Auth Testing Guide](./auth-testing-guide.md) | All sections                   |
 | **Session management**    | [Security Overview](./security-overview.md)   | Free Tier Limitations          |
 | **Environment variables** | [Security Overview](./security-overview.md)   | Environment Variables Security |
@@ -88,5 +112,5 @@ For security concerns:
 
 ---
 
-**Last Updated**: February 2025  
-**Security Review**: After authentication testing completion
+**Last Updated**: November 2025  
+**Security Review**: Complete - All role enforcement implemented

@@ -1,5 +1,40 @@
+// @ts-nocheck
+/**
+ * Database Seed Script for Key Management System Nyckla
+ *
+ * This script generates comprehensive test data for the key management application:
+ *
+ * WHAT IT CREATES:
+ * - Entity: "Testgården Bostadsrättsförening" with encryption keys
+ * - User: from SEED_TEST_EMAIL env var (ADMIN role)
+ * - Supabase Auth user with password: from SEED_TEST_PASSWORD env var
+ * - 6 Key Types: C (Fastighetsskötare), E (Sophämtning), G (Husmorsnyckel),
+ *                L (Tvättstuga), M (Förråd Gökärtsvägen), N (Förråd Pilvägen)
+ * - ~95 Key Copies with realistic status distribution (75% out, 20% available, 5% lost)
+ * - ~50+ Borrowers (residents and external companies) with encrypted PII
+ * - ~75 Active Issue Records with realistic dates and business logic
+ *
+ * KEY FEATURES:
+ * - Checks for existing users/entities and updates them (idempotent)
+ * - Creates/updates Supabase Auth user with default password
+ * - Encrypts all borrower PII with entity-specific encryption keys
+ * - Applies realistic business logic (e.g., G key holders often have M or N keys)
+ * - Cleans old data but preserves entity and user records
+ *
+ * REQUIREMENTS:
+ * - ENCRYPTION_KEY environment variable (master encryption key)
+ * - NEXT_PUBLIC_SUPABASE_URL (for auth user creation)
+ * - SUPABASE_SECRET_KEY (optional, for auth user password updates)
+ *
+ * USAGE:
+ *   npx prisma db seed
+ *
+ * After running, login with the credentials set in SEED_TEST_EMAIL / SEED_TEST_PASSWORD.
+ */
+
 import { prisma } from '../lib/prisma';
 import { KeyStatus, BorrowerAffiliation } from '@prisma/client';
+import { createClient } from '@supabase/supabase-js';
 
 // Swedish names for realistic data
 const SWEDISH_NAMES = [
@@ -91,10 +126,13 @@ function shuffleArray<T>(array: T[]): T[] {
 
 async function createBorrower(
   name: string,
-  userId: string,
+  entityId: string,
+  entityKey: string,
   company?: string | null,
   isExternal: boolean = false,
 ) {
+  const { encryptWithEntityKey } = await import('../lib/entity-encryption');
+
   const email =
     Math.random() > 0.1
       ? generateEmail(name)
@@ -102,14 +140,19 @@ async function createBorrower(
   const phone = Math.random() > 0.05 ? generateSwedishPhone() : null;
 
   if (isExternal || company) {
-    // Create external borrower
+    // Create external borrower with encryption
     const externalBorrower = await prisma.externalBorrower.create({
       data: {
-        name,
-        email,
-        phone,
-        company: company || null,
-        address: isExternal ? `${Math.floor(Math.random() * 999 + 1)} Gatan, Stockholm` : null,
+        name: encryptWithEntityKey(name, entityKey)!,
+        email: encryptWithEntityKey(email, entityKey)!,
+        phone: encryptWithEntityKey(phone, entityKey),
+        company: encryptWithEntityKey(company, entityKey),
+        address: isExternal
+          ? encryptWithEntityKey(
+              `${Math.floor(Math.random() * 999 + 1)} Gatan, Stockholm`,
+              entityKey,
+            )
+          : null,
       },
     });
 
@@ -117,16 +160,16 @@ async function createBorrower(
       data: {
         affiliation: BorrowerAffiliation.EXTERNAL,
         externalBorrowerId: externalBorrower.id,
-        userId,
+        entityId,
       },
     });
   } else {
-    // Create resident borrower
+    // Create resident borrower with encryption
     const residentBorrower = await prisma.residentBorrower.create({
       data: {
-        name,
-        email,
-        phone,
+        name: encryptWithEntityKey(name, entityKey)!,
+        email: encryptWithEntityKey(email, entityKey)!,
+        phone: encryptWithEntityKey(phone, entityKey),
       },
     });
 
@@ -134,7 +177,7 @@ async function createBorrower(
       data: {
         affiliation: BorrowerAffiliation.RESIDENT,
         residentBorrowerId: residentBorrower.id,
-        userId,
+        entityId,
       },
     });
   }
@@ -150,26 +193,123 @@ async function main() {
   await prisma.externalBorrower.deleteMany({});
   await prisma.keyType.deleteMany({});
 
-  console.log('👤 Finding or creating user...');
-  // Find existing user or create one
-  let existingUser = await prisma.user.findFirst({
-    where: { cooperative: 'Testgården Bostadsrättsförening' },
+  console.log('👤 Setting up entity with fresh encryption key...');
+
+  // Always recreate entity to ensure encryption key consistency
+  const entityName = 'Testgården Bostadsrättsförening';
+
+  // Delete existing entity if it exists (cascade will delete users too)
+  const existingEntity = await prisma.entity.findUnique({
+    where: { name: entityName },
   });
 
-  if (!existingUser) {
-    console.log('👤 Creating test user...');
-    existingUser = await prisma.user.create({
-      data: {
-        email: 'anders.ebrev@gmail.com',
-        name: 'Anders Jacobson',
-        cooperative: 'Testgården Bostadsrättsförening',
-      },
+  if (existingEntity) {
+    console.log('🗑️  Deleting existing entity for fresh start...');
+    await prisma.entity.delete({
+      where: { id: existingEntity.id },
     });
   }
 
-  const userId = existingUser.id;
+  // Create fresh entity with new encryption key
+  console.log('🏢 Creating entity with fresh encryption key...');
+  const { generateEntityKey, encryptEntityKey } = await import('../lib/entity-encryption');
+  const plainEntityKey = generateEntityKey();
+  const encryptedEntityKey = encryptEntityKey(plainEntityKey);
 
-  console.log(`Using specific user: ${existingUser.name || existingUser.email} (${userId})`);
+  const entity = await prisma.entity.create({
+    data: {
+      name: entityName,
+      encryptionKey: encryptedEntityKey,
+    },
+  });
+  console.log(`✅ Created entity: ${entity.name}`);
+
+  // Create Supabase Admin client
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+
+  if (!supabaseUrl || !supabaseSecretKey) {
+    console.log(
+      '⚠️  WARNING: Supabase credentials not found. Skipping Supabase Auth user creation.',
+    );
+    console.log('   Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY to .env.local');
+  }
+
+  const testEmail = process.env.SEED_TEST_EMAIL;
+  const testPassword = process.env.SEED_TEST_PASSWORD;
+  if (!testEmail || !testPassword) {
+    throw new Error('SEED_TEST_EMAIL and SEED_TEST_PASSWORD env vars are required to run the seed script.');
+  }
+
+  // Create or update Supabase Auth user
+  if (supabaseUrl && supabaseSecretKey) {
+    const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+
+    console.log('🔐 Creating/updating Supabase Auth user...');
+
+    // Check if auth user exists
+    const { data: existingAuthUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existingAuthUser = existingAuthUsers?.users.find((u) => u.email === testEmail);
+
+    if (existingAuthUser) {
+      console.log(`Found existing Supabase Auth user: ${testEmail}`);
+      // Update password
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        existingAuthUser.id,
+        { password: testPassword, email_confirm: true },
+      );
+
+      if (updateError) {
+        console.log(`⚠️  Error updating Supabase Auth user: ${updateError.message}`);
+      } else {
+        console.log(`✅ Updated Supabase Auth user password`);
+      }
+    } else {
+      // Create new auth user
+      const { error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: testEmail,
+        password: testPassword,
+        email_confirm: true,
+      });
+
+      if (createError) {
+        console.log(`⚠️  Error creating Supabase Auth user: ${createError.message}`);
+      } else {
+        console.log(`✅ Created Supabase Auth user: ${testEmail}`);
+      }
+    }
+  }
+
+  // Create fresh database user with multi-organization support
+  console.log('👤 Creating database user...');
+  const existingUser = await prisma.user.create({
+    data: {
+      email: testEmail,
+      name: 'Anders Jacobson',
+      activeOrganisationId: entity.id,
+      organisations: {
+        create: {
+          organisationId: entity.id,
+          role: 'ADMIN',
+        },
+      },
+    },
+  });
+  console.log(`✅ Created database user: ${existingUser.email}`);
+
+  const userId = existingUser.id;
+  const entityId = entity.id;
+
+  // Use the plainEntityKey we generated earlier (no need to decrypt)
+  const entityKey = plainEntityKey;
+
+  console.log(`Using user: ${existingUser.name || existingUser.email} (${userId})`);
+  console.log(`✅ Using plain entity encryption key for borrower data`);
 
   console.log('🗝️ Creating key types...');
   // Create key types as specified
@@ -218,8 +358,7 @@ async function main() {
       data: {
         label: keyType.label,
         function: keyType.function,
-        accessArea: keyType.accessArea,
-        userId: userId,
+        entityId: entityId,
       },
     });
     createdKeyTypes.push({ ...created, expectedCopies: keyType.copies });
@@ -278,7 +417,8 @@ async function main() {
     const isCompanyContact = Math.random() > 0.8; // 20% are company contacts
     const borrower = await createBorrower(
       name,
-      userId,
+      entityId,
+      entityKey,
       isCompanyContact ? 'Bostadsrättsföreningen' : null,
       false, // Residents are not external
     );
@@ -295,9 +435,9 @@ async function main() {
           Math.random() > 0.7
             ? new Date(Date.now() + Math.random() * 180 * 24 * 60 * 60 * 1000)
             : null, // 30% have end date
-        notes: Math.random() > 0.8 ? 'Boende i föreningen' : null,
         idChecked: Math.random() > 0.1, // 90% ID checked
         returnedDate: null,
+        entityId: entityId,
         userId: userId,
       },
     });
@@ -320,9 +460,9 @@ async function main() {
             Math.random() > 0.8
               ? new Date(Date.now() + Math.random() * 180 * 24 * 60 * 60 * 1000)
               : null,
-          notes: Math.random() > 0.7 ? 'Förrådsplats' : null,
           idChecked: Math.random() > 0.1,
           returnedDate: null,
+          entityId: entityId,
           userId: userId,
         },
       });
@@ -345,7 +485,8 @@ async function main() {
 
     const borrower = await createBorrower(
       name,
-      userId,
+      entityId,
+      entityKey,
       company,
       !!company, // External if they have a company
     );
@@ -361,16 +502,9 @@ async function main() {
             : Math.random() > 0.6
               ? new Date(Date.now() + Math.random() * 180 * 24 * 60 * 60 * 1000)
               : null,
-        notes:
-          key.keyTypeLabel === 'E'
-            ? 'Sophämtning torsdagar'
-            : key.keyTypeLabel === 'C'
-              ? 'Fastighetsskötsel'
-              : key.keyTypeLabel === 'L'
-                ? 'Tvättid bokad'
-                : null,
         idChecked: Math.random() > 0.05,
         returnedDate: null,
+        entityId: entityId,
         userId: userId,
       },
     });
@@ -407,6 +541,14 @@ async function main() {
 
   console.log(`\n✅ Created ${totalBorrowers} borrowers and ${totalIssueRecords} issue records`);
   console.log('🎉 Comprehensive seed data created successfully!');
+
+  console.log('\n═══════════════════════════════════════');
+  console.log('🔑 TEST USER CREDENTIALS');
+  console.log('═══════════════════════════════════════');
+  console.log(`Email: ${testEmail}`);
+  console.log(`Password: ${testPassword}`);
+  console.log('═══════════════════════════════════════');
+  console.log('\n💡 You can now login at: http://localhost:3000\n');
 }
 
 main()

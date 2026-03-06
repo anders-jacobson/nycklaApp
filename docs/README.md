@@ -11,13 +11,16 @@ Critical security information, authentication setup, and testing procedures.
 - **[Security Overview](./security/security-overview.md)** - Comprehensive security architecture and policies
 - **[Authentication Testing Guide](./security/auth-testing-guide.md)** - How to test all auth workflows
 - **[Security Setup](./security/setup-security.md)** - Initial security configuration
+- **[Data Encryption Overview](./security/ENCRYPTION-README.md)** ⭐ - Data encryption implementation summary
 
 ### 🛠️ **Development Documentation** → [`development/`](./development/)
 
 Technical implementation details, tasks, and development workflows.
 
 - **[Tasks](./development/tasks.md)** - Current implementation roadmap and task breakdown
-- **[Architecture](./development/architecture.md)** - Technical architecture (coming soon)
+- **[Implementation Status](./development/IMPLEMENTATION-STATUS.md)** ⭐ - Current feature status and next steps
+- **[UI Components Guide](./development/UI-COMPONENTS.md)** - ResponsiveDialog and UI patterns
+- **[Architecture Decision Record](./development/ARCHITECTURE-DECISION-RECORD.md)** - Multi-tenant entity model decisions
 - **[Features](./development/features/)** - Feature specs and implementation notes
 
 ### 📋 **Product Documentation** → [`product/`](./product/)
@@ -49,13 +52,14 @@ Business requirements, user stories, and product specifications.
 
 ## 🔍 **Finding Information**
 
-| What You Need             | Where to Look                    |
-| ------------------------- | -------------------------------- |
-| **Security policies**     | `security/security-overview.md`  |
-| **Authentication setup**  | `security/setup-security.md`     |
-| **Current tasks**         | `development/tasks.md`           |
-| **Business requirements** | `product/requirements.md`        |
-| **Testing procedures**    | `security/auth-testing-guide.md` |
+| What You Need             | Where to Look                       |
+| ------------------------- | ----------------------------------- |
+| **Security policies**     | `security/security-overview.md`     |
+| **Authentication setup**  | `security/setup-security.md`        |
+| **Current tasks**         | `development/tasks.md`              |
+| **UI Components**         | `development/UI-COMPONENTS.md`      |
+| **Business requirements** | `product/requirements.md`           |
+| **Testing procedures**    | `security/auth-testing-guide.md`    |
 
 ## 📝 **Documentation Standards**
 

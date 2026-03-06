@@ -2,9 +2,11 @@
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 
-export async function updateUser({ email, cooperative }: { email: string; cooperative: string }) {
-  if (!email || !cooperative) {
-    return { error: 'Email and cooperative name are required.' };
+type ActionResult = { success: true } | { success: false; error: string };
+
+export async function updateUser({ email, name }: { email: string; name?: string }): Promise<ActionResult> {
+  if (!email) {
+    return { success: false, error: 'Email is required.' };
   }
 
   try {
@@ -16,22 +18,20 @@ export async function updateUser({ email, cooperative }: { email: string; cooper
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return { error: 'Not authenticated.' };
+      return { success: false, error: 'Not authenticated.' };
     }
 
-    // Update user profile and ensure auth_id is populated
+    // Update user profile - entity cannot be changed after registration
     await prisma.user.update({
-      where: { email },
+      where: { id: user.id }, // UUID lookup instead of email
       data: {
-        cooperative,
-        auth_id: user.id, // Ensure auth_id is set for OAuth users
+        name: name || undefined,
       },
     });
 
     return { success: true };
   } catch (error: unknown) {
-    let message = 'Något gick fel vid uppdatering.';
-    if (error instanceof Error) message = error.message;
-    return { error: message };
+    const message = error instanceof Error ? error.message : 'Något gick fel vid uppdatering.';
+    return { success: false, error: message };
   }
 }

@@ -1,32 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { IconArrowLeft, IconX, IconCheck, IconKey, IconCalendar } from '@tabler/icons-react';
 import {
-  IconArrowLeft,
-  IconX,
-  IconCheck,
-  IconKey,
-  IconNotes,
-  IconCalendar,
-} from '@tabler/icons-react';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
-import { BorrowerSearch } from '@/components/shared/borrower-search';
 import { BorrowerForm } from '@/components/shared/borrower-form';
 import { isPlaceholderEmail } from '@/lib/borrower-utils';
 import { issueMultipleKeysAction } from '@/app/actions/issueKeyWrapper';
+import { toastSuccess } from '@/components/ui/toast-store';
 
 interface KeyType {
   id: string;
   label: string;
   function: string;
-  accessArea: string | null;
+  accessArea?: string | null;
   totalCopies: number;
   availableCopies: number;
+  availableCopyDetails?: Array<{ id: string; copyNumber: number }>;
 }
 
 interface Borrower {
@@ -35,6 +36,7 @@ interface Borrower {
   email: string;
   phone?: string;
   company?: string; // Note: Still using 'company' field name for database compatibility
+  address?: string;
   borrowerPurpose?: string;
 }
 
@@ -67,27 +69,9 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
 
   // Workflow state
   const [keyTypes] = useState<KeyType[]>(initialKeyTypes);
+  const [selectedCopyByType, setSelectedCopyByType] = useState<Record<string, string>>({});
 
-  // Prevent browser back button during workflow
-  useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      e.preventDefault();
-      // Custom back handling within workflow
-      handleBack();
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [currentStep]);
-
-  // Clear error when keys are selected on the select-keys step
-  useEffect(() => {
-    if (currentStep === 'select-keys' && selectedKeyIds.length > 0 && error) {
-      setError(null);
-    }
-  }, [selectedKeyIds, currentStep, error]);
-
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     switch (currentStep) {
       case 'borrower-details':
         setCurrentStep('select-keys');
@@ -99,15 +83,72 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
         setCurrentStep('lending-details');
         break;
       default:
-        handleExit();
+        // At the first step, navigate back to the borrower table (active loans)
+        router.push('/active-loans');
+    }
+  }, [currentStep, router]);
+
+  // Prevent browser back button during workflow
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      // Custom back handling within workflow
+      handleBack();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentStep, handleBack]);
+
+  // Clear error when keys are selected on the select-keys step
+  useEffect(() => {
+    if (currentStep === 'select-keys' && selectedKeyIds.length > 0 && error) {
+      setError(null);
+    }
+  }, [selectedKeyIds, currentStep, error]);
+
+  // Ensure a default copy is selected for any newly selected key type
+  useEffect(() => {
+    if (currentStep !== 'select-keys') return;
+    setSelectedCopyByType((prev) => {
+      const next = { ...prev };
+      for (const typeId of selectedKeyIds) {
+        if (!next[typeId]) {
+          const kt = keyTypes.find((k) => k.id === typeId);
+          const firstAvailable = kt?.availableCopyDetails?.sort(
+            (a, b) => a.copyNumber - b.copyNumber,
+          )[0];
+          if (firstAvailable) next[typeId] = firstAvailable.id;
+        }
+      }
+      // Clean up deselected types
+      Object.keys(next).forEach((k) => {
+        if (!selectedKeyIds.includes(k)) delete next[k];
+      });
+      return next;
+    });
+  }, [selectedKeyIds, keyTypes, currentStep]);
+
+  const getBackLabel = () => {
+    switch (currentStep) {
+      case 'select-keys':
+        return 'Cancel';
+      case 'borrower-details':
+        return 'Select keys';
+      case 'lending-details':
+        return 'Borrower details';
+      case 'confirm':
+        return 'Lending details';
+      default:
+        return 'Back';
     }
   };
 
   const handleExit = () => {
-    router.push('/keys'); // Return to keys page
+    router.push('/active-loans'); // Return to active loans (borrower list)
   };
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setError(null);
 
     switch (currentStep) {
@@ -119,11 +160,11 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
         setCurrentStep('borrower-details');
         break;
       case 'borrower-details':
-        if (!borrowerData.name || !borrowerData.email) {
-          setError('Please provide borrower details.');
-          return;
+        // Submit the borrower form to trigger per-field validation and save
+        const form = document.getElementById('borrower-form') as HTMLFormElement | null;
+        if (form) {
+          form.requestSubmit();
         }
-        setCurrentStep('lending-details');
         break;
       case 'lending-details':
         if (!lendingDetails.idChecked) {
@@ -133,18 +174,16 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
         setCurrentStep('confirm');
         break;
     }
-  };
+  }, [currentStep, selectedKeyIds, lendingDetails.idChecked]);
 
-  const handleBorrowerSelected = (borrower: Borrower) => {
-    setBorrowerData(borrower);
-    setCurrentStep('lending-details');
-  };
+  // Selection is now handled inside BorrowerForm via form submit
 
   const handleBorrowerFormSubmit = (borrowerData: {
     name: string;
     email: string;
     phone?: string;
     company?: string;
+    address?: string;
     borrowerPurpose?: string;
   }) => {
     // Convert form data to Borrower format for new borrowers
@@ -154,13 +193,14 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
       email: borrowerData.email,
       phone: borrowerData.phone,
       company: borrowerData.company,
+      address: borrowerData.address,
       borrowerPurpose: borrowerData.borrowerPurpose,
     };
     setBorrowerData(newBorrower);
     setCurrentStep('lending-details');
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!lendingDetails.idChecked) {
       setError('ID verification is required to issue keys.');
       return;
@@ -168,22 +208,34 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
 
     setIsLoading(true);
     try {
-      const result = await issueMultipleKeysAction({
-        keyTypeIds: selectedKeyIds,
-        borrowerName: borrowerData.name,
-        borrowerEmail: borrowerData.email,
-        borrowerPhone: borrowerData.phone,
-        borrowerCompany: borrowerData.company,
-        borrowerPurpose: borrowerData.borrowerPurpose,
-        dueDate: lendingDetails.dueDate,
-
-        idChecked: lendingDetails.idChecked,
-        borrowerId: borrowerData.id || undefined, // Pass existing borrower ID if available
-      });
+      const result = await issueMultipleKeysAction(
+        {
+          keyTypeIds: selectedKeyIds,
+          borrowerName: borrowerData.name,
+          borrowerEmail: borrowerData.email,
+          borrowerPhone: borrowerData.phone,
+          borrowerCompany: borrowerData.company,
+          borrowerAddress: borrowerData.address,
+          borrowerPurpose: borrowerData.borrowerPurpose,
+          dueDate: lendingDetails.dueDate,
+          idChecked: lendingDetails.idChecked,
+          borrowerId: borrowerData.id || undefined, // Pass existing borrower ID if available
+        },
+        { keyCopyIdsByType: selectedCopyByType },
+      );
 
       if (result.success) {
-        // Success - redirect to keys page with success message
-        router.push('/keys?success=keys-issued');
+        // Show success toast with action to view keys page
+        toastSuccess(
+          'Keys issued successfully!',
+          `${selectedKeyIds.length} ${selectedKeyIds.length === 1 ? 'key' : 'keys'} issued to ${borrowerData.name}`,
+          {
+            label: 'View Keys',
+            onClick: () => router.push('/keys'),
+          },
+        );
+        // Redirect to active loans (borrower list)
+        router.push('/active-loans');
       } else {
         setError(result.error || 'Failed to issue keys.');
       }
@@ -192,7 +244,14 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [
+    lendingDetails.idChecked,
+    lendingDetails.dueDate,
+    selectedKeyIds,
+    borrowerData,
+    selectedCopyByType,
+    router,
+  ]);
 
   const availableKeyOptions: MultiSelectOption[] = keyTypes.map((keyType) => ({
     label: `${keyType.label} - ${keyType.function}`,
@@ -202,18 +261,18 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
     disabled: keyType.availableCopies === 0,
   }));
 
-  const getSelectedKeys = () => {
+  const selectedKeys = useMemo(() => {
     return keyTypes.filter((keyType) => selectedKeyIds.includes(keyType.id));
-  };
+  }, [keyTypes, selectedKeyIds]);
 
-  const getAccessAreasSummary = () => {
-    const areas = getSelectedKeys()
+  const accessAreasSummary = useMemo(() => {
+    const areas = selectedKeys
       .map((key) => key.accessArea)
       .filter((area) => area !== null)
       .filter((area, index, arr) => arr.indexOf(area) === index); // Remove duplicates
 
-    return areas.length > 0 ? areas.join(', ') : 'No specific access areas defined';
-  };
+    return areas.length > 0 ? areas.join(', ') : 'No areas';
+  }, [selectedKeys]);
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -227,22 +286,6 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
               </p>
             </div>
 
-            {selectedKeyIds.length > 0 && (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <IconKey className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">
-                        Combined Access Areas ({selectedKeyIds.length} keys):
-                      </span>
-                    </div>
-                    <p className="text-muted-foreground">{getAccessAreasSummary()}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             <MultiSelect
               options={availableKeyOptions}
               onValueChange={setSelectedKeyIds}
@@ -251,6 +294,62 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
               emptyIndicator="No keys found."
               disabled={isLoading}
             />
+
+            <Card>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <IconKey className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">
+                      Combined Access Areas ({selectedKeyIds.length} keys):
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground">{accessAreasSummary}</p>
+                </div>
+                {selectedKeyIds.length > 0 && (
+                  <div className="mt-4 space-y-3">
+                    {selectedKeyIds.map((typeId) => {
+                      const kt = keyTypes.find((k) => k.id === typeId);
+                      if (!kt) return null;
+                      const copies = (kt.availableCopyDetails || []).sort(
+                        (a, b) => a.copyNumber - b.copyNumber,
+                      );
+                      return (
+                        <div key={typeId} className="flex items-center gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium truncate">
+                              {kt.label} — {kt.function}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Select copy to issue
+                            </div>
+                          </div>
+                          <div className="w-36">
+                            <Select
+                              value={selectedCopyByType[typeId] || ''}
+                              onValueChange={(val) =>
+                                setSelectedCopyByType((prev) => ({ ...prev, [typeId]: val }))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Copy" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {copies.map((c) => (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    #{c.copyNumber}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         );
 
@@ -259,31 +358,14 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
           <div className="space-y-6">
             <div className="text-center space-y-2">
               <h1 className="text-2xl font-bold">Borrower Details</h1>
-              <p className="text-muted-foreground">
-                Search for an existing borrower or add a new one
-              </p>
-            </div>
-
-            <BorrowerSearch
-              onSelectBorrower={handleBorrowerSelected}
-              onCreateNew={() => setCurrentStep('borrower-details')}
-              disabled={isLoading}
-            />
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or add new borrower
-                </span>
-              </div>
+              <p className="text-muted-foreground">Type a name to search or enter a new one.</p>
             </div>
 
             <BorrowerForm
               onSubmit={handleBorrowerFormSubmit}
               onCancel={handleBack}
+              formId="borrower-form"
+              hideActions
               isLoading={isLoading}
             />
           </div>
@@ -356,11 +438,18 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                   <div>
                     <p className="font-medium">Keys ({selectedKeyIds.length})</p>
                     <ul className="list-disc list-inside text-muted-foreground">
-                      {getSelectedKeys().map((key) => (
-                        <li key={key.id}>
-                          {key.label} - {key.function}
-                        </li>
-                      ))}
+                      {selectedKeys.map((key) => {
+                        const copyId = selectedCopyByType[key.id];
+                        const copyNum = key.availableCopyDetails?.find(
+                          (c) => c.id === copyId,
+                        )?.copyNumber;
+                        return (
+                          <li key={key.id}>
+                            {key.label} - {key.function}
+                            {copyNum ? ` (copy #${copyNum})` : ''}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                   <div>
@@ -393,7 +482,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                     <IconKey className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Combined Access Areas:</span>
                   </div>
-                  <p className="text-muted-foreground">{getAccessAreasSummary()}</p>
+                  <p className="text-muted-foreground">{accessAreasSummary}</p>
                 </div>
 
                 <Separator />
@@ -425,15 +514,12 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Header with navigation */}
-      <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={handleBack}>
+      <header className="flex items-center justify-between px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={handleBack} className="gap-2">
             <IconArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">{getBackLabel()}</span>
           </Button>
-          <div className="flex items-center gap-2">
-            <IconKey className="h-5 w-5" />
-            <span className="font-semibold">Issue Keys</span>
-          </div>
         </div>
 
         <Button variant="ghost" size="icon" onClick={handleExit}>
@@ -442,20 +528,24 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
       </header>
 
       {/* Progress indicator */}
-      <div className="px-4 py-2 border-b">
+      <div className="px-4 py-2">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            Step{' '}
-            {currentStep === 'select-keys'
-              ? 1
-              : currentStep === 'borrower-details'
-                ? 2
-                : currentStep === 'lending-details'
-                  ? 3
-                  : 4}{' '}
-            of 4
-          </span>
-          <div className="flex gap-1">
+          <div className="flex items-center gap-2 pl-6">
+            <span className="font-semibold text-foreground">Issue Keys</span>
+            <span>—</span>
+            <span>
+              Step{' '}
+              {currentStep === 'select-keys'
+                ? 1
+                : currentStep === 'borrower-details'
+                  ? 2
+                  : currentStep === 'lending-details'
+                    ? 3
+                    : 4}{' '}
+              of 4
+            </span>
+          </div>
+          <div className="flex gap-1 pr-6">
             {['select-keys', 'borrower-details', 'lending-details', 'confirm'].map(
               (step, index) => (
                 <div
@@ -489,16 +579,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
           )}
 
           {/* Navigation buttons positioned after content */}
-          <div className="flex justify-between pt-4">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={handleBack}
-              disabled={isLoading || currentStep === 'select-keys'}
-            >
-              Back
-            </Button>
-
+          <div className="flex justify-end pt-4">
             {currentStep === 'confirm' ? (
               <Button onClick={handleSubmit} disabled={isLoading} size="lg" className="gap-2">
                 {isLoading && (
