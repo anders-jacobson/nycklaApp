@@ -2,6 +2,8 @@
 
 Key management app for Swedish housing cooperatives (*bostadsrättsföreningar*). Multi-tenant, with per-entity PII encryption.
 
+See WORKFLOW.md for the daily development checklist.
+
 ## Tech Stack
 
 - **Next.js 15** App Router, TypeScript strict mode, React 19
