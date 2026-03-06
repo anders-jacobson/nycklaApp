@@ -12,7 +12,7 @@
 
 - [ ] **Navigate to project folder**
   ```bash
-  cd ~/dev/nycklaApp
+  cd ~/Documents/Firma/Projects/Nyckla/nycklaApp
   ```
   Always launch Claude Code from inside the project — never from your home folder
 
@@ -102,6 +102,9 @@
 | Sync with main | `/sync` |
 | Review changes | `/review` |
 | Verify before PR | `/verify` |
+| New worktree | `git worktree add ~/…/worktrees/feat-x -b feat/x` |
+| List worktrees | `git worktree list` |
+| Remove worktree | `git worktree remove ~/…/worktrees/feat-x` |
 
 ---
 
@@ -109,13 +112,19 @@
 
 Run multiple Claude sessions on different branches simultaneously — each worktree is a full independent checkout.
 
-**Create a worktree for a feature branch**
+Useful when you have two independent things to work on at the same time — but only worth it when you actually do.
+
+**Create and launch a worktree**
 ```bash
 # New branch
-git worktree add /Users/Anders/Documents/Firma/Projects/Nyckla/worktrees/feat-my-feature -b feat/my-feature
+git worktree add ~/Documents/Firma/Projects/Nyckla/worktrees/feat-my-feature -b feat/my-feature
 
 # Existing branch
-git worktree add /Users/Anders/Documents/Firma/Projects/Nyckla/worktrees/feat-my-feature feat/my-feature
+git worktree add ~/Documents/Firma/Projects/Nyckla/worktrees/feat-my-feature feat/my-feature
+
+# Then open it in a new Ghostty tab (Cmd+T) and start Claude
+cd ~/Documents/Firma/Projects/Nyckla/worktrees/feat-my-feature
+claude
 ```
 
 **List all active worktrees**
@@ -125,7 +134,7 @@ git worktree list
 
 **Remove a worktree when done**
 ```bash
-git worktree remove /Users/Anders/Documents/Firma/Projects/Nyckla/worktrees/feat-my-feature
+git worktree remove ~/Documents/Firma/Projects/Nyckla/worktrees/feat-my-feature
 ```
 
 **Prune stale worktree refs** (if you deleted the folder manually)
@@ -133,14 +142,11 @@ git worktree remove /Users/Anders/Documents/Firma/Projects/Nyckla/worktrees/feat
 git worktree prune
 ```
 
-> Open each worktree in a separate Ghostty tab and launch Claude Code inside it — fully isolated sessions, no context bleed.
-
 ---
 
 ## Still To Set Up
 
 - [ ] GitHub Actions CI pipeline
-- [ ] Parallel Ghostty sessions (Boris's tip #1)
 
 ---
 
