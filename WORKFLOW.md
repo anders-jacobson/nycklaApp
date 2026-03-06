@@ -66,9 +66,9 @@
 
 - [ ] **Verify the app builds and types check**
   ```
-  run verify-app
+  /verify
   ```
-  Runs typecheck + lint + build. Catches issues before they reach GitHub
+  Runs lint → typecheck → build → tests in order. Stops on first failure with exact error and suggested fix
 
 ---
 
@@ -101,6 +101,7 @@
 | Commit + PR | `/commit-push-pr` |
 | Sync with main | `/sync` |
 | Review changes | `/review` |
+| Verify before PR | `/verify` |
 
 ---
 
