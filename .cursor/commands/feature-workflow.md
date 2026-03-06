@@ -3,7 +3,7 @@
 Structured checklist for creating a feature, testing, and pushing to a branch. Follow in order; tick as you go.
 
 ## 1. Branch
-- [ ] Create branch from latest `main`/`develop`: `git checkout -b feature/short-name`
+- [ ] Create branch from latest `main`: `git checkout -b feature/short-name`
 - [ ] Confirm you're on the right base
 
 ## 2. Implement

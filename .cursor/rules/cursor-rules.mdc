@@ -1,64 +1,28 @@
 ---
-description: Master development rules - Project-specific patterns only
+description: Master rules — references CLAUDE.md as canonical source
 globs: ['**/*.tsx', '**/*.ts']
 alwaysApply: true
 ---
 
-# Master Development Rules
+# Nyckla Project Rules
 
-## 🚨 Critical Project-Specific Rules
+All conventions are in @CLAUDE.md. Follow it for:
+- Auth: `getCurrentUser()` from `lib/auth-utils.ts`, never look up by email
+- Entity scoping: always filter by `entityId: user.activeOrganisationId`
+- Encryption: `lib/entity-encryption.ts` — `getEntityKey` / `encryptWithEntityKey` / `decryptWithEntityKey`
+- Server actions: `ActionResult<T>` shape, `revalidatePath`, `prisma.$transaction` for multi-step writes
+- UI: shadcn/ui + Tabler Icons only (`@tabler/icons-react`)
+- Borrowers: use `getBorrowerDetails` / `createBorrowerWithAffiliation` from `lib/borrower-utils.ts`
 
-### 1. Database → Prisma Only (Never Supabase .from())
+## Cursor-Specific: Responsive Dialogs
 
-```typescript
-// ✅ ALWAYS
-const data = await prisma.keyType.findMany({ where: { userId } });
+For all user-facing dialogs: use `ResponsiveDialog` from `@/components/ui/responsive-dialog`.
+It renders as `Dialog` on desktop and `Drawer` on mobile (<768px) automatically.
 
-// ❌ NEVER
-const { data } = await supabase.from('KeyType')...
-```
+## Slash Commands
 
-### 2. Auth → getCurrentUser() + Supabase SSR
-
-Use `getCurrentUser()` from `@/lib/auth-utils` in server actions; returns `{ id, email, activeOrganisationId, roleInActiveOrg, allOrganisations[] }`. Use that for data filtering. For Supabase Auth SSR, middleware, or cookie handling, use the **supabase-auth-ssr** skill.
-
-### 3. UI → shadcn/ui + Tabler Icons + ResponsiveDialog
-
-No plain HTML buttons/forms. Use `@/components/ui/*` and `@tabler/icons-react`. User-facing dialogs: `ResponsiveDialog` from `@/components/ui/responsive-dialog` (Dialog on desktop, Drawer on mobile). See `docs/development/UI-COMPONENTS.md`.
-
-### 4. Server Actions → ActionResult<T>
-
-`type ActionResult<T> = { success: true; data?: T } | { success: false; error: string }`. Use `getCurrentUserId()` or `getCurrentUser()`, filter by org, use `prisma.$transaction` for multi-step ops, `revalidatePath` then return.
-
-### 5. Data Isolation
-
-Always filter by `entityId: user.activeOrganisationId` (or equivalent). Never query by `id` alone without org scope.
-
-### 6. Documentation → Only in docs/ Directory
-
-- ✅ `docs/security/`, `docs/development/`, `docs/product/`
-- ❌ NEVER create `.md` files in project root (except README.md)
-
-## Schema (see `prisma/schema.prisma`)
-
-User, UserOrganisation, Entity (org in UI), KeyType, KeyCopy, Borrower, IssueRecord. Multi-tenant: filter by `user.activeOrganisationId` / `entityId`.
-
-## Imports
-
-`prisma` from `@/lib/prisma`; Supabase from `@/lib/supabase/server` (auth only); UI from `@/components/ui/*`, `@tabler/icons-react`.
-
-## Reference
-
-- **Supabase Auth SSR**: `.cursor/skills/supabase-auth-ssr/SKILL.md` (cookie/middleware patterns)
-- **Patterns**: `.cursor/rules/patterns.mdc` | **Context**: `.cursor/rules/project-context.mdc` | **Features**: `.cursor/rules/key-features.mdc`
-- **UI**: `docs/development/UI-COMPONENTS.md` | **Schema**: `prisma/schema.prisma`
-
-## ✅ Checklist
-
-- [ ] Used Prisma (not Supabase .from())?
-- [ ] Used getCurrentUser() pattern (returns activeOrganisationId)?
-- [ ] Used shadcn/ui + Tabler Icons?
-- [ ] Used ResponsiveDialog for user-facing dialogs?
-- [ ] Filtered by activeOrganisationId for data isolation?
-- [ ] Used transactions for multi-step ops?
-- [ ] Used ActionResult<T> type?
+| Command | Purpose |
+|---|---|
+| `/code-review` | Review against conventions (functionality, security, project rules) |
+| `/check-entity-isolation` | Verify Prisma/entityId filtering, no `supabase.from()` |
+| `/feature-workflow` | Branch → implement → test → push checklist |
