@@ -5,6 +5,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test:workflows": "tsx tests/test-issue-return-workflows.ts",
     "postinstall": "prisma generate"
