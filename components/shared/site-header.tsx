@@ -12,6 +12,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 const getPageTitle = (pathname: string): string => {
   if (pathname === '/active-loans') return 'Active Loans';
   if (pathname.startsWith('/keys')) return 'Keys';
+  if (pathname.startsWith('/settings')) return 'Settings';
   if (pathname.startsWith('/lifecycle')) return 'Lifecycle';
   if (pathname.startsWith('/analytics')) return 'Analytics';
   if (pathname.startsWith('/projects')) return 'Projects';

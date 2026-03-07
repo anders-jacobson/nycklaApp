@@ -20,20 +20,9 @@ export function WelcomeContent({ organizationName, stats, from }: WelcomeContent
   const [secondsLeft, setSecondsLeft] = useState(5);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
-  useEffect(() => {
-    // Countdown timer
-    if (secondsLeft > 0) {
-      const timer = setTimeout(() => setSecondsLeft(secondsLeft - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (secondsLeft === 0 && !isRedirecting) {
-      // Auto-redirect after countdown
-      handleContinue();
-    }
-  }, [secondsLeft, isRedirecting]);
-
   const handleContinue = () => {
     setIsRedirecting(true);
-    
+
     // If organization was just created and has no keys, go to onboarding
     // Otherwise go to dashboard
     if (from === 'create' && stats.keyTypes === 0) {
@@ -42,6 +31,18 @@ export function WelcomeContent({ organizationName, stats, from }: WelcomeContent
       router.push('/active-loans');
     }
   };
+
+  useEffect(() => {
+    // Countdown timer
+    if (secondsLeft > 0) {
+      const timer = setTimeout(() => setSecondsLeft(secondsLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (secondsLeft === 0 && !isRedirecting) {
+      // Auto-redirect after countdown
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      handleContinue();
+    }
+  }, [secondsLeft, isRedirecting]);
 
   const getMessage = () => {
     switch (from) {

@@ -1,12 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-  IconDashboard,
-  IconHelp,
-  IconListDetails,
-  IconSettings,
-} from '@tabler/icons-react';
+import { IconDashboard, IconHelp, IconListDetails, IconSettings } from '@tabler/icons-react';
 
 import { NavMain } from './nav-main';
 import { NavSecondary } from './nav-secondary';
@@ -62,7 +57,7 @@ export function DashboardSidebar({
   ...props
 }: DashboardSidebarProps) {
   const userData = {
-    name: user?.name || 'Loading...',
+    name: user?.name || user?.email || '',
     email: user?.email || '',
     avatar: user?.avatar || '',
   };

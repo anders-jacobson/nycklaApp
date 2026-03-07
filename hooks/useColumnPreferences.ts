@@ -20,6 +20,7 @@ export function useColumnPreferences() {
 
   // Initialize preferences after mounting to avoid hydration mismatch
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
 
     const getInitialVisibility = (): ColumnVisibility => {
@@ -60,6 +61,7 @@ export function useColumnPreferences() {
   useEffect(() => {
     if (mounted && isMobile) {
       // On mobile, prioritize essential columns
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setColumnVisibility((prev) => ({
         ...prev,
         affiliation: false, // Hide on mobile to save space

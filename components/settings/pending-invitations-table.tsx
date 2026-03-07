@@ -46,6 +46,7 @@ export function PendingInvitationsTable({ invitations }: { invitations: Invitati
         </TableHeader>
         <TableBody>
           {invitations.map((inv) => {
+            // eslint-disable-next-line react-hooks/purity
             const daysLeft = Math.ceil((new Date(inv.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
             
             return (

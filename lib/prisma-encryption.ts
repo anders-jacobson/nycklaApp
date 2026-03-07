@@ -5,11 +5,11 @@
  */
 
 import { Prisma } from '@prisma/client';
-import { 
-  getEntityKey, 
-  encryptWithEntityKey, 
-  decryptWithEntityKey, 
-  isEncrypted 
+import {
+  getEntityKey,
+  encryptWithEntityKey,
+  decryptWithEntityKey,
+  isEncrypted,
 } from '@/lib/entity-encryption';
 
 /**
@@ -28,10 +28,11 @@ type ModelName = keyof typeof ENCRYPTION_FIELDS;
  * Create Prisma Client Extension for encryption
  * Uses Client Extensions API which works better with Next.js 16
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createEncryptionExtension(basePrisma: any) {
   // Check for encryption key - allow graceful fallback for tests/dev
   const hasEncryptionKey = !!process.env.ENCRYPTION_KEY;
-  
+
   if (!hasEncryptionKey) {
     // In development/test, allow running without encryption key
     if (process.env.NODE_ENV !== 'production') {
@@ -103,17 +104,25 @@ export function createEncryptionExtension(basePrisma: any) {
 /**
  * Encrypt sensitive fields before write
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function encryptFields(data: any, modelName: ModelName, prisma: any): Promise<any> {
   if (!data) return data;
-  
+
   const fieldsToEncrypt = ENCRYPTION_FIELDS[modelName];
   if (!fieldsToEncrypt) {
     return data;
   }
-  
+
+  // If all non-null fields are already encrypted, skip re-encryption entirely
+  // (happens when createBorrowerWithAffiliation pre-encrypts before the Prisma write)
+  const fieldsNeedingEncryption = fieldsToEncrypt.filter(
+    (field) => data[field] && typeof data[field] === 'string' && !isEncrypted(data[field]),
+  );
+  if (fieldsNeedingEncryption.length === 0) return data;
+
   // Get entityId from data or borrower relation
   let entityId: string | null = data.entityId || null;
-  
+
   if (!entityId && data.borrower?.connect?.id) {
     const borrower = await prisma.borrower.findUnique({
       where: { id: data.borrower.connect.id },
@@ -121,47 +130,44 @@ async function encryptFields(data: any, modelName: ModelName, prisma: any): Prom
     });
     entityId = borrower?.entityId || null;
   }
-  
+
   if (!entityId) {
     throw new Error(
       `Cannot encrypt PII for model "${modelName}": entityId could not be resolved from the data context. ` +
-      'Ensure entityId is present in the write data or accessible via the borrower relation.',
+        'Ensure entityId is present in the write data or accessible via the borrower relation.',
     );
   }
 
   const entityKey = await getEntityKey(entityId);
   const encrypted = { ...data };
-  
-  for (const field of fieldsToEncrypt) {
-    if (encrypted[field] && typeof encrypted[field] === 'string') {
-      if (!isEncrypted(encrypted[field])) {
-        encrypted[field] = encryptWithEntityKey(encrypted[field], entityKey);
-      }
-    }
+
+  for (const field of fieldsNeedingEncryption) {
+    encrypted[field] = encryptWithEntityKey(encrypted[field], entityKey);
   }
-  
+
   return encrypted;
 }
 
 /**
  * Decrypt sensitive fields after read
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function decryptFields(result: any, modelName: ModelName, prisma: any): Promise<any> {
   if (!result) return result;
-  
+
   const fieldsToDecrypt = ENCRYPTION_FIELDS[modelName];
   if (!fieldsToDecrypt) {
     return result;
   }
-  
+
   // Handle arrays
   if (Array.isArray(result)) {
     return Promise.all(result.map((item) => decryptFields(item, modelName, prisma)));
   }
-  
+
   // Get entityId from result or borrower relation
   let entityId: string | null = null;
-  
+
   if (result.borrower?.entityId) {
     entityId = result.borrower.entityId;
   } else if (result.entityId) {
@@ -170,29 +176,25 @@ async function decryptFields(result: any, modelName: ModelName, prisma: any): Pr
     // Try to fetch borrower to get entityId
     const borrower = await prisma.borrower.findFirst({
       where: {
-        OR: [
-          { residentBorrowerId: result.id },
-          { externalBorrowerId: result.id },
-        ],
+        OR: [{ residentBorrowerId: result.id }, { externalBorrowerId: result.id }],
       },
       select: { entityId: true },
     });
     entityId = borrower?.entityId || null;
   }
-  
+
   if (!entityId) {
     return result; // Skip decryption if no entity context
   }
-  
+
   const entityKey = await getEntityKey(entityId);
   const decrypted = { ...result };
-  
+
   for (const field of fieldsToDecrypt) {
     if (decrypted[field] && typeof decrypted[field] === 'string') {
       decrypted[field] = decryptWithEntityKey(decrypted[field], entityKey);
     }
   }
-  
+
   return decrypted;
 }
-

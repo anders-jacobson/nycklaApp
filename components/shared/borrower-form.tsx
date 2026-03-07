@@ -33,11 +33,10 @@ import {
   IconPlus,
 } from '@tabler/icons-react';
 import {
-  generatePlaceholderEmail,
   isPlaceholderEmail,
   validateBorrowerData,
   type BorrowerValidationResult,
-} from '@/lib/borrower-utils';
+} from '@/lib/borrower-pure-utils';
 
 interface BorrowerFormProps {
   onSubmit: (borrowerData: {
@@ -142,10 +141,10 @@ export function BorrowerForm({
         const results = await searchBorrowers(q);
         if (!active) return;
         setNameOptions(
-          results.map((b) => ({
+          (results.success ? (results.data ?? []) : []).map((b) => ({
             id: b.id,
             name: b.name,
-            email: b.email,
+            email: b.email ?? '',
             phone: b.phone ?? undefined,
             company: b.company ?? undefined,
           })),
@@ -199,7 +198,13 @@ export function BorrowerForm({
 
   // Validate form data whenever it changes
   useEffect(() => {
-    const result = validateBorrowerData({ name: formData.name, email: formData.email, phone: formData.phone, company: formData.company, borrowerPurpose: formData.borrowerPurpose });
+    const result = validateBorrowerData({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      company: formData.company,
+      borrowerPurpose: formData.borrowerPurpose,
+    });
     setValidation(result);
   }, [formData, affiliation]);
 
@@ -566,11 +571,11 @@ export function BorrowerForm({
 
                 <div className="space-y-2">
                   <Label htmlFor="address">Address</Label>
-                  {(validation as any).errors.address &&
+                  {validation.errors.address &&
                     ((touched.address && formData.address.length > 0) || submitted) && (
                       <p className="text-sm text-destructive flex items-center gap-1">
                         <IconAlertCircle className="h-3.5 w-3.5" />
-                        {(validation as any).errors.address}
+                        {validation.errors.address}
                       </p>
                     )}
                   <Input
@@ -580,7 +585,7 @@ export function BorrowerForm({
                     onBlur={() => setTouched((prev) => ({ ...prev, address: true }))}
                     placeholder="Enter address (optional)"
                     className={
-                      (validation as any).errors.address &&
+                      validation.errors.address &&
                       ((touched.address && formData.address.length > 0) || submitted)
                         ? 'border-destructive'
                         : ''

@@ -6,7 +6,7 @@ import { validateInvitationToken } from '@/app/actions/team';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { IconBrandGoogle, IconArrowLeft, IconMail, IconUserPlus } from '@tabler/icons-react';
+import { IconBrandGoogle, IconUserPlus } from '@tabler/icons-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Turnstile } from '@marsidev/react-turnstile';
 
@@ -31,6 +31,7 @@ export function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [invitationInfo, setInvitationInfo] = useState<InvitationInfo | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const turnstileRef = useRef<any>(null);
 
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
@@ -61,6 +62,7 @@ export function LoginForm() {
   // Auto-submit when 6 digits are entered
   useEffect(() => {
     if (code.length === 6 && !isPending) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMessage(null);
       startTransition(async () => {
         const result = await verifyOtpCode(email, code);
@@ -131,7 +133,7 @@ export function LoginForm() {
         <div className="rounded-lg bg-muted p-4 space-y-2">
           <div className="flex items-center gap-2 text-sm font-medium">
             <IconUserPlus className="h-4 w-4" />
-            <span>You've been invited!</span>
+            <span>You&apos;ve been invited!</span>
           </div>
           <p className="text-sm text-muted-foreground">
             Join <strong>{invitationInfo.organizationName}</strong> as a{' '}
@@ -229,7 +231,7 @@ export function LoginForm() {
                 code here or tap the button in the email to continue.
               </p>
               <p className="text-sm text-muted-foreground">
-                If you don't see the email, check your spam or junk folder.
+                If you don&apos;t see the email, check your spam or junk folder.
               </p>
             </div>
           </div>

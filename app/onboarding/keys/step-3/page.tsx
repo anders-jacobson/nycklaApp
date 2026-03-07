@@ -77,6 +77,7 @@ export default function Step3Page() {
     const prefixUpper = seriesPrefix.trim().toUpperCase();
     // Only deselect if prefix is a single letter
     if (prefixUpper.length === 1 && letterLabels.includes(prefixUpper)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLetterLabels(letterLabels.filter((l) => l !== prefixUpper));
     }
   }, [seriesPrefix, letterLabels]);
@@ -85,6 +86,7 @@ export default function Step3Page() {
   useEffect(() => {
     const conflictingLetters = letterLabels.filter((letter) => customLabels.includes(letter));
     if (conflictingLetters.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLetterLabels(letterLabels.filter((l) => !customLabels.includes(l)));
     }
   }, [customLabels, letterLabels]);
@@ -386,7 +388,7 @@ export default function Step3Page() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              💡 Example: Prefix "Z", From 1, To 14 → creates Z1, Z2, ... Z14 (14 keys)
+              💡 Example: Prefix &quot;Z&quot;, From 1, To 14 → creates Z1, Z2, ... Z14 (14 keys)
             </p>
           </div>
           
@@ -505,7 +507,7 @@ export default function Step3Page() {
             Key types to create: <span className="text-lg font-bold">{getTotalLabels()}</span>
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            You'll specify the number of copies for each type in the next step
+            You&apos;ll specify the number of copies for each type in the next step
           </p>
         </div>
 
