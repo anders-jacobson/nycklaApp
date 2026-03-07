@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { getOnboardingSession, updateOnboardingDraft } from '@/app/actions/onboarding';
 import { IconArrowLeft, IconArrowRight, IconMinus, IconPlus } from '@tabler/icons-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { generateSeries } from '@/lib/label-generators';
 
 export default function Step4Page() {
@@ -25,7 +25,11 @@ export default function Step4Page() {
         const labels: string[] = [
           ...(draft.letterLabels || []),
           ...(draft.seriesPreset
-            ? generateSeries(draft.seriesPreset.prefix, draft.seriesPreset.from, draft.seriesPreset.to)
+            ? generateSeries(
+                draft.seriesPreset.prefix,
+                draft.seriesPreset.from,
+                draft.seriesPreset.to,
+              )
             : []),
           ...(draft.customLabels || []),
         ];
@@ -68,7 +72,7 @@ export default function Step4Page() {
       });
 
       if (result.success) {
-        router.push('/onboarding/keys/step-5');
+        router.push('/onboarding/keys/review');
       }
     });
   };
@@ -83,8 +87,16 @@ export default function Step4Page() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-52" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -100,10 +112,7 @@ export default function Step4Page() {
 
       <div className="space-y-3">
         {allLabels.map((label) => (
-          <div
-            key={label}
-            className="flex items-center gap-4 p-4 border rounded-lg bg-card"
-          >
+          <div key={label} className="flex items-center gap-4 p-4 border rounded-lg bg-card">
             <div className="flex-1">
               <span className="font-medium">{label}</span>
             </div>
@@ -117,9 +126,7 @@ export default function Step4Page() {
               >
                 <IconMinus className="h-4 w-4" />
               </Button>
-              <div className="w-12 text-center font-medium text-lg">
-                {copiesMap[label]}
-              </div>
+              <div className="w-12 text-center font-medium text-lg">{copiesMap[label]}</div>
               <Button
                 variant="outline"
                 size="sm"
@@ -142,21 +149,15 @@ export default function Step4Page() {
       </div>
 
       <div className="flex gap-3 pt-4">
-        <Button onClick={handleBack} variant="outline" className="h-11 min-w-32" size="lg">
-          <IconArrowLeft className="mr-2 h-5 w-5" />
+        <Button onClick={handleBack} variant="outline" className="min-w-32" size="lg">
+          <IconArrowLeft className="mr-1.5 h-3.5 w-3.5" />
           Back
         </Button>
-        <Button
-          onClick={handleNext}
-          disabled={isPending}
-          className="ml-auto h-11 min-w-32"
-          size="lg"
-        >
+        <Button onClick={handleNext} disabled={isPending} className="ml-auto min-w-32" size="lg">
           {isPending ? 'Saving...' : 'Next'}
-          <IconArrowRight className="ml-2 h-5 w-5" />
+          <IconArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
   );
 }
-
