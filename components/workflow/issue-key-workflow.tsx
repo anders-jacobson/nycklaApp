@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
 import { BorrowerForm } from '@/components/shared/borrower-form';
-import { isPlaceholderEmail } from '@/lib/borrower-utils';
+import { isPlaceholderEmail } from '@/lib/borrower-pure-utils';
 import { issueMultipleKeysAction } from '@/app/actions/issueKeyWrapper';
 import { toastSuccess } from '@/components/ui/toast-store';
 

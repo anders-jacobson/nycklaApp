@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { IconSearch, IconUser, IconMail, IconPhone, IconPlus } from '@tabler/icons-react';
-import { isPlaceholderEmail } from '@/lib/borrower-utils';
+import { isPlaceholderEmail } from '@/lib/borrower-pure-utils';
 
 interface Borrower {
   id: string;
@@ -39,8 +39,9 @@ export function BorrowerSearch({
     const { searchBorrowers: searchAction } = await import('@/app/actions/dashboard');
     const results = await searchAction(term);
     // Map null to undefined for optional fields
-    return results.map((borrower) => ({
+    return (results.success ? (results.data ?? []) : []).map((borrower) => ({
       ...borrower,
+      email: borrower.email ?? '',
       phone: borrower.phone ?? undefined,
       company: borrower.company ?? undefined,
     }));
