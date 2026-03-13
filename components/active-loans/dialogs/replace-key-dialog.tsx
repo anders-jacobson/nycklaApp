@@ -52,7 +52,6 @@ export function ReplaceKeyDialog({
     }
   };
 
-
   return (
     <ResponsiveDialog
       open={open}
@@ -62,8 +61,7 @@ export function ReplaceKeyDialog({
         <span className="flex items-start gap-2">
           <IconAlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
           <span>
-            This marks the original key as lost, creates a new copy and issues it to{' '}
-            {borrowerName}.
+            This marks the original key as lost, creates a new copy and issues it to {borrowerName}.
           </span>
         </span>
       }
@@ -106,11 +104,7 @@ export function ReplaceKeyDialog({
           />
         </div>
         <div className="flex items-center space-x-2">
-          <Checkbox
-            id="idChecked"
-            checked={idChecked}
-            onCheckedChange={(v) => setIdChecked(!!v)}
-          />
+          <Checkbox id="idChecked" checked={idChecked} onCheckedChange={(v) => setIdChecked(!!v)} />
           <Label htmlFor="idChecked" className="cursor-pointer font-normal">
             I have verified the borrower&apos;s ID
           </Label>
@@ -119,4 +113,3 @@ export function ReplaceKeyDialog({
     </ResponsiveDialog>
   );
 }
-

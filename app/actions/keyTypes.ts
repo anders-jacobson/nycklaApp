@@ -13,7 +13,6 @@ export async function createKeyType(formData: FormData): Promise<ActionResult<{ 
     // Inputs (do NOT accept any entity identifiers from client)
     const name = (formData.get('name') as string | null)?.trim() ?? '';
     const labelRaw = (formData.get('label') as string | null)?.trim() ?? '';
-    const accessArea = (formData.get('accessArea') as string | null)?.trim() || null;
     const totalCopiesRaw = (formData.get('totalCopies') as string | number | null) ?? '0';
 
     // Validation
@@ -72,27 +71,37 @@ export async function updateKeyType(formData: FormData): Promise<ActionResult<un
 
     const keyTypeId = (formData.get('id') as string | null) ?? '';
     const name = (formData.get('name') as string | null)?.trim() ?? undefined;
-    const accessArea = (formData.get('accessArea') as string | null)?.trim() ?? undefined;
+    const accessAreaIds = formData.getAll('accessAreaIds') as string[];
 
     if (!keyTypeId) return { success: false, error: 'Missing key type id.' };
 
-    // Ensure the key type belongs to the current entity
-    const exists = await prisma.keyType.findFirst({
-      where: { id: keyTypeId, entityId },
-      select: { id: true },
+    await prisma.$transaction(async (tx) => {
+      // Ensure the key type belongs to the current entity
+      const exists = await tx.keyType.findFirst({
+        where: { id: keyTypeId, entityId },
+        select: { id: true },
+      });
+      if (!exists) throw new Error('Key type not found.');
+
+      if (typeof name === 'string') {
+        if (name.length < 2) throw new Error('Name must be at least 2 characters.');
+        await tx.keyType.update({ where: { id: keyTypeId }, data: { function: name } });
+      }
+
+      // Sync access areas: validate each ID belongs to the entity, then replace
+      const validAreas = await tx.accessArea.findMany({
+        where: { id: { in: accessAreaIds }, entityId },
+        select: { id: true },
+      });
+      const validAreaIds = validAreas.map((a) => a.id);
+
+      await tx.keyTypeAccessArea.deleteMany({ where: { keyTypeId } });
+      if (validAreaIds.length > 0) {
+        await tx.keyTypeAccessArea.createMany({
+          data: validAreaIds.map((accessAreaId) => ({ keyTypeId, accessAreaId })),
+        });
+      }
     });
-    if (!exists) return { success: false, error: 'Key type not found.' };
-
-    const data: { function?: string; accessArea?: string | null } = {};
-    if (typeof name === 'string') {
-      if (name.length < 2) return { success: false, error: 'Name must be at least 2 characters.' };
-      data.function = name;
-    }
-    if (typeof accessArea === 'string') {
-      data.accessArea = accessArea.length > 0 ? accessArea : null;
-    }
-
-    await prisma.keyType.update({ where: { id: keyTypeId }, data });
 
     revalidatePath('/active-loans');
     revalidatePath('/keys');

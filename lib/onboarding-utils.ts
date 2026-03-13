@@ -12,17 +12,17 @@ export async function shouldShowOnboarding(entityId: string): Promise<boolean> {
       where: { entityId },
       select: { completedAt: true },
     });
-    
+
     // If onboarding was completed/skipped, don't show it
     if (session?.completedAt) {
       return false;
     }
-    
+
     // Otherwise, show onboarding only if there are no keys yet
     const keyCount = await prisma.keyType.count({
       where: { entityId },
     });
-    
+
     return keyCount === 0;
   } catch (error) {
     // On connection errors, gracefully fail by not forcing onboarding
@@ -60,4 +60,3 @@ export async function isOnboardingCompleted(entityId: string): Promise<boolean> 
   });
   return !!session?.completedAt;
 }
-

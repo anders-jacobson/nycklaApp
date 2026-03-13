@@ -62,7 +62,7 @@ export async function sendOtpCode(
   if (error) {
     // Log full error for debugging (remove in production)
     console.error('Supabase OTP Error:', error);
-    
+
     // Supabase global CAPTCHA gives specific error messages
     if (error.message.toLowerCase().includes('captcha')) {
       return {

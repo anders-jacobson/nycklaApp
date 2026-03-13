@@ -36,7 +36,10 @@ export function AffiliationFilter({ value, onValueChange }: AffiliationFilterPro
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <DropdownMenuRadioGroup value={value} onValueChange={(v) => onValueChange(v as AffiliationFilterValue)}>
+        <DropdownMenuRadioGroup
+          value={value}
+          onValueChange={(v) => onValueChange(v as AffiliationFilterValue)}
+        >
           <DropdownMenuRadioItem value="all">All Borrowers</DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="residents">Residents Only</DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="companies">Companies Only</DropdownMenuRadioItem>

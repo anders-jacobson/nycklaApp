@@ -10,8 +10,6 @@ export async function GET(req: NextRequest) {
   // Validate `next` is a relative path to prevent open redirect attacks
   const rawNext = searchParams.get('next') ?? '/active-loans';
   const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/active-loans';
-  const type = searchParams.get('type'); // email confirmation, password reset, etc.
-
   if (code) {
     const supabase = await createClient();
 
@@ -87,7 +85,10 @@ export async function GET(req: NextRequest) {
       if (!inviteResult.success) {
         // Invitation acceptance failed (expired, invalid, wrong email, etc.)
         return NextResponse.redirect(
-          new URL(`/auth/complete-profile?error=${encodeURIComponent(inviteResult.error)}`, req.url),
+          new URL(
+            `/auth/complete-profile?error=${encodeURIComponent(inviteResult.error)}`,
+            req.url,
+          ),
         );
       }
       // Invitation accepted successfully - redirect to welcome screen

@@ -1,7 +1,7 @@
 /**
  * Integration tests for PII encryption/decryption
  * Tests automatic encryption on write and decryption on read via Prisma middleware
- * 
+ *
  * Run with: tsx tests/test-encryption-integration.ts
  */
 
@@ -38,7 +38,7 @@ async function testEncryptionIntegration() {
   try {
     // Test 1: Create Resident Borrower with PII
     console.log('🏠 Test 1: Creating Resident Borrower (should encrypt on create)');
-    
+
     const residentData = {
       name: 'Gunhild Åberg',
       email: 'gunhild.aberg@integration-test.com',
@@ -52,11 +52,13 @@ async function testEncryptionIntegration() {
     console.log(`  ✅ Created resident borrower: ${residentBorrower.id}`);
 
     // Verify data is encrypted in database (direct query)
-    const rawResident = await prisma.$queryRaw<Array<{
-      name: string;
-      email: string;
-      phone: string | null;
-    }>>`
+    const rawResident = await prisma.$queryRaw<
+      Array<{
+        name: string;
+        email: string;
+        phone: string | null;
+      }>
+    >`
       SELECT name, email, phone FROM "ResidentBorrower" WHERE id = ${residentBorrower.id}::uuid
     `;
 
@@ -64,7 +66,7 @@ async function testEncryptionIntegration() {
     console.log(`  🔍 Raw DB data (should be encrypted):`);
     console.log(`     name: ${rawData.name.substring(0, 20)}...`);
     console.log(`     email: ${rawData.email.substring(0, 20)}...`);
-    
+
     // Verify encrypted format (should start with encryption marker)
     const isEncrypted = /^U2FsdGVkX1/.test(rawData.name) && /^U2FsdGVkX1/.test(rawData.email);
     console.log(`  ${isEncrypted ? '✅' : '❌'} Data appears encrypted: ${isEncrypted}`);
@@ -84,16 +86,16 @@ async function testEncryptionIntegration() {
     console.log(`     email: ${decryptedBorrower.email}`);
     console.log(`     phone: ${decryptedBorrower.phone}`);
 
-    const isDecrypted = 
+    const isDecrypted =
       decryptedBorrower.name === residentData.name &&
       decryptedBorrower.email === residentData.email &&
       decryptedBorrower.phone === residentData.phone;
-    
+
     console.log(`  ${isDecrypted ? '✅' : '❌'} Decryption works: ${isDecrypted}\n`);
 
     // Test 2: Create External Borrower with all fields
     console.log('🏢 Test 2: Creating External Borrower with all PII fields');
-    
+
     const externalData = {
       name: 'Erik Sven-Eriksson',
       email: 'erik.sven@integration-test.com',
@@ -110,25 +112,30 @@ async function testEncryptionIntegration() {
     console.log(`  ✅ Created external borrower: ${externalBorrower.id}`);
 
     // Verify all fields are encrypted
-    const rawExternal = await prisma.$queryRaw<Array<{
-      name: string;
-      email: string;
-      phone: string | null;
-      address: string | null;
-      company: string | null;
-      borrowerPurpose: string | null;
-    }>>`
+    const rawExternal = await prisma.$queryRaw<
+      Array<{
+        name: string;
+        email: string;
+        phone: string | null;
+        address: string | null;
+        company: string | null;
+        borrowerPurpose: string | null;
+      }>
+    >`
       SELECT name, email, phone, address, company, "borrowerPurpose"
       FROM "ExternalBorrower" WHERE id = ${externalBorrower.id}::uuid
     `;
 
     const rawExternalData = rawExternal[0];
-    const allFieldsEncrypted = 
+    const allFieldsEncrypted =
       /^U2FsdGVkX1/.test(rawExternalData.name) &&
       /^U2FsdGVkX1/.test(rawExternalData.email) &&
-      rawExternalData.phone && /^U2FsdGVkX1/.test(rawExternalData.phone);
+      rawExternalData.phone &&
+      /^U2FsdGVkX1/.test(rawExternalData.phone);
 
-    console.log(`  ${allFieldsEncrypted ? '✅' : '❌'} All fields encrypted: ${allFieldsEncrypted}`);
+    console.log(
+      `  ${allFieldsEncrypted ? '✅' : '❌'} All fields encrypted: ${allFieldsEncrypted}`,
+    );
 
     // Verify decryption
     const decryptedExternal = await prisma.externalBorrower.findUnique({
@@ -140,7 +147,7 @@ async function testEncryptionIntegration() {
       return;
     }
 
-    const externalMatches = 
+    const externalMatches =
       decryptedExternal.name === externalData.name &&
       decryptedExternal.email === externalData.email &&
       decryptedExternal.phone === externalData.phone &&
@@ -148,11 +155,13 @@ async function testEncryptionIntegration() {
       decryptedExternal.company === externalData.company &&
       decryptedExternal.borrowerPurpose === externalData.borrowerPurpose;
 
-    console.log(`  ${externalMatches ? '✅' : '❌'} External borrower decryption works: ${externalMatches}\n`);
+    console.log(
+      `  ${externalMatches ? '✅' : '❌'} External borrower decryption works: ${externalMatches}\n`,
+    );
 
     // Test 3: Update encrypted field
     console.log('🔄 Test 3: Updating encrypted field (should re-encrypt)');
-    
+
     const updatedName = 'Gunhild Åberg-Updated';
     const updatedResident = await prisma.residentBorrower.update({
       where: { id: residentBorrower.id },
@@ -167,7 +176,9 @@ async function testEncryptionIntegration() {
     `;
 
     const isUpdatedEncrypted = /^U2FsdGVkX1/.test(updatedRaw[0].name);
-    console.log(`  ${isUpdatedEncrypted ? '✅' : '❌'} Updated value encrypted: ${isUpdatedEncrypted}`);
+    console.log(
+      `  ${isUpdatedEncrypted ? '✅' : '❌'} Updated value encrypted: ${isUpdatedEncrypted}`,
+    );
 
     // Verify decryption of updated value
     const rereadResident = await prisma.residentBorrower.findUnique({
@@ -175,23 +186,25 @@ async function testEncryptionIntegration() {
     });
 
     const updateWorks = rereadResident?.name === updatedName;
-    console.log(`  ${updateWorks ? '✅' : '❌'} Updated value decrypted correctly: ${updateWorks}\n`);
+    console.log(
+      `  ${updateWorks ? '✅' : '❌'} Updated value decrypted correctly: ${updateWorks}\n`,
+    );
 
     // Test 4: Query multiple borrowers (array decryption)
     console.log('📊 Test 4: Query multiple borrowers (batch decryption)');
-    
+
     const allResidents = await prisma.residentBorrower.findMany({
       where: { id: { in: [residentBorrower.id, externalBorrower.id] } },
       take: 10,
     });
 
     console.log(`  ✅ Retrieved ${allResidents.length} borrowers`);
-    const allDecrypted = allResidents.every(b => !/^U2FsdGVkX1/.test(b.name || ''));
+    const allDecrypted = allResidents.every((b) => !/^U2FsdGVkX1/.test(b.name || ''));
     console.log(`  ${allDecrypted ? '✅' : '❌'} All borrowers decrypted: ${allDecrypted}\n`);
 
     // Test 5: Special characters and Unicode
     console.log('🌍 Test 5: Special characters and Unicode support');
-    
+
     const unicodeData = {
       name: '你好 世界 🎉 ñoño Åström',
       email: 'unicode@integration-test.com',
@@ -207,7 +220,9 @@ async function testEncryptionIntegration() {
     });
 
     const unicodeWorks = decryptedUnicode?.name === unicodeData.name;
-    console.log(`  ${unicodeWorks ? '✅' : '❌'} Unicode encryption/decryption works: ${unicodeWorks}`);
+    console.log(
+      `  ${unicodeWorks ? '✅' : '❌'} Unicode encryption/decryption works: ${unicodeWorks}`,
+    );
     if (unicodeWorks) {
       console.log(`     Original: ${unicodeData.name}`);
       console.log(`     Decrypted: ${decryptedUnicode?.name}\n`);
@@ -231,7 +246,6 @@ async function testEncryptionIntegration() {
     console.log('  ✅ Batch queries work');
     console.log('  ✅ Unicode/special characters supported');
     console.log('\n🎉 All encryption integration tests passed!\n');
-
   } catch (error) {
     console.error('❌ Test failed with error:', error);
     process.exit(1);
@@ -250,4 +264,3 @@ testEncryptionIntegration()
     console.error('❌ Tests failed:', error);
     process.exit(1);
   });
-

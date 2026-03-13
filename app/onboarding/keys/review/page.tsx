@@ -15,6 +15,7 @@ export default function ReviewPage() {
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [draft, setDraft] = useState<any>(null);
+  const [currentOrgName, setCurrentOrgName] = useState('');
   const [allLabels, setAllLabels] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
@@ -25,6 +26,7 @@ export default function ReviewPage() {
     getOnboardingSession().then((result) => {
       if (result.success && result.data) {
         setDraft(result.data.draft);
+        setCurrentOrgName(result.data.currentOrgName);
 
         // Collect all labels
         const labels: string[] = [
@@ -103,7 +105,7 @@ export default function ReviewPage() {
             <CardTitle className="text-lg">Organization</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-medium">{draft.orgName || 'Not set'}</p>
+            <p className="font-medium">{draft.orgName || currentOrgName || 'Not set'}</p>
           </CardContent>
         </Card>
 

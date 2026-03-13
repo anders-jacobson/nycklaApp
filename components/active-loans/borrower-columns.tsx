@@ -463,7 +463,7 @@ export function getVisibleColumns(
             (k) => k.dueDate && !k.dueDate.startsWith('9999'),
           );
           if (keysWithDates.length === 0) return null;
-          
+
           // Sort and get earliest date
           const sorted = keysWithDates.sort(
             (a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime(),

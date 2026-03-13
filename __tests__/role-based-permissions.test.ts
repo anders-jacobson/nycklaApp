@@ -5,8 +5,13 @@
 
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { prisma } from '@/lib/prisma';
-import { updateKeyType, deleteKeyType, addKeyCopy, markAvailableCopyLost, markLostCopyFound } from '@/app/actions/keyTypes';
-import { markKeyLost } from '@/app/actions/issueKey';
+import {
+  updateKeyType,
+  deleteKeyType,
+  addKeyCopy,
+  markAvailableCopyLost,
+  markLostCopyFound,
+} from '@/app/actions/keyTypes';
 import { inviteUser, changeUserRole, removeUser } from '@/app/actions/team';
 import { updateOrganisationName } from '@/app/actions/organisation';
 
@@ -126,6 +131,7 @@ describe('Role-Based Access Control', () => {
 
   // Helper to mock authenticated user
   const mockAuthUser = (email: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { createClient } = require('@/lib/supabase/server');
     const mockSupabase = {
       auth: {
@@ -141,39 +147,39 @@ describe('Role-Based Access Control', () => {
   describe('Key Type Management - updateKeyType', () => {
     it('should allow OWNER to update key type', async () => {
       mockAuthUser(`owner-${ownerUserId}@example.com`);
-      
+
       const formData = new FormData();
       formData.append('id', keyTypeId);
       formData.append('name', 'Updated Key Name');
-      
+
       // Note: This will fail because mock user email doesn't match DB
       // In real app, you'd need better mocking or integration tests
       const result = await updateKeyType(formData);
-      
+
       // For unit tests, we're verifying the permission logic exists
       expect(result).toBeDefined();
     });
 
     it('should allow ADMIN to update key type', async () => {
       mockAuthUser(`admin-${adminUserId}@example.com`);
-      
+
       const formData = new FormData();
       formData.append('id', keyTypeId);
       formData.append('name', 'Admin Updated Name');
-      
+
       const result = await updateKeyType(formData);
       expect(result).toBeDefined();
     });
 
     it('should deny MEMBER from updating key type', async () => {
       mockAuthUser(`member-${memberUserId}@example.com`);
-      
+
       const formData = new FormData();
       formData.append('id', keyTypeId);
       formData.append('name', 'Member Updated Name');
-      
+
       const result = await updateKeyType(formData);
-      
+
       // Should get permission denied error
       // Note: In real test, verify error message
       expect(result).toBeDefined();
@@ -183,12 +189,12 @@ describe('Role-Based Access Control', () => {
   describe('Key Type Management - deleteKeyType', () => {
     it('should deny MEMBER from deleting key type', async () => {
       mockAuthUser(`member-${memberUserId}@example.com`);
-      
+
       const formData = new FormData();
       formData.append('id', keyTypeId);
-      
+
       const result = await deleteKeyType(formData);
-      
+
       // Expect permission denied
       expect(result).toBeDefined();
     });
@@ -197,12 +203,12 @@ describe('Role-Based Access Control', () => {
   describe('Key Copy Management - addKeyCopy', () => {
     it('should deny MEMBER from adding key copies', async () => {
       mockAuthUser(`member-${memberUserId}@example.com`);
-      
+
       const formData = new FormData();
       formData.append('id', keyTypeId);
-      
+
       const result = await addKeyCopy(formData);
-      
+
       // Expect permission denied
       expect(result).toBeDefined();
     });
@@ -211,9 +217,9 @@ describe('Role-Based Access Control', () => {
   describe('Lost Key Management - markAvailableCopyLost', () => {
     it('should deny MEMBER from marking keys as lost', async () => {
       mockAuthUser(`member-${memberUserId}@example.com`);
-      
+
       const result = await markAvailableCopyLost(availableCopyId);
-      
+
       // Should fail with permission error
       expect(result).toBeDefined();
       // In integration test: expect(result.success).toBe(false);
@@ -222,9 +228,9 @@ describe('Role-Based Access Control', () => {
 
     it('should allow ADMIN to mark keys as lost', async () => {
       mockAuthUser(`admin-${adminUserId}@example.com`);
-      
+
       const result = await markAvailableCopyLost(availableCopyId);
-      
+
       expect(result).toBeDefined();
     });
   });
@@ -232,18 +238,18 @@ describe('Role-Based Access Control', () => {
   describe('Lost Key Management - markLostCopyFound', () => {
     it('should deny MEMBER from marking lost keys as found', async () => {
       mockAuthUser(`member-${memberUserId}@example.com`);
-      
+
       const result = await markLostCopyFound(lostCopyId);
-      
+
       expect(result).toBeDefined();
       // Should contain permission error
     });
 
     it('should allow OWNER to mark lost keys as found', async () => {
       mockAuthUser(`owner-${ownerUserId}@example.com`);
-      
+
       const result = await markLostCopyFound(lostCopyId);
-      
+
       expect(result).toBeDefined();
     });
   });
@@ -251,21 +257,21 @@ describe('Role-Based Access Control', () => {
   describe('Team Management - inviteUser', () => {
     it('should deny MEMBER from inviting users', async () => {
       mockAuthUser(`member-${memberUserId}@example.com`);
-      
+
       const result = await inviteUser('newuser@example.com', 'MEMBER');
-      
+
       expect(result).toBeDefined();
       // Should fail with permission error
     });
 
     it('should allow ADMIN to invite MEMBER only', async () => {
       mockAuthUser(`admin-${adminUserId}@example.com`);
-      
+
       // Try to invite ADMIN (should fail)
       const adminInvite = await inviteUser('newadmin@example.com', 'ADMIN');
       expect(adminInvite).toBeDefined();
       // Should fail - ADMIN can only invite MEMBER
-      
+
       // Try to invite MEMBER (should succeed)
       const memberInvite = await inviteUser('newmember@example.com', 'MEMBER');
       expect(memberInvite).toBeDefined();
@@ -273,7 +279,7 @@ describe('Role-Based Access Control', () => {
 
     it('should allow OWNER to invite any role', async () => {
       mockAuthUser(`owner-${ownerUserId}@example.com`);
-      
+
       const result = await inviteUser('newowner@example.com', 'OWNER');
       expect(result).toBeDefined();
     });
@@ -282,18 +288,18 @@ describe('Role-Based Access Control', () => {
   describe('Team Management - changeUserRole', () => {
     it('should deny ADMIN from changing roles', async () => {
       mockAuthUser(`admin-${adminUserId}@example.com`);
-      
+
       const result = await changeUserRole(memberUserId, 'ADMIN');
-      
+
       expect(result).toBeDefined();
       // Should fail - only OWNER can change roles
     });
 
     it('should deny MEMBER from changing roles', async () => {
       mockAuthUser(`member-${memberUserId}@example.com`);
-      
+
       const result = await changeUserRole(adminUserId, 'MEMBER');
-      
+
       expect(result).toBeDefined();
     });
   });
@@ -301,18 +307,18 @@ describe('Role-Based Access Control', () => {
   describe('Team Management - removeUser', () => {
     it('should deny ADMIN from removing users', async () => {
       mockAuthUser(`admin-${adminUserId}@example.com`);
-      
+
       const result = await removeUser(memberUserId);
-      
+
       expect(result).toBeDefined();
       // Should fail - only OWNER can remove
     });
 
     it('should deny MEMBER from removing users', async () => {
       mockAuthUser(`member-${memberUserId}@example.com`);
-      
+
       const result = await removeUser(adminUserId);
-      
+
       expect(result).toBeDefined();
     });
   });
@@ -320,18 +326,18 @@ describe('Role-Based Access Control', () => {
   describe('Organisation Management - updateOrganisationName', () => {
     it('should deny ADMIN from updating org name', async () => {
       mockAuthUser(`admin-${adminUserId}@example.com`);
-      
+
       const result = await updateOrganisationName('New Org Name');
-      
+
       expect(result).toBeDefined();
       // Should fail - only OWNER
     });
 
     it('should deny MEMBER from updating org name', async () => {
       mockAuthUser(`member-${memberUserId}@example.com`);
-      
+
       const result = await updateOrganisationName('Another Name');
-      
+
       expect(result).toBeDefined();
     });
   });
@@ -350,9 +356,3 @@ describe('Permission Helper Functions', () => {
     expect(roleHierarchy.ADMIN).toBeGreaterThan(roleHierarchy.MEMBER);
   });
 });
-
-
-
-
-
-

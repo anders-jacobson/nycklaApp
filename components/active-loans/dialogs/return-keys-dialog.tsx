@@ -42,22 +42,20 @@ export function ReturnKeysDialog({
       if (result.success) {
         // Close dialog immediately
         onOpenChange(false);
-        
+
         // Get key information for the returned keys
         const returnedKeys = borrowedKeys.filter((k) => selectedIds.includes(k.issueId));
-        
+
         // Create descriptive toast message
         let message: string;
         if (returnedKeys.length === 1) {
           const key = returnedKeys[0];
           message = `Key ${key.keyLabel}${key.copyNumber} returned successfully`;
         } else {
-          const keyList = returnedKeys
-            .map((k) => `${k.keyLabel}${k.copyNumber}`)
-            .join(', ');
+          const keyList = returnedKeys.map((k) => `${k.keyLabel}${k.copyNumber}`).join(', ');
           message = `${returnedKeys.length} keys returned: ${keyList}`;
         }
-        
+
         toastSuccess(message);
       } else {
         toastError('Failed to return keys', result.error);
@@ -111,11 +109,10 @@ export function ReturnKeysDialog({
       </div>
       {isLastSelectionForBorrower && (
         <div className="mt-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-900 text-sm">
-          Returning all keys for <strong>{borrowerName}</strong> will remove their contact from
-          the system.
+          Returning all keys for <strong>{borrowerName}</strong> will remove their contact from the
+          system.
         </div>
       )}
     </ResponsiveDialog>
   );
 }
-

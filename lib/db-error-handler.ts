@@ -21,7 +21,7 @@ export function getDbErrorMessage(error: unknown): string {
   if (isConnectionError(error)) {
     return 'Unable to connect to the database. Please check your internet connection and try again.';
   }
-  
+
   if (error instanceof PrismaClientKnownRequestError) {
     switch (error.code) {
       case 'P2002':
@@ -34,7 +34,7 @@ export function getDbErrorMessage(error: unknown): string {
         return 'A database error occurred. Please try again.';
     }
   }
-  
+
   return 'An unexpected error occurred. Please try again.';
 }
 
@@ -45,28 +45,28 @@ export function getDbErrorMessage(error: unknown): string {
 export async function retryDbOperation<T>(
   operation: () => Promise<T>,
   maxRetries: number = 3,
-  baseDelay: number = 1000
+  baseDelay: number = 1000,
 ): Promise<T> {
   let lastError: unknown;
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error;
-      
+
       // Only retry connection errors
       if (!isConnectionError(error)) {
         throw error;
       }
-      
+
       // Don't delay after the last attempt
       if (attempt < maxRetries - 1) {
         const delay = baseDelay * Math.pow(2, attempt);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
-  
+
   throw lastError;
 }

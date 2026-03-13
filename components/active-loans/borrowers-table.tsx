@@ -56,7 +56,7 @@ export function DataTable<TData>({ data, highlightBorrowerId }: DataTableProps<T
   });
   const [affiliationFilter, setAffiliationFilter] = React.useState<AffiliationFilterValue>('all');
   const [highlightedRow, setHighlightedRow] = React.useState<string | null>(
-    highlightBorrowerId || null
+    highlightBorrowerId || null,
   );
 
   // Use column preferences hook
@@ -111,14 +111,14 @@ export function DataTable<TData>({ data, highlightBorrowerId }: DataTableProps<T
     if (highlightBorrowerId && filteredData.length > 0) {
       // Find the index of the borrower in the filtered data
       const borrowerIndex = (filteredData as BorrowerWithKeys[]).findIndex(
-        (b) => b.borrowerId === highlightBorrowerId
+        (b) => b.borrowerId === highlightBorrowerId,
       );
 
       if (borrowerIndex !== -1) {
         // Calculate which page the borrower is on
         const pageSize = table.getState().pagination.pageSize;
         const targetPage = Math.floor(borrowerIndex / pageSize);
-        
+
         // Set the table to the correct page
         table.setPageIndex(targetPage);
 
@@ -232,7 +232,7 @@ export function DataTable<TData>({ data, highlightBorrowerId }: DataTableProps<T
                       data-borrower-id={borrower.borrowerId}
                       className={cn(
                         highlightedRow === borrower.borrowerId &&
-                          'bg-yellow-100 dark:bg-yellow-900/20 transition-colors duration-1000'
+                          'bg-yellow-100 dark:bg-yellow-900/20 transition-colors duration-1000',
                       )}
                     >
                       {row.getVisibleCells().map((cell) => (

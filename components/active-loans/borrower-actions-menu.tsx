@@ -72,10 +72,7 @@ export function BorrowerActionsMenu({ borrower, onOpenDialog }: BorrowerActionsM
                 <IconArrowBackUp className="h-3.5 w-3.5 mr-2" />
                 Return Keys
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onOpenDialog('lost-key')}
-                variant="destructive"
-              >
+              <DropdownMenuItem onClick={() => onOpenDialog('lost-key')} variant="destructive">
                 <IconKeyOff className="h-3.5 w-3.5 mr-2" />
                 Mark Key Lost
               </DropdownMenuItem>
@@ -90,4 +87,3 @@ export function BorrowerActionsMenu({ borrower, onOpenDialog }: BorrowerActionsM
     </div>
   );
 }
-

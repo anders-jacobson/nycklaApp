@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { getOnboardingSession, updateOnboardingDraft } from '@/app/actions/onboarding';
 import { IconArrowLeft, IconArrowRight, IconPlus, IconX } from '@tabler/icons-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { DEFAULT_ACCESS_AREAS } from '@/lib/label-generators';
 
 export default function Step2Page() {
@@ -80,8 +81,16 @@ export default function Step2Page() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -101,10 +110,7 @@ export default function Step2Page() {
           <Label className="text-base">Access Areas ({areas.length})</Label>
           <div className="mt-2 space-y-2">
             {areas.map((area, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-2 p-3 border rounded-lg bg-card"
-              >
+              <div key={index} className="flex items-center gap-2 p-3 border rounded-lg bg-card">
                 <span className="flex-1">{area}</span>
                 <Button
                   variant="ghost"
@@ -112,7 +118,7 @@ export default function Step2Page() {
                   onClick={() => handleRemoveArea(index)}
                   className="h-8 w-8 p-0"
                 >
-                  <IconX className="h-4 w-4" />
+                  <IconX className="h-3.5 w-3.5" />
                 </Button>
               </div>
             ))}
@@ -143,8 +149,8 @@ export default function Step2Page() {
               className="h-11"
               maxLength={100}
             />
-            <Button onClick={handleAddArea} size="lg" className="h-11">
-              <IconPlus className="h-5 w-5" />
+            <Button onClick={handleAddArea} size="lg">
+              <IconPlus className="h-3.5 w-3.5" />
             </Button>
           </div>
           {error && <p className="text-sm text-destructive mt-1">{error}</p>}
@@ -152,21 +158,20 @@ export default function Step2Page() {
       </div>
 
       <div className="flex gap-3 pt-4">
-        <Button onClick={handleBack} variant="outline" className="h-11 min-w-32" size="lg">
-          <IconArrowLeft className="mr-2 h-5 w-5" />
+        <Button onClick={handleBack} variant="outline" className="min-w-32" size="lg">
+          <IconArrowLeft className="mr-1.5 h-3.5 w-3.5" />
           Back
         </Button>
         <Button
           onClick={handleNext}
           disabled={areas.length === 0 || isPending}
-          className="ml-auto h-11 min-w-32"
+          className="ml-auto min-w-32"
           size="lg"
         >
           {isPending ? 'Saving...' : 'Next'}
-          <IconArrowRight className="ml-2 h-5 w-5" />
+          <IconArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
   );
 }
-

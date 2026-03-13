@@ -9,7 +9,7 @@ export default async function Page({
 }) {
   // Await searchParams (Next.js 15 requirement)
   const params = await searchParams;
-  
+
   // Fetch data for chart and table
   const [borrowersResult, overdueResult] = await Promise.all([
     getBorrowersWithKeysGrouped(),

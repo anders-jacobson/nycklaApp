@@ -51,4 +51,3 @@ export function Turnstile({ siteKey, onSuccess, onError }: TurnstileProps) {
 
   return <div ref={containerRef} />;
 }
-

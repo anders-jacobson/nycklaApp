@@ -229,11 +229,11 @@ export async function createOrganisation(
 
     // Check if organisation name already exists (case-insensitive)
     const existing = await prisma.entity.findFirst({
-      where: { 
+      where: {
         name: {
           equals: name.trim(),
           mode: 'insensitive', // Case-insensitive check
-        }
+        },
       },
     });
 
@@ -242,7 +242,7 @@ export async function createOrganisation(
     }
 
     // Create organisation in transaction
-    const result = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       // Generate and encrypt entity key
       const entityKey = generateEntityKey();
       const encryptedKey = encryptEntityKey(entityKey);
@@ -290,17 +290,17 @@ export async function createOrganisation(
     redirect('/welcome?from=create');
   } catch (error) {
     // Re-throw redirect errors (they're not real errors - just Next.js redirect mechanism)
-    if ((error as any)?.digest?.startsWith('NEXT_REDIRECT')) {
+    if ((error as { digest?: string })?.digest?.startsWith('NEXT_REDIRECT')) {
       throw error;
     }
-    
+
     console.error('Error creating organisation:', error);
-    
+
     // Handle Prisma unique constraint violation
-    if ((error as any)?.code === 'P2002') {
+    if ((error as { code?: string })?.code === 'P2002') {
       return { success: false, error: 'An organisation with this name already exists.' };
     }
-    
+
     return { success: false, error: 'Failed to create organisation.' };
   }
 }

@@ -8,6 +8,7 @@ import { useState, useTransition } from 'react';
 import { ColumnDef, HeaderContext, CellContext } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MultiSelect } from '@/components/ui/multi-select';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,7 @@ export type KeyTypeRow = {
   label: string;
   name: string;
   accessArea: string;
+  accessAreaIds: string[];
   copies: KeyCopy[];
 };
 
@@ -74,6 +76,7 @@ export function getKeyTypeColumns(params: {
   columnVisibility: KeyTypeColumnVisibility;
   expandedRows: Set<string>;
   onToggleExpand: (keyTypeId: string) => void;
+  allAreas: { id: string; name: string }[];
 }): ColumnDef<KeyTypeRow>[] {
   const {
     updateAction,
@@ -82,6 +85,7 @@ export function getKeyTypeColumns(params: {
     columnVisibility,
     expandedRows,
     onToggleExpand,
+    allAreas,
   } = params;
 
   const columns: ColumnDef<KeyTypeRow>[] = [];
@@ -180,6 +184,7 @@ export function getKeyTypeColumns(params: {
         updateAction={updateAction}
         deleteAction={deleteAction}
         addCopyAction={addCopyAction}
+        allAreas={allAreas}
       />
     ),
   });
@@ -192,14 +197,23 @@ function KeyTypeActionsCell({
   updateAction,
   deleteAction,
   addCopyAction,
+  allAreas,
 }: {
   kt: KeyTypeRow;
   updateAction: (formData: FormData) => void | Promise<void>;
   deleteAction: (formData: FormData) => void | Promise<void>;
   addCopyAction: (formData: FormData) => void | Promise<void>;
+  allAreas: { id: string; name: string }[];
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [, startTransition] = useTransition();
+  const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>(kt.accessAreaIds);
+
+  const handleEditOpenChange = (open: boolean) => {
+    setEditOpen(open);
+    // Reset selection to current state when closing (cancel or post-save)
+    if (!open) setSelectedAreaIds(kt.accessAreaIds);
+  };
 
   const handleUpdate = (formData: FormData) => {
     startTransition(async () => {
@@ -207,6 +221,8 @@ function KeyTypeActionsCell({
       setEditOpen(false);
     });
   };
+
+  const areaOptions = allAreas.map((a) => ({ label: a.name, value: a.id }));
 
   return (
     <div className="flex justify-end">
@@ -229,7 +245,7 @@ function KeyTypeActionsCell({
             </DropdownMenuItem>
           </form>
           <DropdownMenuSeparator />
-          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <Dialog open={editOpen} onOpenChange={handleEditOpenChange}>
             <DialogTrigger asChild>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                 <IconEdit className="h-3.5 w-3.5 mr-2" />
@@ -242,6 +258,9 @@ function KeyTypeActionsCell({
               </DialogHeader>
               <form action={handleUpdate} className="grid gap-3">
                 <Input type="hidden" name="id" value={kt.id} />
+                {selectedAreaIds.map((id) => (
+                  <input key={id} type="hidden" name="accessAreaIds" value={id} />
+                ))}
                 <Input
                   name="name"
                   defaultValue={kt.name}
@@ -249,11 +268,14 @@ function KeyTypeActionsCell({
                   required
                   minLength={2}
                 />
-                <Input
-                  name="accessArea"
-                  defaultValue={kt.accessArea}
-                  placeholder="Access area (optional)"
-                />
+                {areaOptions.length > 0 && (
+                  <MultiSelect
+                    options={areaOptions}
+                    selectedValues={selectedAreaIds}
+                    onValueChange={setSelectedAreaIds}
+                    placeholder="Select access areas..."
+                  />
+                )}
                 <DialogFooter>
                   <Button type="submit">Save</Button>
                 </DialogFooter>

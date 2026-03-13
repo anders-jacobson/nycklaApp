@@ -1,6 +1,13 @@
 'use client';
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { IconX } from '@tabler/icons-react';
@@ -47,8 +54,11 @@ export function PendingInvitationsTable({ invitations }: { invitations: Invitati
         <TableBody>
           {invitations.map((inv) => {
             // eslint-disable-next-line react-hooks/purity
-            const daysLeft = Math.ceil((new Date(inv.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-            
+            const now = Date.now();
+            const daysLeft = Math.ceil(
+              (new Date(inv.expiresAt).getTime() - now) / (1000 * 60 * 60 * 24),
+            );
+
             return (
               <TableRow key={inv.id}>
                 <TableCell className="font-medium">{inv.email}</TableCell>
@@ -80,17 +90,3 @@ export function PendingInvitationsTable({ invitations }: { invitations: Invitati
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

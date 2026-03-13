@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { entityId } = await getCurrentUserInfo();
-    
+
     // Fetch all borrowers (can't search encrypted data in DB)
     const borrowers = await prisma.borrower.findMany({
       where: { entityId },
@@ -39,16 +39,18 @@ export async function GET(req: NextRequest) {
     // Decrypt and filter in memory
     const decryptedBorrowers = await Promise.all(
       borrowers.map(async (b) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const details = await getBorrowerDetails(b as any, entityId);
         return { ...details, matches: details.name.toLowerCase().includes(q) };
-      })
+      }),
     );
 
     // Filter and limit results
     const results = decryptedBorrowers
-      .filter(b => b.matches)
+      .filter((b) => b.matches)
       .slice(0, 10)
-      .map(({ matches, ...rest }) => rest);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .map(({ matches: _m, ...rest }) => rest);
 
     return NextResponse.json({ results });
   } catch (error) {
@@ -56,7 +58,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results: [], error: 'Search failed' }, { status: 200 });
   }
 }
-
-
-
-

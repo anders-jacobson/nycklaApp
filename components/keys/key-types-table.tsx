@@ -43,11 +43,11 @@ import {
   ExpandedCopiesRow,
 } from './key-type-columns';
 import { IconPlus } from '@tabler/icons-react';
-import Link from 'next/link';
 import { DataTablePagination } from '@/components/shared/data-table-pagination';
 
 type KeyTypesTableProps = {
   data: KeyTypeRow[];
+  allAreas: { id: string; name: string }[];
   updateAction: (formData: FormData) => void | Promise<void>;
   deleteAction: (formData: FormData) => void | Promise<void>;
   createAction: (formData: FormData) => void | Promise<void>;
@@ -58,6 +58,7 @@ type KeyTypesTableProps = {
 
 export function KeyTypesTable({
   data,
+  allAreas,
   updateAction,
   deleteAction,
   createAction,
@@ -92,21 +93,19 @@ export function KeyTypesTable({
         updateAction,
         deleteAction,
         addCopyAction,
-        markLostAction,
-        markFoundAction,
         columnVisibility,
         expandedRows,
         onToggleExpand: toggleExpand,
+        allAreas,
       }),
     [
       updateAction,
       deleteAction,
       addCopyAction,
-      markLostAction,
-      markFoundAction,
       columnVisibility,
       expandedRows,
       toggleExpand,
+      allAreas,
     ],
   );
 

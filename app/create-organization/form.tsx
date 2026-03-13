@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,19 +13,17 @@ export function CreateOrganizationForm() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return; // Prevent double-submit
-    
+
     setLoading(true);
     setError(null);
 
     try {
       // Server action will redirect on success or return error
       const result = await createOrganisation(name);
-      
+
       // If we get here, it means the action returned instead of redirecting
       // This happens when there's a validation error
       if (result && !result.success) {
@@ -37,7 +34,7 @@ export function CreateOrganizationForm() {
       // If redirect succeeds, this line never executes
     } catch (error) {
       // Re-throw redirect errors (let Next.js handle them)
-      if ((error as any)?.digest?.startsWith('NEXT_REDIRECT')) {
+      if ((error as { digest?: string })?.digest?.startsWith('NEXT_REDIRECT')) {
         throw error;
       }
       // Handle real errors only
@@ -93,12 +90,7 @@ export function CreateOrganizationForm() {
             </div>
           )}
 
-          <Button
-            type="submit"
-            className="w-full h-11"
-            size="lg"
-            disabled={loading || !name.trim()}
-          >
+          <Button type="submit" className="w-full" size="lg" disabled={loading || !name.trim()}>
             {loading ? 'Creating...' : 'Create Organization'}
           </Button>
         </form>

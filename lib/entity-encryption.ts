@@ -16,7 +16,7 @@ function getMasterKey(): string {
   if (!key) {
     throw new Error(
       'ENCRYPTION_KEY environment variable is required. ' +
-      'Generate with: openssl rand -base64 32'
+        'Generate with: openssl rand -base64 32',
     );
   }
   return key;
@@ -34,7 +34,7 @@ export function generateEntityKey(): string {
 /**
  * Encrypt an entity's key with the master encryption key
  * This allows entity keys to be securely stored in the database
- * 
+ *
  * @param plainKey - Plain text entity key to encrypt
  * @returns Encrypted entity key (safe to store in database)
  */
@@ -45,7 +45,7 @@ export function encryptEntityKey(plainKey: string): string {
 
 /**
  * Decrypt an entity's key using the master encryption key
- * 
+ *
  * @param encryptedKey - Encrypted entity key from database
  * @returns Plain text entity key (use for encrypting/decrypting PII)
  */
@@ -53,17 +53,17 @@ export function decryptEntityKey(encryptedKey: string): string {
   const masterKey = getMasterKey();
   const bytes = CryptoJS.AES.decrypt(encryptedKey, masterKey);
   const plainKey = bytes.toString(CryptoJS.enc.Utf8);
-  
+
   if (!plainKey) {
     throw new Error('Failed to decrypt entity key - invalid master key or corrupted data');
   }
-  
+
   return plainKey;
 }
 
 /**
  * Get an entity's encryption key from the database (decrypted and ready to use)
- * 
+ *
  * @param entityId - UUID of the entity
  * @returns Decrypted entity key for encrypting/decrypting PII
  */
@@ -72,27 +72,27 @@ export async function getEntityKey(entityId: string): Promise<string> {
     where: { id: entityId },
     select: { encryptionKey: true },
   });
-  
+
   if (!entity) {
     throw new Error(`Entity not found: ${entityId}`);
   }
-  
+
   return decryptEntityKey(entity.encryptionKey);
 }
 
 /**
  * Encrypt a field value using an entity's encryption key
- * 
+ *
  * @param value - Plain text value to encrypt
  * @param entityKey - Entity's encryption key (from getEntityKey)
  * @returns Encrypted value or null if input is null/undefined
  */
 export function encryptWithEntityKey(
   value: string | null | undefined,
-  entityKey: string
+  entityKey: string,
 ): string | null {
   if (!value) return null;
-  
+
   try {
     return CryptoJS.AES.encrypt(value, entityKey).toString();
   } catch (error) {
@@ -103,27 +103,27 @@ export function encryptWithEntityKey(
 
 /**
  * Decrypt a field value using an entity's encryption key
- * 
+ *
  * @param encrypted - Encrypted value from database
  * @param entityKey - Entity's encryption key (from getEntityKey)
  * @returns Decrypted plain text or null if input is null/undefined
  */
 export function decryptWithEntityKey(
   encrypted: string | null | undefined,
-  entityKey: string
+  entityKey: string,
 ): string | null {
   if (!encrypted) return null;
-  
+
   try {
     const bytes = CryptoJS.AES.decrypt(encrypted, entityKey);
     const plaintext = bytes.toString(CryptoJS.enc.Utf8);
-    
+
     // Handle migration scenario where data might still be plain text
     if (!plaintext) {
       console.warn('Decryption returned empty string, treating as plain text');
       return encrypted;
     }
-    
+
     return plaintext;
   } catch (error) {
     console.error('Decryption error:', error);
@@ -134,7 +134,7 @@ export function decryptWithEntityKey(
 
 /**
  * Check if a value is encrypted (heuristic)
- * 
+ *
  * @param value - Value to check
  * @returns True if value appears to be encrypted
  */
@@ -147,7 +147,7 @@ export function isEncrypted(value: string): boolean {
 /**
  * Rotate an entity's encryption key
  * WARNING: This requires re-encrypting ALL PII data for the entity
- * 
+ *
  * @param entityId - UUID of the entity
  * @returns New encrypted entity key
  */
@@ -155,16 +155,13 @@ export async function rotateEntityKey(entityId: string): Promise<string> {
   // Generate new key
   const newKey = generateEntityKey();
   const encryptedNewKey = encryptEntityKey(newKey);
-  
-  // Get old key for re-encryption
-  const oldKey = await getEntityKey(entityId);
-  
+
   // Update entity with new key
   await prisma.entity.update({
     where: { id: entityId },
     data: { encryptionKey: encryptedNewKey },
   });
-  
+
   // TODO: Re-encrypt all PII data with new key
   // This would require:
   // 1. Fetch all borrower records for this entity
@@ -174,17 +171,3 @@ export async function rotateEntityKey(entityId: string): Promise<string> {
 
   return encryptedNewKey;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

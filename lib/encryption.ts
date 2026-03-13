@@ -15,10 +15,10 @@ function getEncryptionKey(): string {
   if (!key) {
     throw new Error(
       'ENCRYPTION_KEY environment variable is required. ' +
-      'Generate with: openssl rand -base64 32'
+        'Generate with: openssl rand -base64 32',
     );
   }
-  
+
   return key;
 }
 
@@ -72,13 +72,13 @@ export function decryptField(encrypted: string | null | undefined): string | nul
 /**
  * Check if a value is already encrypted (heuristic)
  * Encrypted values are Base64 strings starting with "U2FsdGVkX1..."
- * 
+ *
  * @param value - Value to check
  * @returns True if value appears to be encrypted
  */
 export function isEncrypted(value: string): boolean {
   if (!value) return false;
-  
+
   // Encrypted values are Base64 strings starting with "U2FsdGVkX1..."
   return /^U2FsdGVkX1/.test(value);
 }
@@ -89,14 +89,14 @@ export function isEncrypted(value: string): boolean {
  * @returns Object with encrypted fields
  */
 export function encryptFields<T extends Record<string, string | null | undefined>>(
-  data: T
+  data: T,
 ): Record<keyof T, string | null> {
   const encrypted: Record<keyof T, string | null> = {} as Record<keyof T, string | null>;
-  
+
   for (const [key, value] of Object.entries(data)) {
     encrypted[key as keyof T] = encryptField(value);
   }
-  
+
   return encrypted;
 }
 
@@ -106,13 +106,13 @@ export function encryptFields<T extends Record<string, string | null | undefined
  * @returns Object with decrypted fields
  */
 export function decryptFields<T extends Record<string, string | null | undefined>>(
-  data: T
+  data: T,
 ): Record<keyof T, string | null> {
   const decrypted: Record<keyof T, string | null> = {} as Record<keyof T, string | null>;
-  
+
   for (const [key, value] of Object.entries(data)) {
     decrypted[key as keyof T] = decryptField(value);
   }
-  
+
   return decrypted;
 }

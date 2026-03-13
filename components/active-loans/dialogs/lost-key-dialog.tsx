@@ -70,10 +70,7 @@ export function LostKeyDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Cancel
           </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={isLoading || !selectedId}
-          >
+          <Button onClick={handleConfirm} disabled={isLoading || !selectedId}>
             {isLoading && <IconLoader className="h-3.5 w-3.5 animate-spin mr-1" />}
             Mark as Lost
           </Button>
@@ -105,4 +102,3 @@ export function LostKeyDialog({
     </ResponsiveDialog>
   );
 }
-

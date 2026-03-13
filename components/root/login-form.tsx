@@ -186,7 +186,7 @@ export function LoginForm() {
 
             <Button
               type="submit"
-              className="w-full h-11"
+              className="w-full"
               disabled={isPending || cooldownSeconds > 0 || !captchaToken}
               size="lg"
             >

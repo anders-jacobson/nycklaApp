@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { revalidatePath } from 'next/cache';
 import {
@@ -220,7 +221,7 @@ export async function issueKey(formData: FormData): Promise<
               borrowerPurpose: validation.sanitized.borrowerPurpose,
             },
             entityId,
-            tx, // Pass transaction
+            tx as unknown as Prisma.TransactionClient, // extended client is compatible at runtime
           );
         }
       }

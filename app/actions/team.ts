@@ -605,7 +605,7 @@ export async function acceptInvitation(token: string): Promise<ActionResult<void
       }
 
       revalidatePath('/');
-      
+
       // Note: No redirect here - callback route will handle redirect to /welcome?from=invitation
       return { success: true };
     });
