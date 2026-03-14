@@ -30,6 +30,8 @@ export async function createKeyType(formData: FormData): Promise<ActionResult<{ 
       return { success: false, error: 'Total copies must be a number greater than or equal to 0.' };
     }
 
+    const accessAreaIds = formData.getAll('accessAreaIds') as string[];
+
     const result = await prisma.$transaction(async (tx) => {
       const keyType = await tx.keyType.create({
         data: {
@@ -47,6 +49,16 @@ export async function createKeyType(formData: FormData): Promise<ActionResult<{ 
           copyNumber: idx + 1,
         }));
         await tx.keyCopy.createMany({ data: copies });
+      }
+
+      if (accessAreaIds.length > 0) {
+        const validAreas = await tx.accessArea.findMany({
+          where: { id: { in: accessAreaIds }, entityId },
+          select: { id: true },
+        });
+        await tx.keyTypeAccessArea.createMany({
+          data: validAreas.map((a) => ({ keyTypeId: keyType.id, accessAreaId: a.id })),
+        });
       }
 
       return keyType;
@@ -128,6 +140,16 @@ export async function deleteKeyType(formData: FormData): Promise<ActionResult<un
       select: { id: true },
     });
     if (!owned) return { success: false, error: 'Key type not found.' };
+
+    const loanCount = await prisma.issueRecord.count({
+      where: { keyCopy: { keyType: { id: keyTypeId } } },
+    });
+    if (loanCount > 0) {
+      return {
+        success: false,
+        error: 'Cannot delete a key type that has loan history. Retire it instead.',
+      };
+    }
 
     await prisma.keyType.delete({ where: { id: keyTypeId } });
 

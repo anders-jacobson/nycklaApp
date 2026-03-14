@@ -4,6 +4,7 @@
 // pattern to avoid refactoring existing components. Future: extract DataTableBase.
 
 import * as React from 'react';
+import { useTransition } from 'react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -18,6 +19,7 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MultiSelect } from '@/components/ui/multi-select';
 import {
   Dialog,
   DialogContent,
@@ -49,7 +51,7 @@ type KeyTypesTableProps = {
   data: KeyTypeRow[];
   allAreas: { id: string; name: string }[];
   updateAction: (formData: FormData) => void | Promise<void>;
-  deleteAction: (formData: FormData) => void | Promise<void>;
+  deleteAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   createAction: (formData: FormData) => void | Promise<void>;
   addCopyAction: (formData: FormData) => void | Promise<void>;
   markLostAction: (formData: FormData) => void | Promise<void>;
@@ -69,6 +71,21 @@ export function KeyTypesTable({
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
+  const [createOpen, setCreateOpen] = React.useState(false);
+  const [createSelectedAreaIds, setCreateSelectedAreaIds] = React.useState<string[]>([]);
+  const [, startCreateTransition] = useTransition();
+
+  const handleCreateOpenChange = (open: boolean) => {
+    setCreateOpen(open);
+    if (!open) setCreateSelectedAreaIds([]);
+  };
+
+  const handleCreate = (formData: FormData) => {
+    startCreateTransition(async () => {
+      await createAction(formData);
+      setCreateOpen(false);
+    });
+  };
 
   // Key types column visibility state
   const [columnVisibility, setColumnVisibility] = React.useState<KeyTypeColumnVisibility>(
@@ -146,7 +163,7 @@ export function KeyTypesTable({
             columnVisibility={columnVisibility}
             onColumnVisibilityChange={setColumnVisibility}
           />
-          <Dialog>
+          <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
             <DialogTrigger asChild>
               <Button className="gap-1">
                 <IconPlus className="h-3.5 w-3.5" />
@@ -157,10 +174,20 @@ export function KeyTypesTable({
               <DialogHeader>
                 <DialogTitle>Create Key Type</DialogTitle>
               </DialogHeader>
-              <form action={createAction} className="grid gap-3">
+              <form action={handleCreate} className="grid gap-3">
                 <Input name="label" placeholder="Label (e.g. A)" required maxLength={2} />
                 <Input name="name" placeholder="Name / Function" required minLength={2} />
-                <Input name="accessArea" placeholder="Access area (optional)" />
+                {createSelectedAreaIds.map((id) => (
+                  <input key={id} type="hidden" name="accessAreaIds" value={id} />
+                ))}
+                {allAreas.length > 0 && (
+                  <MultiSelect
+                    options={allAreas.map((a) => ({ label: a.name, value: a.id }))}
+                    selectedValues={createSelectedAreaIds}
+                    onValueChange={setCreateSelectedAreaIds}
+                    placeholder="Select access areas..."
+                  />
+                )}
                 <div className="flex items-center gap-2">
                   <Input
                     name="totalCopies"

@@ -137,7 +137,7 @@ async function updateKeyTypeAction(formData: FormData) {
 
 async function deleteKeyTypeAction(formData: FormData) {
   'use server';
-  await deleteKeyType(formData);
+  return deleteKeyType(formData);
 }
 
 async function addKeyCopyAction(formData: FormData) {

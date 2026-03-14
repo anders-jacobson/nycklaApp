@@ -5,6 +5,7 @@
 // consider extracting a shared DataTableBase.
 
 import { useState, useTransition } from 'react';
+import { toastError } from '@/components/ui/toast-store';
 import { ColumnDef, HeaderContext, CellContext } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,7 +72,7 @@ export const defaultKeyTypeColumnVisibility: KeyTypeColumnVisibility = {
 
 export function getKeyTypeColumns(params: {
   updateAction: (formData: FormData) => void | Promise<void>;
-  deleteAction: (formData: FormData) => void | Promise<void>;
+  deleteAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   addCopyAction: (formData: FormData) => void | Promise<void>;
   columnVisibility: KeyTypeColumnVisibility;
   expandedRows: Set<string>;
@@ -158,9 +159,19 @@ export function getKeyTypeColumns(params: {
       id: 'accessArea',
       accessorKey: 'accessArea',
       header: 'Access Area',
-      cell: ({ row }: CellContext<KeyTypeRow, unknown>) => (
-        <div className="text-muted-foreground">{row.original.accessArea || '—'}</div>
-      ),
+      cell: ({ row }: CellContext<KeyTypeRow, unknown>) => {
+        const kt = row.original;
+        if (!kt.accessArea) return <div className="text-muted-foreground">—</div>;
+        return (
+          <div className="flex flex-wrap gap-1">
+            {kt.accessArea.split(', ').map((area) => (
+              <Badge key={area} variant="secondary" className="font-normal text-xs">
+                {area}
+              </Badge>
+            ))}
+          </div>
+        );
+      },
     });
   }
 
@@ -201,7 +212,7 @@ function KeyTypeActionsCell({
 }: {
   kt: KeyTypeRow;
   updateAction: (formData: FormData) => void | Promise<void>;
-  deleteAction: (formData: FormData) => void | Promise<void>;
+  deleteAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   addCopyAction: (formData: FormData) => void | Promise<void>;
   allAreas: { id: string; name: string }[];
 }) {
@@ -219,6 +230,17 @@ function KeyTypeActionsCell({
     startTransition(async () => {
       await updateAction(formData);
       setEditOpen(false);
+    });
+  };
+
+  const handleDelete = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    startTransition(async () => {
+      const result = await deleteAction(formData);
+      if (!result.success && result.error) {
+        toastError(result.error);
+      }
     });
   };
 
@@ -283,7 +305,7 @@ function KeyTypeActionsCell({
             </DialogContent>
           </Dialog>
           <DropdownMenuSeparator />
-          <form action={deleteAction}>
+          <form onSubmit={handleDelete}>
             <Input type="hidden" name="id" value={kt.id} />
             <DropdownMenuItem asChild>
               <button type="submit" className="w-full text-destructive">
