@@ -8,6 +8,7 @@ import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
 import { IconLoader } from '@tabler/icons-react';
 import { returnMultipleKeysAction } from '@/app/actions/issueKeyWrapper';
 import { toastError, toastSuccess } from '@/components/ui/toast-store';
+import { useTranslations } from 'next-intl';
 import type { BorrowedKeyInfo } from '../borrower-columns';
 
 interface ReturnKeysDialogProps {
@@ -25,6 +26,7 @@ export function ReturnKeysDialog({
   borrowedKeys,
   totalKeysForBorrower,
 }: ReturnKeysDialogProps) {
+  const t = useTranslations('activeLoans');
   const [selectedIds, setSelectedIds] = useState<string[]>(borrowedKeys.map((k) => k.issueId));
   const [isLoading, setIsLoading] = useState(false);
 
@@ -50,18 +52,18 @@ export function ReturnKeysDialog({
         let message: string;
         if (returnedKeys.length === 1) {
           const key = returnedKeys[0];
-          message = `Key ${key.keyLabel}${key.copyNumber} returned successfully`;
+          message = t('returnKeysSuccessSingle', { label: key.keyLabel, copy: key.copyNumber });
         } else {
           const keyList = returnedKeys.map((k) => `${k.keyLabel}${k.copyNumber}`).join(', ');
-          message = `${returnedKeys.length} keys returned: ${keyList}`;
+          message = t('returnKeysSuccessMultiple', { count: returnedKeys.length, keyList });
         }
 
         toastSuccess(message);
       } else {
-        toastError('Failed to return keys', result.error);
+        toastError(t('returnKeysError'), result.error);
       }
     } catch (error) {
-      toastError('Failed to return keys', error instanceof Error ? error.message : 'Unknown error');
+      toastError(t('returnKeysError'), error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
@@ -78,16 +80,16 @@ export function ReturnKeysDialog({
     <ResponsiveDialog
       open={open && borrowedKeys.length > 0}
       onOpenChange={onOpenChange}
-      title="Select keys to return"
-      description={`Choose which keys to return for ${borrowerName}.`}
+      title={t('returnKeysTitle')}
+      description={t('returnKeysDescription', { borrowerName })}
       footer={
         <>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-            Cancel
+            {t('returnKeysCancel')}
           </Button>
           <Button onClick={handleConfirm} disabled={isLoading || selectedIds.length === 0}>
             {isLoading && <IconLoader className="h-3.5 w-3.5 animate-spin mr-1" />}
-            Return {selectedIds.length === 1 ? 'Key' : 'Keys'}
+            {t('returnKeysButton', { count: selectedIds.length })}
           </Button>
         </>
       }
@@ -109,8 +111,10 @@ export function ReturnKeysDialog({
       </div>
       {isLastSelectionForBorrower && (
         <div className="mt-3 p-3 rounded border border-amber-200 bg-amber-50 text-amber-900 text-sm">
-          Returning all keys for <strong>{borrowerName}</strong> will remove their contact from the
-          system.
+          {t.rich('returnKeysWarning', {
+            name: borrowerName,
+            strong: (chunks) => <strong>{chunks}</strong>,
+          })}
         </div>
       )}
     </ResponsiveDialog>

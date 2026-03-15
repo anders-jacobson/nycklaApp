@@ -19,6 +19,7 @@ import {
   IconKeyOff,
   IconReplace,
 } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
 import type { BorrowerWithKeys } from './borrower-columns';
 
 export type DialogType = 'return-keys' | 'lost-key' | 'replace-key';
@@ -29,6 +30,7 @@ interface BorrowerActionsMenuProps {
 }
 
 export function BorrowerActionsMenu({ borrower, onOpenDialog }: BorrowerActionsMenuProps) {
+  const t = useTranslations('activeLoans');
   const hasActiveKeys = borrower.borrowedKeys.length > 0;
 
   return (
@@ -36,49 +38,49 @@ export function BorrowerActionsMenu({ borrower, onOpenDialog }: BorrowerActionsM
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">
-            <span className="sr-only">Open menu for {borrower.borrowerName}</span>
+            <span className="sr-only">{t('actionsMenuOpen', { name: borrower.borrowerName })}</span>
             <IconDotsVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Contact Actions</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('contactActions')}</DropdownMenuLabel>
           {borrower.email && (
             <DropdownMenuItem onClick={() => (window.location.href = `mailto:${borrower.email}`)}>
               <IconMail className="h-3.5 w-3.5 mr-2" />
-              Email
+              {t('contactEmail')}
             </DropdownMenuItem>
           )}
           {borrower.phone && (
             <DropdownMenuItem onClick={() => (window.location.href = `tel:${borrower.phone}`)}>
               <IconPhone className="h-3.5 w-3.5 mr-2" />
-              Call
+              {t('contactCall')}
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuLabel>Borrower Management</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('borrowerManagement')}</DropdownMenuLabel>
           <DropdownMenuItem disabled>
             <IconEdit className="h-3.5 w-3.5 mr-2" />
-            Edit Contact
+            {t('editContact')}
           </DropdownMenuItem>
           <DropdownMenuItem disabled>
             <IconPlus className="h-3.5 w-3.5 mr-2" />
-            Issue Key
+            {t('menuIssueKey')}
           </DropdownMenuItem>
           {hasActiveKeys && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>Loan Actions</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('loanActions')}</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => onOpenDialog('return-keys')}>
                 <IconArrowBackUp className="h-3.5 w-3.5 mr-2" />
-                Return Keys
+                {t('menuReturnKeys')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onOpenDialog('lost-key')} variant="destructive">
                 <IconKeyOff className="h-3.5 w-3.5 mr-2" />
-                Mark Key Lost
+                {t('menuMarkKeyLost')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onOpenDialog('replace-key')}>
                 <IconReplace className="h-3.5 w-3.5 mr-2" />
-                Replace Key
+                {t('menuReplaceKey')}
               </DropdownMenuItem>
             </>
           )}
