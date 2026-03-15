@@ -1,18 +1,30 @@
 {
+  "defaultMode": "bypassPermissions",
   "permissions": {
-    "allow": [
-      "Bash(ls:*)",
-      "Bash(cat:*)",
-      "Bash(grep:*)",
-      "Bash(find:*)",
-      "Bash(git status:*)",
-      "Bash(git log:*)",
-      "Bash(git diff:*)",
-      "Bash(npm run lint:*)",
-      "Bash(npm run typecheck:*)",
-      "Bash(npm run build:*)"
-    ],
-    "deny": []
+    "deny": [
+      "Bash(rm -rf*)",
+      "Bash(rm -r *)",
+      "Bash(rm -fr*)",
+      "Bash(sudo*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)",
+      "Bash(chmod*)",
+      "Bash(chown*)",
+      "Bash(npx prisma db push*)",
+      "Bash(npx prisma migrate reset*)",
+      "Read(/Users/Anders/.ssh/*)",
+      "Read(/Users/Anders/.aws/*)",
+      "Read(/Users/Anders/.gnupg/*)",
+      "Read(/Users/Anders/Library/Keychains/*)",
+      "Write(/Users/Anders/.ssh/*)",
+      "Write(/Users/Anders/.aws/*)",
+      "Write(/Users/Anders/.gnupg/*)",
+      "Edit(/Users/Anders/.ssh/*)",
+      "Edit(/Users/Anders/.aws/*)",
+      "Edit(/Users/Anders/.gnupg/*)"
+    ]
   },
   "hooks": {
     "PostToolUse": [

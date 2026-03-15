@@ -4,6 +4,15 @@ Key management app for Swedish housing cooperatives (*bostadsrättsföreningar*)
 
 See WORKFLOW.md for the daily development checklist.
 
+## Session Constraints
+
+You are running in bypass permissions mode. Hard rules:
+
+- **Stay in this directory.** Do not read, write, or execute anything outside `/Users/Anders/Documents/Firma/Projects/Nyckla/nycklaApp/` unless explicitly asked.
+- **No large-scale changes without a plan first.** If a task touches more than ~3 files or involves schema/migration changes, summarize what you intend to do and wait for confirmation before proceeding.
+- **Prefer small, incremental commits** so work can be reviewed and rolled back.
+- **Never access sensitive paths** — `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/Library`, `.env` files outside this project.
+
 ## Tech Stack
 
 - **Next.js 15** App Router, TypeScript strict mode, React 19
