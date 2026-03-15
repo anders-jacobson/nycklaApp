@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DEFAULT_ACCESS_AREAS } from '@/lib/label-generators';
 
 export default function Step2Page() {
+  const t = useTranslations('onboarding');
   const router = useRouter();
   const [areas, setAreas] = useState<string[]>([...DEFAULT_ACCESS_AREAS]);
   const [newArea, setNewArea] = useState('');
@@ -36,12 +38,12 @@ export default function Step2Page() {
     if (!trimmed) return;
 
     if (areas.includes(trimmed)) {
-      setError('This area already exists');
+      setError(t('step2ErrorExists'));
       return;
     }
 
     if (trimmed.length > 100) {
-      setError('Area name too long (max 100 characters)');
+      setError(t('step2ErrorTooLong'));
       return;
     }
 
@@ -56,7 +58,7 @@ export default function Step2Page() {
 
   const handleNext = () => {
     if (areas.length === 0) {
-      setError('Please add at least one access area');
+      setError(t('step2ErrorMinOne'));
       return;
     }
 
@@ -98,16 +100,14 @@ export default function Step2Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Access Areas</h2>
-        <p className="text-muted-foreground mt-2">
-          Define the areas that keys can provide access to (e.g., Port, Laundry, Basement).
-        </p>
+        <h2 className="text-2xl font-bold">{t('step2Heading')}</h2>
+        <p className="text-muted-foreground mt-2">{t('step2Description')}</p>
       </div>
 
       <div className="space-y-4">
         {/* Current areas */}
         <div>
-          <Label className="text-base">Access Areas ({areas.length})</Label>
+          <Label className="text-base">{t('step2AreasLabel', { count: areas.length })}</Label>
           <div className="mt-2 space-y-2">
             {areas.map((area, index) => (
               <div key={index} className="flex items-center gap-2 p-3 border rounded-lg bg-card">
@@ -128,7 +128,7 @@ export default function Step2Page() {
         {/* Add new area */}
         <div>
           <Label htmlFor="newArea" className="text-base">
-            Add New Area
+            {t('step2AddLabel')}
           </Label>
           <div className="flex gap-2 mt-2">
             <Input
@@ -145,7 +145,7 @@ export default function Step2Page() {
                   handleAddArea();
                 }
               }}
-              placeholder="e.g., Gym, Pool, Meeting room"
+              placeholder={t('step2Placeholder')}
               className="h-11"
               maxLength={100}
             />
@@ -160,7 +160,7 @@ export default function Step2Page() {
       <div className="flex gap-3 pt-4">
         <Button onClick={handleBack} variant="outline" className="min-w-32" size="lg">
           <IconArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-          Back
+          {t('back')}
         </Button>
         <Button
           onClick={handleNext}
@@ -168,7 +168,7 @@ export default function Step2Page() {
           className="ml-auto min-w-32"
           size="lg"
         >
-          {isPending ? 'Saving...' : 'Next'}
+          {isPending ? t('saving') : t('next')}
           <IconArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </div>

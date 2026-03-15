@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +51,7 @@ type WorkflowStep = 'select-keys' | 'borrower-details' | 'lending-details' | 'co
 
 export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
   const router = useRouter();
+  const t = useTranslations('issueKey');
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('select-keys');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,15 +136,15 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
   const getBackLabel = () => {
     switch (currentStep) {
       case 'select-keys':
-        return 'Cancel';
+        return t('backToCancel');
       case 'borrower-details':
-        return 'Select keys';
+        return t('backToSelectKeys');
       case 'lending-details':
-        return 'Borrower details';
+        return t('backToBorrower');
       case 'confirm':
-        return 'Lending details';
+        return t('backToLending');
       default:
-        return 'Back';
+        return t('backDefault');
     }
   };
 
@@ -156,7 +158,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
     switch (currentStep) {
       case 'select-keys':
         if (selectedKeyIds.length === 0) {
-          setError('Please select at least one key to issue.');
+          setError(t('validationSelectKey'));
           return;
         }
         setCurrentStep('borrower-details');
@@ -170,13 +172,13 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
         break;
       case 'lending-details':
         if (!lendingDetails.idChecked) {
-          setError('ID verification is required to issue keys.');
+          setError(t('validationIdRequired'));
           return;
         }
         setCurrentStep('confirm');
         break;
     }
-  }, [currentStep, selectedKeyIds, lendingDetails.idChecked]);
+  }, [currentStep, selectedKeyIds, lendingDetails.idChecked, t]);
 
   // Selection is now handled inside BorrowerForm via form submit
 
@@ -204,7 +206,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
 
   const handleSubmit = useCallback(async () => {
     if (!lendingDetails.idChecked) {
-      setError('ID verification is required to issue keys.');
+      setError(t('validationIdRequired'));
       return;
     }
 
@@ -229,20 +231,20 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
       if (result.success) {
         // Show success toast with action to view keys page
         toastSuccess(
-          'Keys issued successfully!',
-          `${selectedKeyIds.length} ${selectedKeyIds.length === 1 ? 'key' : 'keys'} issued to ${borrowerData.name}`,
+          t('successTitle'),
+          t('successBody', { count: selectedKeyIds.length, name: borrowerData.name }),
           {
-            label: 'View Keys',
+            label: t('successViewKeys'),
             onClick: () => router.push('/keys'),
           },
         );
         // Redirect to active loans (borrower list)
         router.push('/active-loans');
       } else {
-        setError(result.error || 'Failed to issue keys.');
+        setError(result.error || t('errorFailed'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+      setError(err instanceof Error ? err.message : t('errorUnexpected'));
     } finally {
       setIsLoading(false);
     }
@@ -253,13 +255,14 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
     borrowerData,
     selectedCopyByType,
     router,
+    t,
   ]);
 
   const availableKeyOptions: MultiSelectOption[] = keyTypes.map((keyType) => ({
     label: `${keyType.label} - ${keyType.name}`,
     value: keyType.id,
     badge: `${keyType.availableCopies}`,
-    description: keyType.accessArea || 'No specific access area',
+    description: keyType.accessArea || t('noAreas'),
     disabled: keyType.availableCopies === 0,
   }));
 
@@ -273,8 +276,8 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
       .filter((area) => area !== null)
       .filter((area, index, arr) => arr.indexOf(area) === index); // Remove duplicates
 
-    return areas.length > 0 ? areas.join(', ') : 'No areas';
-  }, [selectedKeys]);
+    return areas.length > 0 ? areas.join(', ') : t('noAreas');
+  }, [selectedKeys, t]);
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -282,18 +285,16 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h1 className="text-2xl font-bold">Select Keys to Issue</h1>
-              <p className="text-muted-foreground">
-                Choose one or more keys to issue to the borrower
-              </p>
+              <h1 className="text-2xl font-bold">{t('stepSelectKeys')}</h1>
+              <p className="text-muted-foreground">{t('stepSelectKeysDesc')}</p>
             </div>
 
             <MultiSelect
               options={availableKeyOptions}
               onValueChange={setSelectedKeyIds}
               selectedValues={selectedKeyIds}
-              placeholder="Select keys to issue..."
-              emptyIndicator="No keys found."
+              placeholder={t('selectKeysPlaceholder')}
+              emptyIndicator={t('noKeysFound')}
               disabled={isLoading}
             />
 
@@ -303,7 +304,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                   <div className="flex items-center gap-2">
                     <IconKey className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">
-                      Combined Access Areas ({selectedKeyIds.length} keys):
+                      {t('combinedAccessAreas', { count: selectedKeyIds.length })}
                     </span>
                   </div>
                   <p className="text-muted-foreground">{accessAreasSummary}</p>
@@ -323,7 +324,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                               {kt.label} — {kt.name}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              Select copy to issue
+                              {t('selectCopyToIssue')}
                             </div>
                           </div>
                           <div className="w-36">
@@ -334,7 +335,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                               }
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Copy" />
+                                <SelectValue placeholder={t('copyPlaceholder')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {copies.map((c) => (
@@ -359,8 +360,8 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h1 className="text-2xl font-bold">Borrower Details</h1>
-              <p className="text-muted-foreground">Type a name to search or enter a new one.</p>
+              <h1 className="text-2xl font-bold">{t('stepBorrower')}</h1>
+              <p className="text-muted-foreground">{t('stepBorrowerDesc')}</p>
             </div>
 
             <BorrowerForm
@@ -377,15 +378,15 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h1 className="text-2xl font-bold">Lending Details</h1>
-              <p className="text-muted-foreground">Set due date, notes, and verify ID</p>
+              <h1 className="text-2xl font-bold">{t('stepLending')}</h1>
+              <p className="text-muted-foreground">{t('stepLendingDesc')}</p>
             </div>
 
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <IconCalendar className="h-5 w-5" />
-                  Due Date (Optional)
+                  {t('dueDateCard')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -413,7 +414,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                     }
                   />
                   <label htmlFor="idChecked" className="text-sm font-medium">
-                    I have verified the borrower&apos;s ID
+                    {t('verifyIdCheckbox')}
                   </label>
                 </div>
               </CardContent>
@@ -425,18 +426,18 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h1 className="text-2xl font-bold">Confirm Key Issue</h1>
-              <p className="text-muted-foreground">Review the details and confirm the key issue</p>
+              <h1 className="text-2xl font-bold">{t('stepConfirm')}</h1>
+              <p className="text-muted-foreground">{t('stepConfirmDesc')}</p>
             </div>
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Issue Summary</CardTitle>
+                <CardTitle className="text-lg">{t('issueSummary')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="font-medium">Keys ({selectedKeyIds.length})</p>
+                    <p className="font-medium">{t('keys', { count: selectedKeyIds.length })}</p>
                     <ul className="list-disc list-inside text-muted-foreground">
                       {selectedKeys.map((key) => {
                         const copyId = selectedCopyByType[key.id];
@@ -453,11 +454,11 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                     </ul>
                   </div>
                   <div>
-                    <p className="font-medium">Borrower</p>
+                    <p className="font-medium">{t('borrower')}</p>
                     <p className="text-muted-foreground">{borrowerData.name}</p>
                   </div>
                   <div>
-                    <p className="font-medium">Email</p>
+                    <p className="font-medium">{t('email')}</p>
                     <div className="flex items-center gap-2">
                       <p className="text-muted-foreground">{borrowerData.email}</p>
                       {isPlaceholderEmail(borrowerData.email) && (
@@ -468,9 +469,9 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                     </div>
                   </div>
                   <div>
-                    <p className="font-medium">Due Date</p>
+                    <p className="font-medium">{t('dueDate')}</p>
                     <p className="text-muted-foreground">
-                      {lendingDetails.dueDate || 'No due date set'}
+                      {lendingDetails.dueDate || t('noDueDateSet')}
                     </p>
                   </div>
                 </div>
@@ -480,7 +481,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <IconKey className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">Combined Access Areas:</span>
+                    <span className="font-medium">{t('combinedAccessAreasLabel')}</span>
                   </div>
                   <p className="text-muted-foreground">{accessAreasSummary}</p>
                 </div>
@@ -498,7 +499,8 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                       lendingDetails.idChecked ? 'text-foreground' : 'text-muted-foreground'
                     }
                   >
-                    ID verification: {lendingDetails.idChecked ? 'Completed' : 'Not completed'}
+                    {t('idVerification')}{' '}
+                    {lendingDetails.idChecked ? t('idCompleted') : t('idNotCompleted')}
                   </span>
                 </div>
               </CardContent>
@@ -510,6 +512,15 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
         return null;
     }
   };
+
+  const stepNum =
+    currentStep === 'select-keys'
+      ? 1
+      : currentStep === 'borrower-details'
+        ? 2
+        : currentStep === 'lending-details'
+          ? 3
+          : 4;
 
   return (
     <div className="h-full flex flex-col">
@@ -531,19 +542,9 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
       <div className="px-4 py-2">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-2 pl-6">
-            <span className="font-semibold text-foreground">Issue Keys</span>
+            <span className="font-semibold text-foreground">{t('progressLabel')}</span>
             <span>—</span>
-            <span>
-              Step{' '}
-              {currentStep === 'select-keys'
-                ? 1
-                : currentStep === 'borrower-details'
-                  ? 2
-                  : currentStep === 'lending-details'
-                    ? 3
-                    : 4}{' '}
-              of 4
-            </span>
+            <span>{t('progressStep', { step: stepNum, total: 4 })}</span>
           </div>
           <div className="flex gap-1 pr-6">
             {['select-keys', 'borrower-details', 'lending-details', 'confirm'].map(
@@ -585,11 +586,11 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                 {isLoading && (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 )}
-                Issue Keys
+                {t('submitButton')}
               </Button>
             ) : (
               <Button onClick={handleNext} disabled={isLoading} size="lg">
-                Next
+                {t('next')}
               </Button>
             )}
           </div>

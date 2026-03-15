@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -71,6 +72,7 @@ export function BorrowerForm({
   existingBorrower,
   isLoading = false,
 }: BorrowerFormProps) {
+  const t = useTranslations('borrowerForm');
   const [formData, setFormData] = useState({
     name: existingBorrower?.name || '',
     email: existingBorrower?.email || '',
@@ -257,14 +259,14 @@ export function BorrowerForm({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconUser className="h-5 w-5" />
-            {existingBorrower ? 'Edit Borrower' : 'Add Borrower'}
+            {existingBorrower ? t('titleEdit') : t('titleAdd')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form id={formId} onSubmit={handleSubmit} className="space-y-4">
             {/* Name Field */}
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">{t('nameLabel')}</Label>
               {validation.errors.name &&
                 ((touched.name && formData.name.length > 0) || submitted) && (
                   <p className="text-sm text-destructive flex items-center gap-1">
@@ -291,7 +293,7 @@ export function BorrowerForm({
                           }
                         }}
                         onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
-                        placeholder="Enter full name"
+                        placeholder={t('namePlaceholder')}
                         className={
                           (validation.errors.name &&
                           ((touched.name && formData.name.length > 0) || submitted)
@@ -317,7 +319,7 @@ export function BorrowerForm({
                           }}
                           title="Create new borrower with this name"
                         >
-                          <IconPlus className="h-3.5 w-3.5 mr-1" /> New
+                          <IconPlus className="h-3.5 w-3.5 mr-1" /> {t('newButton')}
                         </Button>
                       )}
                     </div>
@@ -328,7 +330,7 @@ export function BorrowerForm({
                   >
                     <Command>
                       <CommandInput
-                        placeholder="Search names..."
+                        placeholder={t('searchPlaceholder')}
                         value={nameQuery}
                         onValueChange={(value) => {
                           setNameQuery(value);
@@ -351,9 +353,7 @@ export function BorrowerForm({
                       />
                       <CommandList>
                         <CommandEmpty>
-                          {nameQuery.trim().length < 2
-                            ? 'Type at least 2 characters to search existing borrowers.'
-                            : 'No matches. Press Enter or click New to create this borrower.'}
+                          {nameQuery.trim().length < 2 ? t('searchMinChars') : t('searchNoMatch')}
                         </CommandEmpty>
                         <CommandGroup>
                           {nameOptions.map((opt) => (
@@ -398,9 +398,7 @@ export function BorrowerForm({
               </div>
               {/* Helper hint below the name field */}
               {nameQuery.trim().length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Start typing to search existing borrowers or create a new one.
-                </p>
+                <p className="text-xs text-muted-foreground">{t('searchHint')}</p>
               )}
             </div>
 
@@ -408,7 +406,7 @@ export function BorrowerForm({
             <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2">
                 <IconMail className="h-4 w-4" />
-                Email *
+                {t('emailLabel')}
                 {hasPlaceholderEmail && (
                   <Badge variant="outline" className="text-xs">
                     Placeholder
@@ -417,13 +415,13 @@ export function BorrowerForm({
               </Label>
               {checkingEmail && (
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  Checking email availability...
+                  {t('emailChecking')}
                 </p>
               )}
               {emailExists && !checkingEmail && (
                 <p className="text-sm text-destructive flex items-center gap-1">
                   <IconAlertCircle className="h-3.5 w-3.5" />
-                  This email is already registered with another borrower
+                  {t('emailTaken')}
                 </p>
               )}
               {validation.errors.email &&
@@ -440,7 +438,7 @@ export function BorrowerForm({
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 ref={emailRef}
                 onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
-                placeholder="Enter email address"
+                placeholder={t('emailPlaceholder')}
                 className={
                   (validation.errors.email &&
                     ((touched.email && formData.email.length > 0) || submitted)) ||
@@ -453,7 +451,7 @@ export function BorrowerForm({
               {hasPlaceholderEmail && (
                 <p className="text-sm text-amber-600 flex items-center gap-1">
                   <IconAlertCircle className="h-3.5 w-3.5" />
-                  This is a placeholder email. Please update with real email when possible.
+                  {t('emailPlaceholderWarning')}
                 </p>
               )}
               {duplicateCheck.isDuplicate && (
@@ -478,7 +476,7 @@ export function BorrowerForm({
             <div className="space-y-2">
               <Label htmlFor="phone" className="flex items-center gap-2">
                 <IconPhone className="h-4 w-4" />
-                Phone
+                {t('phoneLabel')}
               </Label>
               {validation.errors.phone &&
                 ((touched.phone && formData.phone.length > 0) || submitted) && (
@@ -493,7 +491,7 @@ export function BorrowerForm({
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 onBlur={() => setTouched((prev) => ({ ...prev, phone: true }))}
-                placeholder="Enter phone number"
+                placeholder={t('phonePlaceholder')}
                 className={
                   validation.errors.phone &&
                   ((touched.phone && formData.phone.length > 0) || submitted)
@@ -506,11 +504,11 @@ export function BorrowerForm({
 
             {/* Affiliation Selector */}
             <div className="space-y-2">
-              <Label>Affiliation *</Label>
+              <Label>{t('affiliationLabel')}</Label>
               {!affiliation && submitted && (
                 <p className="text-sm text-destructive flex items-center gap-1">
                   <IconAlertCircle className="h-3.5 w-3.5" />
-                  Please select an affiliation type
+                  {t('affiliationRequired')}
                 </p>
               )}
               <Select
@@ -529,11 +527,11 @@ export function BorrowerForm({
                 disabled={isLoading}
               >
                 <SelectTrigger className={!affiliation && submitted ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Select affiliation" />
+                  <SelectValue placeholder={t('affiliationPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="RESIDENT">Resident</SelectItem>
-                  <SelectItem value="EXTERNAL">External</SelectItem>
+                  <SelectItem value="RESIDENT">{t('affiliationResident')}</SelectItem>
+                  <SelectItem value="EXTERNAL">{t('affiliationExternal')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -544,7 +542,7 @@ export function BorrowerForm({
                 <div className="space-y-2">
                   <Label htmlFor="company" className="flex items-center gap-2">
                     <IconBuilding className="h-4 w-4" />
-                    Company
+                    {t('companyLabel')}
                   </Label>
                   {validation.errors.company &&
                     ((touched.company && formData.company.length > 0) || submitted) && (
@@ -558,7 +556,7 @@ export function BorrowerForm({
                     value={formData.company}
                     onChange={(e) => handleInputChange('company', e.target.value)}
                     onBlur={() => setTouched((prev) => ({ ...prev, company: true }))}
-                    placeholder="Enter company (optional)"
+                    placeholder={t('companyPlaceholder')}
                     className={
                       validation.errors.company &&
                       ((touched.company && formData.company.length > 0) || submitted)
@@ -570,7 +568,7 @@ export function BorrowerForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">{t('addressLabel')}</Label>
                   {validation.errors.address &&
                     ((touched.address && formData.address.length > 0) || submitted) && (
                       <p className="text-sm text-destructive flex items-center gap-1">
@@ -583,7 +581,7 @@ export function BorrowerForm({
                     value={formData.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
                     onBlur={() => setTouched((prev) => ({ ...prev, address: true }))}
-                    placeholder="Enter address (optional)"
+                    placeholder={t('addressPlaceholder')}
                     className={
                       validation.errors.address &&
                       ((touched.address && formData.address.length > 0) || submitted)
@@ -597,7 +595,7 @@ export function BorrowerForm({
                 <div className="space-y-2">
                   <Label htmlFor="borrowerPurpose" className="flex items-center gap-2">
                     <IconNotes className="h-4 w-4" />
-                    Purpose/Description
+                    {t('purposeLabel')}
                   </Label>
                   {validation.errors.borrowerPurpose &&
                     ((touched.borrowerPurpose && formData.borrowerPurpose.length > 0) ||
@@ -612,7 +610,7 @@ export function BorrowerForm({
                     value={formData.borrowerPurpose}
                     onChange={(e) => handleInputChange('borrowerPurpose', e.target.value)}
                     onBlur={() => setTouched((prev) => ({ ...prev, borrowerPurpose: true }))}
-                    placeholder="Describe why they need access to keys (optional)"
+                    placeholder={t('purposePlaceholder')}
                     className={
                       validation.errors.borrowerPurpose &&
                       ((touched.borrowerPurpose && formData.borrowerPurpose.length > 0) ||
@@ -631,10 +629,10 @@ export function BorrowerForm({
             {!hideActions && (
               <div className="flex gap-2 pt-4">
                 <Button type="submit" disabled={isLoading} className="flex-1">
-                  {existingBorrower ? 'Update' : 'Add'} Borrower
+                  {existingBorrower ? t('submitUpdate') : t('submitAdd')}
                 </Button>
                 <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
-                  Cancel
+                  {t('cancel')}
                 </Button>
               </div>
             )}

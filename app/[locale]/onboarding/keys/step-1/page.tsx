@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +11,7 @@ import { IconArrowRight } from '@tabler/icons-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Step1Page() {
+  const t = useTranslations('onboarding');
   const router = useRouter();
   const [orgName, setOrgName] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -52,31 +54,31 @@ export default function Step1Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Confirm Organization Name</h2>
+        <h2 className="text-2xl font-bold">{t('step1Heading')}</h2>
         <p className="text-muted-foreground mt-2">
-          {orgName
-            ? 'Update your organization name if needed, or continue to the next step.'
-            : "What's the name of your housing cooperative or organization?"}
+          {orgName ? t('step1DescExisting') : t('step1DescNew')}
         </p>
       </div>
 
       <div className="space-y-4">
         <div>
           <Label htmlFor="orgName" className="text-base">
-            Organization Name
+            {t('step1Label')}
           </Label>
           <Input
             id="orgName"
             type="text"
             value={orgName}
             onChange={(e) => setOrgName(e.target.value)}
-            placeholder="e.g., Strandvägen Bostadsrättsförening"
+            placeholder={t('step1Placeholder')}
             className="h-11 mt-2"
             maxLength={200}
             // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus={!orgName} // Only autofocus if empty
           />
-          <p className="text-sm text-muted-foreground mt-1">{orgName.length}/200 characters</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {t('step1CharCount', { count: orgName.length })}
+          </p>
         </div>
       </div>
 
@@ -87,7 +89,7 @@ export default function Step1Page() {
           className="ml-auto min-w-32"
           size="lg"
         >
-          {isPending ? 'Saving...' : 'Next'}
+          {isPending ? t('saving') : t('next')}
           <IconArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </div>

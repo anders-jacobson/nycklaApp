@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +13,7 @@ import { IconArrowLeft, IconCheck, IconKey } from '@tabler/icons-react';
 import { generateSeries } from '@/lib/label-generators';
 
 export default function ReviewPage() {
+  const t = useTranslations('onboarding');
   const router = useRouter();
   const [draft, setDraft] = useState<any>(null);
   const [currentOrgName, setCurrentOrgName] = useState('');
@@ -85,7 +87,7 @@ export default function ReviewPage() {
   if (!draft) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-destructive">No draft data found</p>
+        <p className="text-destructive">{t('reviewNoDraftData')}</p>
       </div>
     );
   }
@@ -93,25 +95,25 @@ export default function ReviewPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Review & Create</h2>
-        <p className="text-muted-foreground mt-2">Review your setup before creating the keys.</p>
+        <h2 className="text-2xl font-bold">{t('reviewHeading')}</h2>
+        <p className="text-muted-foreground mt-2">{t('reviewDescription')}</p>
       </div>
 
       <div className="space-y-4">
         {/* Organization */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Organization</CardTitle>
+            <CardTitle className="text-lg">{t('reviewOrganization')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-medium">{draft.orgName || currentOrgName || 'Not set'}</p>
+            <p className="font-medium">{draft.orgName || currentOrgName || t('reviewNotSet')}</p>
           </CardContent>
         </Card>
 
         {/* Access Areas */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Access Areas</CardTitle>
+            <CardTitle className="text-lg">{t('reviewAccessAreas')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -119,7 +121,7 @@ export default function ReviewPage() {
                 <Badge key={area} variant="secondary">
                   {area}
                 </Badge>
-              )) || <p className="text-muted-foreground">None</p>}
+              )) || <p className="text-muted-foreground">{t('reviewNone')}</p>}
             </div>
           </CardContent>
         </Card>
@@ -127,16 +129,16 @@ export default function ReviewPage() {
         {/* Keys Summary */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Keys Summary</CardTitle>
+            <CardTitle className="text-lg">{t('reviewKeysSummary')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-muted-foreground">Total Key Types</p>
+                <p className="text-muted-foreground">{t('reviewTotalTypes')}</p>
                 <p className="text-2xl font-bold">{allLabels.length}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Total Copies</p>
+                <p className="text-muted-foreground">{t('reviewTotalCopies')}</p>
                 <p className="text-2xl font-bold">{getTotalCopies()}</p>
               </div>
             </div>
@@ -144,7 +146,7 @@ export default function ReviewPage() {
             {/* Letter Labels */}
             {draft.letterLabels && draft.letterLabels.length > 0 && (
               <div>
-                <p className="text-sm font-medium mb-2">Letter Keys</p>
+                <p className="text-sm font-medium mb-2">{t('reviewLetterKeys')}</p>
                 <div className="flex flex-wrap gap-1">
                   {draft.letterLabels.map((label: string) => (
                     <Badge key={label} variant="outline" className="font-mono">
@@ -158,12 +160,12 @@ export default function ReviewPage() {
             {/* Series Keys */}
             {draft.seriesPreset && (
               <div>
-                <p className="text-sm font-medium mb-2">Apartment Keys (Series)</p>
+                <p className="text-sm font-medium mb-2">{t('reviewApartmentKeys')}</p>
                 <p className="text-sm">
                   {draft.seriesPreset.prefix || ''}
                   {draft.seriesPreset.from} through {draft.seriesPreset.prefix || ''}
                   {draft.seriesPreset.to}
-                  {!draft.seriesPreset.prefix && ' (pure numbers)'}
+                  {!draft.seriesPreset.prefix && ` ${t('step3PureNumbers')}`}
                 </p>
               </div>
             )}
@@ -171,7 +173,7 @@ export default function ReviewPage() {
             {/* Custom Labels */}
             {draft.customLabels && draft.customLabels.length > 0 && (
               <div>
-                <p className="text-sm font-medium mb-2">Custom Keys</p>
+                <p className="text-sm font-medium mb-2">{t('reviewCustomKeys')}</p>
                 <div className="flex flex-wrap gap-1">
                   {draft.customLabels.map((label: string) => (
                     <Badge key={label} variant="outline">
@@ -187,7 +189,7 @@ export default function ReviewPage() {
               <div className="pt-2 border-t">
                 <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
                   <IconKey className="h-3.5 w-3.5" />
-                  Keys to create
+                  {t('reviewKeysToCreate')}
                 </p>
                 <div
                   className={`space-y-1 ${allLabels.length > 10 ? 'max-h-56 overflow-y-auto pr-1' : ''}`}
@@ -201,7 +203,7 @@ export default function ReviewPage() {
                       >
                         <span className="font-mono font-medium">{label}</span>
                         <span className="text-muted-foreground">
-                          {copies} {copies === 1 ? 'copy' : 'copies'}
+                          {t('reviewCopies', { count: copies })}
                         </span>
                       </div>
                     );
@@ -222,7 +224,7 @@ export default function ReviewPage() {
       <div className="flex gap-3 pt-4">
         <Button onClick={handleBack} variant="outline" className="min-w-32" size="lg">
           <IconArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-          Back
+          {t('back')}
         </Button>
         <Button
           onClick={handleCreateKeys}
@@ -230,7 +232,7 @@ export default function ReviewPage() {
           className="ml-auto min-w-32"
           size="lg"
         >
-          {isPending ? 'Creating...' : 'Create Keys'}
+          {isPending ? t('reviewCreating') : t('reviewCreate')}
           <IconCheck className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </div>

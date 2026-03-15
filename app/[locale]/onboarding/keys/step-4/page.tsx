@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { useRouter } from '@/i18n/navigation';
 import { getOnboardingSession, updateOnboardingDraft } from '@/app/actions/onboarding';
@@ -9,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { generateSeries } from '@/lib/label-generators';
 
 export default function Step4Page() {
+  const t = useTranslations('onboarding');
   const router = useRouter();
   const [allLabels, setAllLabels] = useState<string[]>([]);
   const [copiesMap, setCopiesMap] = useState<Record<string, number>>({});
@@ -104,10 +106,8 @@ export default function Step4Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Number of Copies</h2>
-        <p className="text-muted-foreground mt-2">
-          How many physical copies do you have for each key?
-        </p>
+        <h2 className="text-2xl font-bold">{t('step4Heading')}</h2>
+        <p className="text-muted-foreground mt-2">{t('step4Description')}</p>
       </div>
 
       <div className="space-y-3">
@@ -144,17 +144,17 @@ export default function Step4Page() {
       {/* Total count */}
       <div className="bg-muted p-4 rounded-lg">
         <p className="text-sm font-medium">
-          Total key copies: <span className="text-lg font-bold">{getTotalCopies()}</span>
+          {t('step4TotalCopies')} <span className="text-lg font-bold">{getTotalCopies()}</span>
         </p>
       </div>
 
       <div className="flex gap-3 pt-4">
         <Button onClick={handleBack} variant="outline" className="min-w-32" size="lg">
           <IconArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-          Back
+          {t('back')}
         </Button>
         <Button onClick={handleNext} disabled={isPending} className="ml-auto min-w-32" size="lg">
-          {isPending ? 'Saving...' : 'Next'}
+          {isPending ? t('saving') : t('next')}
           <IconArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,17 +37,8 @@ import {
 } from '@/lib/label-generators';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-// Conventional meanings for specific letters in Swedish housing cooperatives
-const LETTER_HINTS: Record<string, string> = {
-  Z: 'Default prefix for apartment keys (Z1, Z2…)',
-  P: 'Common for parking / garage',
-  B: 'Common for basement',
-  G: 'Common for garage',
-  T: 'Common for trash room / terrace',
-  F: 'Common for laundry room',
-};
-
 export default function Step3Page() {
+  const t = useTranslations('onboarding');
   const router = useRouter();
   const [letterLabels, setLetterLabels] = useState<string[]>([]);
   const [showAllLetters, setShowAllLetters] = useState(false);
@@ -55,6 +47,16 @@ export default function Step3Page() {
   const [seriesTo, setSeriesTo] = useState('');
   const [apartmentPresetsOpen, setApartmentPresetsOpen] = useState(false);
   const [customPresetsOpen, setCustomPresetsOpen] = useState(false);
+
+  // Conventional meanings for specific letters in Swedish housing cooperatives
+  const LETTER_HINTS: Record<string, string> = {
+    Z: t('step3LetterHintZ'),
+    P: t('step3LetterHintP'),
+    B: t('step3LetterHintB'),
+    G: t('step3LetterHintG'),
+    T: t('step3LetterHintT'),
+    F: t('step3LetterHintF'),
+  };
 
   // Apartment key presets
   const apartmentPresets = [
@@ -119,7 +121,7 @@ export default function Step3Page() {
     if (!trimmed) return;
 
     if (!validateLabel(trimmed)) {
-      setError('Label must be 1-50 characters');
+      setError(t('step3ErrorLabelLength'));
       return;
     }
 
@@ -137,11 +139,11 @@ export default function Step3Page() {
     const allLabels = [...letterLabels, ...seriesLabels, ...customLabels];
     if (allLabels.includes(trimmed)) {
       if (letterLabels.includes(trimmed)) {
-        setError(`"${trimmed}" already exists in Common Keys`);
+        setError(t('step3ErrorExistsCommon', { label: trimmed }));
       } else if (seriesLabels.includes(trimmed)) {
-        setError(`"${trimmed}" already exists in Apartment Keys series`);
+        setError(t('step3ErrorExistsApartment', { label: trimmed }));
       } else {
-        setError(`"${trimmed}" already exists in Custom Labels`);
+        setError(t('step3ErrorExistsCustom', { label: trimmed }));
       }
       return;
     }
@@ -168,19 +170,19 @@ export default function Step3Page() {
   };
 
   const getSeriesSummary = () => {
-    if (!seriesFrom || !seriesTo) return 'Not configured';
+    if (!seriesFrom || !seriesTo) return t('step3OptionalNumbered');
     const from = parseInt(seriesFrom);
     const to = parseInt(seriesTo);
-    if (isNaN(from) || isNaN(to) || from > to) return 'Invalid range';
+    if (isNaN(from) || isNaN(to) || from > to) return t('step3OptionalNumbered');
     const prefix = seriesPrefix.trim();
     const count = to - from + 1;
-    return `${prefix}${from}–${prefix}${to} · ${count} key${count !== 1 ? 's' : ''}`;
+    return `${prefix}${from}–${prefix}${to} · ${count}`;
   };
 
   const handleNext = () => {
     const totalLabels = getTotalLabels();
     if (totalLabels === 0) {
-      setError('Please select at least one key label');
+      setError(t('step3ErrorMinOne'));
       return;
     }
 
@@ -191,16 +193,14 @@ export default function Step3Page() {
       const from = parseInt(seriesFrom);
       const to = parseInt(seriesTo);
       if (isNaN(from) || isNaN(to) || from > to || from < 1 || to > 9999) {
-        setError('Invalid series range (must be 1-9999, from ≤ to)');
+        setError(t('step3ErrorInvalidRange'));
         return;
       }
       seriesPreset = { prefix: seriesPrefix.trim(), from, to };
       seriesLabels = generateSeries(seriesPrefix.trim(), from, to);
     } else if (seriesFrom || seriesTo) {
       // One field is filled but not the other
-      setError(
-        'Please fill both "from" and "to" fields for apartment keys, or leave both empty to skip',
-      );
+      setError(t('step3ErrorFillBothFields'));
       return;
     }
 
@@ -211,9 +211,7 @@ export default function Step3Page() {
 
     if (duplicates.length > 0) {
       const uniqueDuplicates = Array.from(new Set(duplicates));
-      setError(
-        `Duplicate labels found: ${uniqueDuplicates.join(', ')}. Each key label must be unique.`,
-      );
+      setError(t('step3ErrorDuplicates', { labels: uniqueDuplicates.join(', ') }));
       return;
     }
 
@@ -257,10 +255,8 @@ export default function Step3Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Key Labels</h2>
-        <p className="text-muted-foreground mt-2">
-          Choose labels for your keys. Expand the sections you need.
-        </p>
+        <h2 className="text-2xl font-bold">{t('step3Heading')}</h2>
+        <p className="text-muted-foreground mt-2">{t('step3Description')}</p>
       </div>
 
       <TooltipProvider delayDuration={300}>
@@ -269,25 +265,23 @@ export default function Step3Page() {
           <AccordionItem value="common" className="border rounded-lg px-4">
             <AccordionTrigger className="hover:no-underline py-4">
               <div className="flex items-center justify-between w-full pr-2">
-                <span className="font-medium">Common Keys</span>
+                <span className="font-medium">{t('step3CommonKeys')}</span>
                 <span className="text-sm text-muted-foreground">
                   {letterLabels.length > 0
-                    ? `${letterLabels.length} selected`
-                    : 'Letters for shared areas'}
+                    ? t('step3SeriesSelectedSummary', { count: letterLabels.length })
+                    : t('step3LettersForShared')}
                 </span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-4 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Pick letters that label your common-area keys.
-                </p>
+                <p className="text-sm text-muted-foreground">{t('step3CommonLettersDesc')}</p>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowAllLetters(!showAllLetters)}
                 >
-                  {showAllLetters ? 'Hide I & O' : 'Show all letters'}
+                  {showAllLetters ? t('step3HideLetters') : t('step3ShowAllLetters')}
                 </Button>
               </div>
 
@@ -300,9 +294,9 @@ export default function Step3Page() {
                   const hint = LETTER_HINTS[letter];
 
                   const disabledTitle = isDisabledByPrefix
-                    ? `${letter} is used as apartment keys prefix`
+                    ? t('step3LetterUsedAsPrefix', { letter })
                     : isDisabledByCustom
-                      ? `${letter} is already in custom labels`
+                      ? t('step3LetterInCustom', { letter })
                       : undefined;
 
                   const btn = (
@@ -341,19 +335,17 @@ export default function Step3Page() {
                     availableLetters.includes(seriesPrefix.trim().toUpperCase()) && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <IconBulb className="h-3.5 w-3.5 shrink-0" />
-                        Letter {seriesPrefix.toUpperCase()} is reserved for apartment keys — change
-                        the prefix under{' '}
-                        <span className="font-medium text-foreground">Apartment Keys</span> if you
-                        want to use it here.
+                        {t('step3LetterUsedAsPrefix', { letter: seriesPrefix.toUpperCase() })}
                       </p>
                     )}
                   {customLabels.some((label) => availableLetters.includes(label)) && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <IconBulb className="h-3.5 w-3.5 shrink-0" />
-                      {customLabels
-                        .filter((label) => availableLetters.includes(label))
-                        .join(', ')}{' '}
-                      disabled (used in custom labels)
+                      {t('step3LetterInCustom', {
+                        letter: customLabels
+                          .filter((label) => availableLetters.includes(label))
+                          .join(', '),
+                      })}
                     </p>
                   )}
                 </div>
@@ -365,23 +357,18 @@ export default function Step3Page() {
           <AccordionItem value="apartment" className="border rounded-lg px-4">
             <AccordionTrigger className="hover:no-underline py-4">
               <div className="flex items-center justify-between w-full pr-2">
-                <span className="font-medium">Apartment Keys</span>
-                <span className="text-sm text-muted-foreground">
-                  {seriesFrom && seriesTo ? getSeriesSummary() : 'Optional — numbered series'}
-                </span>
+                <span className="font-medium">{t('step3ApartmentKeys')}</span>
+                <span className="text-sm text-muted-foreground">{getSeriesSummary()}</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-4 space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Most cooperatives use Z1–Z14 format, but you can customize the prefix or use pure
-                numbers.
-              </p>
+              <p className="text-sm text-muted-foreground">{t('step3ApartmentDesc')}</p>
 
               {/* Quick Presets */}
               <Collapsible open={apartmentPresetsOpen} onOpenChange={setApartmentPresetsOpen}>
                 <CollapsibleTrigger asChild>
                   <Button variant="outline" className="w-full justify-between" type="button">
-                    <span className="text-sm">Quick Presets</span>
+                    <span className="text-sm">{t('step3QuickPresets')}</span>
                     <IconChevronDown
                       className={`h-4 w-4 transition-transform ${
                         apartmentPresetsOpen ? 'rotate-180' : ''
@@ -420,8 +407,7 @@ export default function Step3Page() {
                         <IconHelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-52">
-                        Z is the most common prefix in Swedish housing cooperatives. You can change
-                        it to any letter, or leave it empty for plain numbers (101, 102…).
+                        {t('step3PrefixTooltip')}
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -470,7 +456,7 @@ export default function Step3Page() {
 
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <IconBulb className="h-3.5 w-3.5 shrink-0" />
-                Example: Prefix &quot;Z&quot;, From 1, To 14 → creates Z1, Z2, ... Z14 (14 keys)
+                {t('step3SeriesHint')}
               </p>
 
               {seriesFrom && seriesTo && (
@@ -478,7 +464,7 @@ export default function Step3Page() {
                   <div className="flex items-start gap-2">
                     <IconInfoCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="text-sm">
-                      <p className="font-medium mb-1">Preview:</p>
+                      <p className="font-medium mb-1">{t('step3Preview')}</p>
                       <p className="text-muted-foreground">
                         {generateSeriesPreview(
                           seriesPrefix,
@@ -497,11 +483,11 @@ export default function Step3Page() {
           <AccordionItem value="custom" className="border rounded-lg px-4">
             <AccordionTrigger className="hover:no-underline py-4">
               <div className="flex items-center justify-between w-full pr-2">
-                <span className="font-medium">Custom Labels</span>
+                <span className="font-medium">{t('step3CustomLabels')}</span>
                 <span className="text-sm text-muted-foreground">
                   {customLabels.length > 0
-                    ? `${customLabels.length} label${customLabels.length !== 1 ? 's' : ''}`
-                    : 'Optional — anything else'}
+                    ? t('step3SeriesSelectedSummary', { count: customLabels.length })
+                    : t('step3OptionalAnything')}
                 </span>
               </div>
             </AccordionTrigger>
@@ -510,7 +496,7 @@ export default function Step3Page() {
               <Collapsible open={customPresetsOpen} onOpenChange={setCustomPresetsOpen}>
                 <CollapsibleTrigger asChild>
                   <Button variant="outline" className="w-full justify-between" type="button">
-                    <span className="text-sm">Common Area Keys</span>
+                    <span className="text-sm">{t('step3CommonAreaKeysButton')}</span>
                     <IconChevronDown
                       className={`h-4 w-4 transition-transform ${
                         customPresetsOpen ? 'rotate-180' : ''
@@ -557,7 +543,7 @@ export default function Step3Page() {
                       handleAddCustomLabel();
                     }
                   }}
-                  placeholder="e.g., Office, Storage-1"
+                  placeholder={t('step3CustomPlaceholder')}
                   className="h-11"
                   maxLength={50}
                 />
@@ -573,7 +559,7 @@ export default function Step3Page() {
       {/* Total count + badge summary */}
       <div className="bg-muted p-4 rounded-lg space-y-3">
         <div className="flex items-baseline justify-between">
-          <p className="text-sm font-medium">Key types to create</p>
+          <p className="text-sm font-medium">{t('step3KeyTypesToCreate')}</p>
           <span className="text-lg font-bold">{getTotalLabels()}</span>
         </div>
 
@@ -625,12 +611,10 @@ export default function Step3Page() {
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">No keys selected yet</p>
+          <p className="text-xs text-muted-foreground">{t('step3NoKeysSelected')}</p>
         )}
 
-        <p className="text-xs text-muted-foreground">
-          You&apos;ll specify the number of copies for each type in the next step
-        </p>
+        <p className="text-xs text-muted-foreground">{t('step3NextStepHint')}</p>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -638,7 +622,7 @@ export default function Step3Page() {
       <div className="flex gap-3 pt-4">
         <Button onClick={handleBack} variant="outline" className="min-w-32" size="lg">
           <IconArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-          Back
+          {t('back')}
         </Button>
         <Button
           onClick={handleNext}
@@ -646,7 +630,7 @@ export default function Step3Page() {
           className="ml-auto min-w-32"
           size="lg"
         >
-          {isPending ? 'Saving...' : 'Next'}
+          {isPending ? t('saving') : t('next')}
           <IconArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </div>

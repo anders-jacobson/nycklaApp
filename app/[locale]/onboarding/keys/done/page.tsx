@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { IconCheck } from '@tabler/icons-react';
 import { useRouter } from '@/i18n/navigation';
 
 export default function DonePage() {
+  const t = useTranslations('onboarding');
   const router = useRouter();
 
   useEffect(() => {
@@ -25,14 +27,12 @@ export default function DonePage() {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold">Setup Complete!</h1>
-          <p className="text-muted-foreground">
-            Your key management system is ready. Redirecting you to the keys page...
-          </p>
+          <h1 className="text-3xl font-bold">{t('doneHeading')}</h1>
+          <p className="text-muted-foreground">{t('doneDescription')}</p>
         </div>
 
         <Button onClick={() => router.push('/keys')} size="lg" className="h-12">
-          Go to Keys Now
+          {t('doneGoToKeys')}
         </Button>
       </div>
     </div>
