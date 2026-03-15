@@ -1,3 +1,7 @@
+---
+description: Review changed code for duplication, unnecessary complexity, and convention violations
+---
+
 Run the code-simplifier subagent on recent changes.
 
 Review all files changed since the last commit for:
