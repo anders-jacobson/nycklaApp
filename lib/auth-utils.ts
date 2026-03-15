@@ -35,13 +35,13 @@ export interface AuthUserSafe {
 /**
  * Get authenticated user WITHOUT requiring organisation membership
  * Returns null instead of throwing - safe for pages where user might not have orgs yet
- * 
+ *
  * ⚠️ USE THIS INSTEAD OF getCurrentUser() for:
  * - /no-organization page
  * - /onboarding/keys page
  * - /create-organization action
  * - Any page where user might not have organisations yet
- * 
+ *
  * @returns User data or null if not authenticated or not found
  * @throws Never throws - returns null on any error
  */
@@ -142,10 +142,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   let activeOrgId = dbUser.activeOrganisationId;
 
   // If null or not in current memberships, use first org (deterministic due to orderBy)
-  if (
-    !activeOrgId ||
-    !dbUser.organisations.some((o) => o.organisationId === activeOrgId)
-  ) {
+  if (!activeOrgId || !dbUser.organisations.some((o) => o.organisationId === activeOrgId)) {
     const firstOrg = dbUser.organisations[0];
     activeOrgId = firstOrg.organisationId;
 
@@ -155,9 +152,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   }
 
   // Find the role in the active organisation
-  const activeOrgRelation = dbUser.organisations.find(
-    (o) => o.organisationId === activeOrgId,
-  );
+  const activeOrgRelation = dbUser.organisations.find((o) => o.organisationId === activeOrgId);
 
   if (!activeOrgRelation) {
     // Should never happen after the checks above, but safety

@@ -106,12 +106,11 @@ export function WelcomeContent({ organizationName, stats, from }: WelcomeContent
             onClick={handleContinue}
             disabled={isRedirecting}
           >
-            {isRedirecting 
-              ? 'Redirecting...' 
-              : from === 'create' && stats.keyTypes === 0 
-                ? 'Set Up Keys' 
-                : 'Get Started'
-            }
+            {isRedirecting
+              ? 'Redirecting...'
+              : from === 'create' && stats.keyTypes === 0
+                ? 'Set Up Keys'
+                : 'Get Started'}
           </Button>
 
           <p className="text-sm text-muted-foreground">

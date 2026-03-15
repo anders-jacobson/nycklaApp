@@ -4,7 +4,13 @@ import { createClient } from '@/lib/supabase/server';
 
 type ActionResult = { success: true } | { success: false; error: string };
 
-export async function updateUser({ email, name }: { email: string; name?: string }): Promise<ActionResult> {
+export async function updateUser({
+  email,
+  name,
+}: {
+  email: string;
+  name?: string;
+}): Promise<ActionResult> {
   if (!email) {
     return { success: false, error: 'Email is required.' };
   }

@@ -33,7 +33,7 @@ export default function CompleteProfilePage() {
       return;
     }
     const result = await updateUser({ email, name });
-    if (result.error) {
+    if (!result.success) {
       setError(result.error);
       setLoading(false);
       return;

@@ -67,9 +67,7 @@ async function Layout({ children }: { children: React.ReactNode }) {
         // a valid membership, fall back to the first org (deterministic due to orderBy asc).
         const isActiveOrgValid =
           profile.activeOrganisationId &&
-          profile.organisations.some(
-            (o) => o.organisationId === profile.activeOrganisationId,
-          );
+          profile.organisations.some((o) => o.organisationId === profile.activeOrganisationId);
         activeEntityId = isActiveOrgValid
           ? profile.activeOrganisationId!
           : profile.organisations[0].organisationId;
@@ -85,7 +83,7 @@ async function Layout({ children }: { children: React.ReactNode }) {
       if (isRedirectError(error)) {
         throw error;
       }
-      
+
       // Log connection errors differently
       if (isConnectionError(error)) {
         console.warn('Database connection issue (likely unstable network):', error);

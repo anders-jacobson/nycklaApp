@@ -10,7 +10,9 @@ export function Toaster() {
 
   useEffect(() => {
     const unsub = subscribe(setItems);
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, []);
 
   return (

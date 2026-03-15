@@ -4,14 +4,18 @@ import { useEffect, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { getOnboardingSession, createOnboardingKeys } from '@/app/actions/onboarding';
-import { IconArrowLeft, IconCheck } from '@tabler/icons-react';
+import { IconArrowLeft, IconCheck, IconKey } from '@tabler/icons-react';
 import { generateSeries } from '@/lib/label-generators';
 
 export default function ReviewPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [draft, setDraft] = useState<any>(null);
+  const [currentOrgName, setCurrentOrgName] = useState('');
   const [allLabels, setAllLabels] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +26,7 @@ export default function ReviewPage() {
     getOnboardingSession().then((result) => {
       if (result.success && result.data) {
         setDraft(result.data.draft);
+        setCurrentOrgName(result.data.currentOrgName);
 
         // Collect all labels
         const labels: string[] = [
@@ -53,7 +58,7 @@ export default function ReviewPage() {
   };
 
   const handleBack = () => {
-    router.push('/onboarding/keys/step-6');
+    router.push('/onboarding/keys/step-4');
   };
 
   const getTotalCopies = () => {
@@ -66,8 +71,14 @@ export default function ReviewPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-44" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-28 w-full" />
+        ))}
       </div>
     );
   }
@@ -84,9 +95,7 @@ export default function ReviewPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Review & Create</h2>
-        <p className="text-muted-foreground mt-2">
-          Review your setup before creating the keys.
-        </p>
+        <p className="text-muted-foreground mt-2">Review your setup before creating the keys.</p>
       </div>
 
       <div className="space-y-4">
@@ -96,7 +105,7 @@ export default function ReviewPage() {
             <CardTitle className="text-lg">Organization</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-medium">{draft.orgName || 'Not set'}</p>
+            <p className="font-medium">{draft.orgName || currentOrgName || 'Not set'}</p>
           </CardContent>
         </Card>
 
@@ -173,59 +182,59 @@ export default function ReviewPage() {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
 
-        {/* Sample Area Mappings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Sample Area Mappings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              {allLabels.slice(0, 3).map((label) => {
-                const areas = draft.areaMappings?.[label] || [];
-                return (
-                  <div key={label} className="flex items-start gap-2">
-                    <span className="font-medium min-w-12">{label}:</span>
-                    <span className="text-muted-foreground">
-                      {areas.length > 0 ? areas.join(', ') : 'No areas mapped'}
-                    </span>
-                  </div>
-                );
-              })}
-              {allLabels.length > 3 && (
-                <p className="text-muted-foreground text-xs">
-                  ... and {allLabels.length - 3} more
+            {/* Per-key breakdown */}
+            {allLabels.length > 0 && (
+              <div className="pt-2 border-t">
+                <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                  <IconKey className="h-3.5 w-3.5" />
+                  Keys to create
                 </p>
-              )}
-            </div>
+                <div
+                  className={`space-y-1 ${allLabels.length > 10 ? 'max-h-56 overflow-y-auto pr-1' : ''}`}
+                >
+                  {allLabels.map((label) => {
+                    const copies = draft.copiesMap?.[label] ?? 1;
+                    return (
+                      <div
+                        key={label}
+                        className="flex items-center justify-between text-sm py-1 px-2 rounded hover:bg-muted/50"
+                      >
+                        <span className="font-mono font-medium">{label}</span>
+                        <span className="text-muted-foreground">
+                          {copies} {copies === 1 ? 'copy' : 'copies'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {error && (
-        <div className="bg-destructive/10 border border-destructive p-4 rounded-lg">
-          <p className="text-sm text-destructive">{error}</p>
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       <div className="flex gap-3 pt-4">
-        <Button onClick={handleBack} variant="outline" className="h-11 min-w-32" size="lg">
-          <IconArrowLeft className="mr-2 h-5 w-5" />
+        <Button onClick={handleBack} variant="outline" className="min-w-32" size="lg">
+          <IconArrowLeft className="mr-1.5 h-3.5 w-3.5" />
           Back
         </Button>
         <Button
           onClick={handleCreateKeys}
           disabled={isPending}
-          className="ml-auto h-11 min-w-32"
+          className="ml-auto min-w-32"
           size="lg"
         >
           {isPending ? 'Creating...' : 'Create Keys'}
-          <IconCheck className="ml-2 h-5 w-5" />
+          <IconCheck className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
   );
 }
-

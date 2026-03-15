@@ -28,15 +28,15 @@ export function generateSeriesPreview(prefix: string, from: number, to: number):
   if (!from || !to || from > to || from < 1 || to > 9999) {
     return 'Invalid range';
   }
-  
+
   const first = prefix ? `${prefix}${from}` : `${from}`;
   const last = prefix ? `${prefix}${to}` : `${to}`;
   const count = to - from + 1;
-  
+
   if (count <= 3) {
     return generateSeries(prefix, from, to).join(', ');
   }
-  
+
   return `${first}, ${prefix ? `${prefix}${from + 1}` : `${from + 1}`}, ... ${last} (${count} keys)`;
 }
 
@@ -66,4 +66,3 @@ export const DEFAULT_ACCESS_AREAS = [
   'Bike room',
   'Storage',
 ];
-

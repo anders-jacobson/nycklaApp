@@ -10,6 +10,7 @@ export type AccessAreaData = {
   id: string;
   name: string;
   _count: { keyTypes: number };
+  keyTypes: { keyType: { id: string; label: string } }[];
 };
 
 export async function getAccessAreas(): Promise<ActionResult<AccessAreaData[]>> {
@@ -22,6 +23,12 @@ export async function getAccessAreas(): Promise<ActionResult<AccessAreaData[]>> 
         id: true,
         name: true,
         _count: { select: { keyTypes: true } },
+        keyTypes: {
+          select: {
+            keyType: { select: { id: true, label: true } },
+          },
+          orderBy: { keyType: { label: 'asc' } },
+        },
       },
     });
     return { success: true, data: areas };

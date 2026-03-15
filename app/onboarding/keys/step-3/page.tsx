@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useRouter } from 'next/navigation';
 import { getOnboardingSession, updateOnboardingDraft } from '@/app/actions/onboarding';
 import {
@@ -13,15 +20,31 @@ import {
   IconPlus,
   IconX,
   IconInfoCircle,
+  IconBulb,
   IconChevronDown,
   IconCheck,
+  IconHelpCircle,
 } from '@tabler/icons-react';
-import { ALPHABET, ALPHABET_NO_IO, validateLabel, generateSeriesPreview, generateSeries, DEFAULT_ACCESS_AREAS } from '@/lib/label-generators';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+  ALPHABET,
+  ALPHABET_NO_IO,
+  validateLabel,
+  generateSeriesPreview,
+  generateSeries,
+  DEFAULT_ACCESS_AREAS,
+} from '@/lib/label-generators';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
+// Conventional meanings for specific letters in Swedish housing cooperatives
+const LETTER_HINTS: Record<string, string> = {
+  Z: 'Default prefix for apartment keys (Z1, Z2…)',
+  P: 'Common for parking / garage',
+  B: 'Common for basement',
+  G: 'Common for garage',
+  T: 'Common for trash room / terrace',
+  F: 'Common for laundry room',
+};
 
 export default function Step3Page() {
   const router = useRouter();
@@ -32,7 +55,7 @@ export default function Step3Page() {
   const [seriesTo, setSeriesTo] = useState('');
   const [apartmentPresetsOpen, setApartmentPresetsOpen] = useState(false);
   const [customPresetsOpen, setCustomPresetsOpen] = useState(false);
-  
+
   // Apartment key presets
   const apartmentPresets = [
     { label: 'Z1-14 (14 apartments)', prefix: 'Z', from: 1, to: 14 },
@@ -113,7 +136,6 @@ export default function Step3Page() {
     // Check against all existing labels
     const allLabels = [...letterLabels, ...seriesLabels, ...customLabels];
     if (allLabels.includes(trimmed)) {
-      // Determine which section has the conflict for a more helpful error message
       if (letterLabels.includes(trimmed)) {
         setError(`"${trimmed}" already exists in Common Keys`);
       } else if (seriesLabels.includes(trimmed)) {
@@ -145,6 +167,16 @@ export default function Step3Page() {
     return count;
   };
 
+  const getSeriesSummary = () => {
+    if (!seriesFrom || !seriesTo) return 'Not configured';
+    const from = parseInt(seriesFrom);
+    const to = parseInt(seriesTo);
+    if (isNaN(from) || isNaN(to) || from > to) return 'Invalid range';
+    const prefix = seriesPrefix.trim();
+    const count = to - from + 1;
+    return `${prefix}${from}–${prefix}${to} · ${count} key${count !== 1 ? 's' : ''}`;
+  };
+
   const handleNext = () => {
     const totalLabels = getTotalLabels();
     if (totalLabels === 0) {
@@ -158,13 +190,7 @@ export default function Step3Page() {
     if (seriesFrom && seriesTo) {
       const from = parseInt(seriesFrom);
       const to = parseInt(seriesTo);
-      if (
-        isNaN(from) ||
-        isNaN(to) ||
-        from > to ||
-        from < 1 ||
-        to > 9999
-      ) {
+      if (isNaN(from) || isNaN(to) || from > to || from < 1 || to > 9999) {
         setError('Invalid series range (must be 1-9999, from ≤ to)');
         return;
       }
@@ -172,22 +198,22 @@ export default function Step3Page() {
       seriesLabels = generateSeries(seriesPrefix.trim(), from, to);
     } else if (seriesFrom || seriesTo) {
       // One field is filled but not the other
-      setError('Please fill both "from" and "to" fields for apartment keys, or leave both empty to skip');
+      setError(
+        'Please fill both "from" and "to" fields for apartment keys, or leave both empty to skip',
+      );
       return;
     }
 
     // Check for duplicate labels across all three sources
-    const allLabels: string[] = [
-      ...letterLabels,
-      ...seriesLabels,
-      ...customLabels,
-    ];
+    const allLabels: string[] = [...letterLabels, ...seriesLabels, ...customLabels];
 
     const duplicates = allLabels.filter((label, index, arr) => arr.indexOf(label) !== index);
-    
+
     if (duplicates.length > 0) {
       const uniqueDuplicates = Array.from(new Set(duplicates));
-      setError(`Duplicate labels found: ${uniqueDuplicates.join(', ')}. Each key label must be unique.`);
+      setError(
+        `Duplicate labels found: ${uniqueDuplicates.join(', ')}. Each key label must be unique.`,
+      );
       return;
     }
 
@@ -214,8 +240,16 @@ export default function Step3Page() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-36" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-14 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -225,311 +259,397 @@ export default function Step3Page() {
       <div>
         <h2 className="text-2xl font-bold">Key Labels</h2>
         <p className="text-muted-foreground mt-2">
-          Choose labels for your keys. Select common area keys (letters), apartment keys (series),
-          or create custom labels.
+          Choose labels for your keys. Expand the sections you need.
         </p>
       </div>
 
-      <div className="space-y-6">
-        {/* Letter Labels */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-base font-medium">Common Keys (Letters)</Label>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAllLetters(!showAllLetters)}
-            >
-              {showAllLetters ? 'Hide I & O' : 'Show all letters'}
-            </Button>
-          </div>
-          <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-2">
-            {availableLetters.map((letter) => {
-              const prefixUpper = seriesPrefix.trim().toUpperCase();
-              const isDisabledByPrefix = prefixUpper.length === 1 && letter === prefixUpper;
-              const isDisabledByCustom = customLabels.includes(letter);
-              const isDisabled = isDisabledByPrefix || isDisabledByCustom;
-              
-              let title = undefined;
-              if (isDisabledByPrefix) {
-                title = `${letter} is used in apartment keys series`;
-              } else if (isDisabledByCustom) {
-                title = `${letter} is already used in custom labels`;
-              }
-              
-              return (
-                <button
-                  key={letter}
-                  onClick={() => !isDisabled && handleToggleLetter(letter)}
-                  disabled={isDisabled}
-                  className={`h-11 rounded-md border-2 font-medium transition-colors ${
-                    letterLabels.includes(letter)
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : isDisabled
-                        ? 'border-border bg-muted text-muted-foreground cursor-not-allowed opacity-50'
-                        : 'border-border hover:border-primary/50'
-                  }`}
-                  title={title}
-                >
-                  {letter}
-                </button>
-              );
-            })}
-          </div>
-          {(seriesPrefix.trim().length === 1 && availableLetters.includes(seriesPrefix.trim().toUpperCase())) ||
-           customLabels.some(label => availableLetters.includes(label)) ? (
-            <p className="text-xs text-muted-foreground">
-              {seriesPrefix.trim().length === 1 && availableLetters.includes(seriesPrefix.trim().toUpperCase()) && (
-                <>💡 Letter {seriesPrefix.toUpperCase()} is disabled (used as apartment keys prefix)</>
-              )}
-              {seriesPrefix.trim().length === 1 && availableLetters.includes(seriesPrefix.trim().toUpperCase()) && 
-               customLabels.some(label => availableLetters.includes(label)) && (
-                <br />
-              )}
-              {customLabels.some(label => availableLetters.includes(label)) && (
-                <>💡 {customLabels.filter(label => availableLetters.includes(label)).join(', ')} disabled (used in custom labels)</>
-              )}
-            </p>
-          ) : null}
-          {letterLabels.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {letterLabels.map((letter) => (
-                <Badge key={letter} variant="secondary">
-                  {letter}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Apartment Keys (Series Generator) */}
-        <div className="space-y-3">
-          <Label className="text-base font-medium">Apartment Keys (Optional)</Label>
-          <p className="text-sm text-muted-foreground">
-            Most cooperatives use Z1–Z14 format, but you can customize the prefix or use pure numbers.
-          </p>
-          
-          <div className="space-y-3">
-            {/* Collapsible Quick Presets */}
-            <Collapsible open={apartmentPresetsOpen} onOpenChange={setApartmentPresetsOpen}>
-              <CollapsibleTrigger asChild>
+      <TooltipProvider delayDuration={300}>
+        <Accordion type="multiple" className="space-y-2">
+          {/* ── Common Keys ── */}
+          <AccordionItem value="common" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <div className="flex items-center justify-between w-full pr-2">
+                <span className="font-medium">Common Keys</span>
+                <span className="text-sm text-muted-foreground">
+                  {letterLabels.length > 0
+                    ? `${letterLabels.length} selected`
+                    : 'Letters for shared areas'}
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Pick letters that label your common-area keys.
+                </p>
                 <Button
-                  variant="outline"
-                  className="w-full justify-between"
-                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAllLetters(!showAllLetters)}
                 >
-                  <span className="text-sm">Quick Presets</span>
-                  <IconChevronDown
-                    className={`h-4 w-4 transition-transform ${
-                      apartmentPresetsOpen ? 'rotate-180' : ''
-                    }`}
-                  />
+                  {showAllLetters ? 'Hide I & O' : 'Show all letters'}
                 </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 space-y-2 rounded-lg border p-3 bg-muted/30">
-                {apartmentPresets.map((preset, index) => (
-                  <Button
-                    key={index}
-                    variant="secondary"
-                    className="w-full justify-start text-sm"
-                    type="button"
-                    onClick={() => {
-                      setSeriesPrefix(preset.prefix);
-                      setSeriesFrom(preset.from.toString());
-                      setSeriesTo(preset.to.toString());
-                      setApartmentPresetsOpen(false);
-                    }}
-                  >
-                    {preset.label}
-                  </Button>
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
+              </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-24 flex-shrink-0">
-                <Label htmlFor="prefix" className="text-sm">Prefix</Label>
-                <Input
-                  id="prefix"
-                  type="text"
-                  value={seriesPrefix}
-                  onChange={(e) => setSeriesPrefix(e.target.value)}
-                  placeholder="e.g., Z"
-                  maxLength={10}
-                  className="h-11 mt-1 placeholder:text-muted-foreground/50 placeholder:italic"
-                />
+              <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-2">
+                {availableLetters.map((letter) => {
+                  const prefixUpper = seriesPrefix.trim().toUpperCase();
+                  const isDisabledByPrefix = prefixUpper.length === 1 && letter === prefixUpper;
+                  const isDisabledByCustom = customLabels.includes(letter);
+                  const isDisabled = isDisabledByPrefix || isDisabledByCustom;
+                  const hint = LETTER_HINTS[letter];
+
+                  const disabledTitle = isDisabledByPrefix
+                    ? `${letter} is used as apartment keys prefix`
+                    : isDisabledByCustom
+                      ? `${letter} is already in custom labels`
+                      : undefined;
+
+                  const btn = (
+                    <Button
+                      key={letter}
+                      variant={letterLabels.includes(letter) ? 'default' : 'outline'}
+                      onClick={() => !isDisabled && handleToggleLetter(letter)}
+                      disabled={isDisabled}
+                      className="h-11 font-medium w-full"
+                      title={disabledTitle}
+                    >
+                      {letter}
+                    </Button>
+                  );
+
+                  if (hint && !isDisabled) {
+                    return (
+                      <Tooltip key={letter}>
+                        <TooltipTrigger asChild>{btn}</TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-48 text-center">
+                          {hint}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+
+                  return <span key={letter}>{btn}</span>;
+                })}
               </div>
-              <div className="flex-1">
-                <Label htmlFor="from" className="text-sm">From</Label>
-                <Input
-                  id="from"
-                  type="number"
-                  value={seriesFrom}
-                  onChange={(e) => setSeriesFrom(e.target.value)}
-                  placeholder=""
-                  min="1"
-                  max="9999"
-                  className="h-11 mt-1"
-                />
+
+              {(seriesPrefix.trim().length === 1 &&
+                availableLetters.includes(seriesPrefix.trim().toUpperCase())) ||
+              customLabels.some((label) => availableLetters.includes(label)) ? (
+                <div className="flex flex-col gap-1">
+                  {seriesPrefix.trim().length === 1 &&
+                    availableLetters.includes(seriesPrefix.trim().toUpperCase()) && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <IconBulb className="h-3.5 w-3.5 shrink-0" />
+                        Letter {seriesPrefix.toUpperCase()} is reserved for apartment keys — change
+                        the prefix under{' '}
+                        <span className="font-medium text-foreground">Apartment Keys</span> if you
+                        want to use it here.
+                      </p>
+                    )}
+                  {customLabels.some((label) => availableLetters.includes(label)) && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <IconBulb className="h-3.5 w-3.5 shrink-0" />
+                      {customLabels
+                        .filter((label) => availableLetters.includes(label))
+                        .join(', ')}{' '}
+                      disabled (used in custom labels)
+                    </p>
+                  )}
+                </div>
+              ) : null}
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* ── Apartment Keys ── */}
+          <AccordionItem value="apartment" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <div className="flex items-center justify-between w-full pr-2">
+                <span className="font-medium">Apartment Keys</span>
+                <span className="text-sm text-muted-foreground">
+                  {seriesFrom && seriesTo ? getSeriesSummary() : 'Optional — numbered series'}
+                </span>
               </div>
-              <span className="text-muted-foreground mt-6 px-1">to</span>
-              <div className="flex-1">
-                <Label htmlFor="to" className="text-sm">To</Label>
-                <Input
-                  id="to"
-                  type="number"
-                  value={seriesTo}
-                  onChange={(e) => setSeriesTo(e.target.value)}
-                  placeholder=""
-                  min="1"
-                  max="9999"
-                  className="h-11 mt-1"
-                />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              💡 Example: Prefix &quot;Z&quot;, From 1, To 14 → creates Z1, Z2, ... Z14 (14 keys)
-            </p>
-          </div>
-          
-          {seriesFrom && seriesTo && (
-            <div className="bg-muted/50 p-3 rounded-md">
-              <div className="flex items-start gap-2">
-                <IconInfoCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium mb-1">Preview:</p>
-                  <p className="text-muted-foreground">
-                    {generateSeriesPreview(seriesPrefix, parseInt(seriesFrom), parseInt(seriesTo))}
-                  </p>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Most cooperatives use Z1–Z14 format, but you can customize the prefix or use pure
+                numbers.
+              </p>
+
+              {/* Quick Presets */}
+              <Collapsible open={apartmentPresetsOpen} onOpenChange={setApartmentPresetsOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between" type="button">
+                    <span className="text-sm">Quick Presets</span>
+                    <IconChevronDown
+                      className={`h-4 w-4 transition-transform ${
+                        apartmentPresetsOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2 space-y-2 rounded-lg border p-3 bg-muted/30">
+                  {apartmentPresets.map((preset, index) => (
+                    <Button
+                      key={index}
+                      variant="secondary"
+                      className="w-full justify-start text-sm"
+                      type="button"
+                      onClick={() => {
+                        setSeriesPrefix(preset.prefix);
+                        setSeriesFrom(preset.from.toString());
+                        setSeriesTo(preset.to.toString());
+                        setApartmentPresetsOpen(false);
+                      }}
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+
+              <div className="flex items-center gap-3">
+                <div className="w-24 flex-shrink-0">
+                  <div className="flex items-center gap-1 mb-1">
+                    <Label htmlFor="prefix" className="text-sm">
+                      Prefix
+                    </Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <IconHelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-52">
+                        Z is the most common prefix in Swedish housing cooperatives. You can change
+                        it to any letter, or leave it empty for plain numbers (101, 102…).
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="prefix"
+                    type="text"
+                    value={seriesPrefix}
+                    onChange={(e) => setSeriesPrefix(e.target.value)}
+                    placeholder="e.g., Z"
+                    maxLength={10}
+                    className="h-11 placeholder:text-muted-foreground/50 placeholder:italic"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label htmlFor="from" className="text-sm">
+                    From
+                  </Label>
+                  <Input
+                    id="from"
+                    type="number"
+                    value={seriesFrom}
+                    onChange={(e) => setSeriesFrom(e.target.value)}
+                    placeholder=""
+                    min="1"
+                    max="9999"
+                    className="h-11 mt-1"
+                  />
+                </div>
+                <span className="text-muted-foreground mt-6 px-1">to</span>
+                <div className="flex-1">
+                  <Label htmlFor="to" className="text-sm">
+                    To
+                  </Label>
+                  <Input
+                    id="to"
+                    type="number"
+                    value={seriesTo}
+                    onChange={(e) => setSeriesTo(e.target.value)}
+                    placeholder=""
+                    min="1"
+                    max="9999"
+                    className="h-11 mt-1"
+                  />
                 </div>
               </div>
-            </div>
-          )}
-          
-          <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-md border border-blue-200 dark:border-blue-900">
-            <p className="text-xs text-blue-900 dark:text-blue-100 font-medium mb-1">Examples:</p>
-            <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-              <li>• Z + numbers → Z1, Z2, Z3 (most common)</li>
-              <li>• Pure numbers → 101, 102, 103 (apartment numbers)</li>
-              <li>• L + numbers → L1, L2, L3 (alternative letter)</li>
-              <li>• Multiple buildings? Use custom labels for additional series</li>
-            </ul>
-          </div>
-        </div>
 
-        {/* Custom Labels */}
-        <div className="space-y-3">
-          <Label className="text-base font-medium">Custom Labels</Label>
-          
-          {/* Collapsible Common Areas */}
-          <Collapsible open={customPresetsOpen} onOpenChange={setCustomPresetsOpen}>
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-between"
-                type="button"
-              >
-                <span className="text-sm">Common Area Keys</span>
-                <IconChevronDown
-                  className={`h-4 w-4 transition-transform ${
-                    customPresetsOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2 grid grid-cols-2 gap-2 rounded-lg border p-3 bg-muted/30">
-              {DEFAULT_ACCESS_AREAS.map((area) => {
-                const isAdded = customLabels.includes(area) || letterLabels.includes(area);
-                return (
-                  <Button
-                    key={area}
-                    variant={isAdded ? "secondary" : "outline"}
-                    className="text-sm"
-                    type="button"
-                    disabled={isAdded}
-                    onClick={() => {
-                      if (!isAdded) {
-                        setCustomLabels([...customLabels, area]);
-                        setError('');
-                      }
-                    }}
-                  >
-                    {isAdded && <IconCheck className="mr-1 h-3 w-3" />}
-                    {area}
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <IconBulb className="h-3.5 w-3.5 shrink-0" />
+                Example: Prefix &quot;Z&quot;, From 1, To 14 → creates Z1, Z2, ... Z14 (14 keys)
+              </p>
+
+              {seriesFrom && seriesTo && (
+                <div className="bg-muted/50 p-3 rounded-md">
+                  <div className="flex items-start gap-2">
+                    <IconInfoCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium mb-1">Preview:</p>
+                      <p className="text-muted-foreground">
+                        {generateSeriesPreview(
+                          seriesPrefix,
+                          parseInt(seriesFrom),
+                          parseInt(seriesTo),
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* ── Custom Labels ── */}
+          <AccordionItem value="custom" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <div className="flex items-center justify-between w-full pr-2">
+                <span className="font-medium">Custom Labels</span>
+                <span className="text-sm text-muted-foreground">
+                  {customLabels.length > 0
+                    ? `${customLabels.length} label${customLabels.length !== 1 ? 's' : ''}`
+                    : 'Optional — anything else'}
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-3">
+              {/* Common Area presets */}
+              <Collapsible open={customPresetsOpen} onOpenChange={setCustomPresetsOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between" type="button">
+                    <span className="text-sm">Common Area Keys</span>
+                    <IconChevronDown
+                      className={`h-4 w-4 transition-transform ${
+                        customPresetsOpen ? 'rotate-180' : ''
+                      }`}
+                    />
                   </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2 grid grid-cols-2 gap-2 rounded-lg border p-3 bg-muted/30">
+                  {DEFAULT_ACCESS_AREAS.map((area) => {
+                    const isAdded = customLabels.includes(area) || letterLabels.includes(area);
+                    return (
+                      <Button
+                        key={area}
+                        variant={isAdded ? 'secondary' : 'outline'}
+                        className="text-sm"
+                        type="button"
+                        disabled={isAdded}
+                        onClick={() => {
+                          if (!isAdded) {
+                            setCustomLabels([...customLabels, area]);
+                            setError('');
+                          }
+                        }}
+                      >
+                        {isAdded && <IconCheck className="mr-1 h-3 w-3" />}
+                        {area}
+                      </Button>
+                    );
+                  })}
+                </CollapsibleContent>
+              </Collapsible>
+
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={newCustomLabel}
+                  onChange={(e) => {
+                    setNewCustomLabel(e.target.value);
+                    setError('');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomLabel();
+                    }
+                  }}
+                  placeholder="e.g., Office, Storage-1"
+                  className="h-11"
+                  maxLength={50}
+                />
+                <Button onClick={handleAddCustomLabel} size="lg">
+                  <IconPlus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </TooltipProvider>
+
+      {/* Total count + badge summary */}
+      <div className="bg-muted p-4 rounded-lg space-y-3">
+        <div className="flex items-baseline justify-between">
+          <p className="text-sm font-medium">Key types to create</p>
+          <span className="text-lg font-bold">{getTotalLabels()}</span>
+        </div>
+
+        {getTotalLabels() > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {/* Letter key badges — click to deselect */}
+            {letterLabels.map((letter) => (
+              <Badge
+                key={letter}
+                variant="secondary"
+                className="cursor-pointer gap-1 pr-1 hover:bg-destructive/10"
+                onClick={() => handleToggleLetter(letter)}
+              >
+                {letter}
+                <IconX className="h-2.5 w-2.5" />
+              </Badge>
+            ))}
+
+            {/* Apartment series — single summary badge */}
+            {seriesFrom &&
+              seriesTo &&
+              (() => {
+                const from = parseInt(seriesFrom);
+                const to = parseInt(seriesTo);
+                if (isNaN(from) || isNaN(to) || from > to) return null;
+                const prefix = seriesPrefix.trim();
+                const count = to - from + 1;
+                return (
+                  <Badge key="series" variant="secondary">
+                    {prefix}
+                    {from}–{prefix}
+                    {to} · {count}
+                  </Badge>
                 );
-              })}
-            </CollapsibleContent>
-          </Collapsible>
+              })()}
 
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              value={newCustomLabel}
-              onChange={(e) => {
-                setNewCustomLabel(e.target.value);
-                setError('');
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddCustomLabel();
-                }
-              }}
-              placeholder="e.g., Office, Storage-1"
-              className="h-11"
-              maxLength={50}
-            />
-            <Button onClick={handleAddCustomLabel} size="lg" className="h-11">
-              <IconPlus className="h-5 w-5" />
-            </Button>
+            {/* Custom label badges — click × to remove */}
+            {customLabels.map((label, index) => (
+              <Badge key={index} variant="secondary" className="gap-1 pr-1">
+                {label}
+                <button
+                  onClick={() => handleRemoveCustomLabel(index)}
+                  className="hover:text-destructive"
+                  aria-label={`Remove ${label}`}
+                >
+                  <IconX className="h-2.5 w-2.5" />
+                </button>
+              </Badge>
+            ))}
           </div>
-          {customLabels.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {customLabels.map((label, index) => (
-                <Badge key={index} variant="secondary" className="gap-1">
-                  {label}
-                  <button
-                    onClick={() => handleRemoveCustomLabel(index)}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    <IconX className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">No keys selected yet</p>
+        )}
 
-        {/* Total count */}
-        <div className="bg-muted p-4 rounded-lg">
-          <p className="text-sm font-medium">
-            Key types to create: <span className="text-lg font-bold">{getTotalLabels()}</span>
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            You&apos;ll specify the number of copies for each type in the next step
-          </p>
-        </div>
-
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        <p className="text-xs text-muted-foreground">
+          You&apos;ll specify the number of copies for each type in the next step
+        </p>
       </div>
 
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
       <div className="flex gap-3 pt-4">
-        <Button onClick={handleBack} variant="outline" className="h-11 min-w-32" size="lg">
-          <IconArrowLeft className="mr-2 h-5 w-5" />
+        <Button onClick={handleBack} variant="outline" className="min-w-32" size="lg">
+          <IconArrowLeft className="mr-1.5 h-3.5 w-3.5" />
           Back
         </Button>
         <Button
           onClick={handleNext}
           disabled={getTotalLabels() === 0 || isPending}
-          className="ml-auto h-11 min-w-32"
+          className="ml-auto min-w-32"
           size="lg"
         >
           {isPending ? 'Saving...' : 'Next'}
-          <IconArrowRight className="ml-2 h-5 w-5" />
+          <IconArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
   );
 }
-

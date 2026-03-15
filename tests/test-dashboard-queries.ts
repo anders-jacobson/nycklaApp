@@ -163,9 +163,11 @@ async function testDashboardQueries() {
       console.log(
         `       Active Loans: ${borrower.activeLoanCount}${borrower.hasOverdue ? ' (OVERDUE)' : ''}`,
       );
-      borrower.borrowedKeys.forEach((key: any) => {
-        console.log(`         - ${key.keyLabel}-${key.copyNumber}: ${key.keyFunction}`);
-      });
+      borrower.borrowedKeys.forEach(
+        (key: { keyLabel: string; copyNumber: number; keyFunction: string }) => {
+          console.log(`         - ${key.keyLabel}-${key.copyNumber}: ${key.keyFunction}`);
+        },
+      );
     });
     console.log();
 

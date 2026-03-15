@@ -221,12 +221,12 @@ export function MultiSelect({
       >
         <Command>
           <CommandInput
-            placeholder="Search keys..."
+            placeholder="Search..."
             value={searchValue}
             onValueChange={setSearchValue}
           />
           <CommandList>
-            <CommandEmpty>{emptyIndicator || 'No keys found.'}</CommandEmpty>
+            <CommandEmpty>{emptyIndicator || 'No options found.'}</CommandEmpty>
             <CommandGroup>
               {filteredOptions.map((option) => {
                 const isSelected = (pendingValues || []).includes(option.value);
@@ -286,6 +286,7 @@ export function MultiSelect({
           </CommandList>
           <div className="p-2 border-t flex justify-end">
             <Button
+              type="button"
               size="sm"
               onClick={() => {
                 onValueChange(pendingValues || []);
@@ -293,7 +294,7 @@ export function MultiSelect({
               }}
               className="gap-1"
             >
-              Select keys
+              Done
             </Button>
           </div>
         </Command>

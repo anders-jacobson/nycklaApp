@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 export default async function OnboardingPage() {
   // Use getCurrentUserOrNull (doesn't throw if no orgs)
   const user = await getCurrentUserOrNull();
-  
+
   if (!user) {
     redirect('/auth/login');
   }
@@ -30,4 +30,3 @@ export default async function OnboardingPage() {
   // Otherwise, start at Step 1 to collect organization name
   redirect('/onboarding/keys/step-1');
 }
-

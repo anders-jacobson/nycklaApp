@@ -270,7 +270,9 @@ export async function updateBorrowerPurpose(
         id: borrower.externalBorrower.id,
       },
       data: {
-        borrowerPurpose: purpose.trim() ? encryptWithEntityKey(purpose.trim(), entityKey) ?? null : null,
+        borrowerPurpose: purpose.trim()
+          ? (encryptWithEntityKey(purpose.trim(), entityKey) ?? null)
+          : null,
       },
     });
 
@@ -284,15 +286,17 @@ export async function updateBorrowerPurpose(
 /**
  * Get overdue loan summary statistics for horizontal bar chart
  */
-export async function getOverdueSummary(): Promise<ActionResult<{
-  category: string;
-  Critical: number;
-  Urgent: number;
-  DueSoon: number;
-  ThisWeek: number;
-  Later: number;
-  total: number;
-}>> {
+export async function getOverdueSummary(): Promise<
+  ActionResult<{
+    category: string;
+    Critical: number;
+    Urgent: number;
+    DueSoon: number;
+    ThisWeek: number;
+    Later: number;
+    total: number;
+  }>
+> {
   try {
     const { entityId } = await getCurrentUser();
     const now = new Date();
@@ -309,10 +313,10 @@ export async function getOverdueSummary(): Promise<ActionResult<{
 
     const categorized = {
       critical: 0, // 7+ days overdue
-      urgent: 0,   // 1-6 days overdue
-      dueSoon: 0,  // 0-2 days
+      urgent: 0, // 1-6 days overdue
+      dueSoon: 0, // 0-2 days
       thisWeek: 0, // 3-7 days
-      later: 0,    // 8+ days or no due date
+      later: 0, // 8+ days or no due date
     };
 
     activeLoans.forEach((loan) => {

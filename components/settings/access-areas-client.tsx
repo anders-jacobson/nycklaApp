@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { IconPlus, IconEdit, IconTrash, IconAlertCircle } from '@tabler/icons-react';
+import { Badge } from '@/components/ui/badge';
 import type { AccessAreaData } from '@/app/actions/accessAreas';
 
 type Props = {
@@ -184,11 +185,15 @@ export function AccessAreasClient({ areas, createAction, updateAction, deleteAct
               key={area.id}
               className="flex items-center justify-between py-2 px-3 rounded-md border"
             >
-              <span className="text-sm font-medium">{area.name}</span>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground mr-2">
-                  {area._count.keyTypes} key type{area._count.keyTypes !== 1 ? 's' : ''}
-                </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium">{area.name}</span>
+                {area.keyTypes.map(({ keyType }) => (
+                  <Badge key={keyType.id} variant="secondary" className="font-mono text-xs">
+                    {keyType.label}
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex items-center gap-1 ml-2 shrink-0">
                 <EditAreaDialog area={area} updateAction={updateAction} />
                 <DeleteAreaDialog area={area} deleteAction={deleteAction} />
               </div>

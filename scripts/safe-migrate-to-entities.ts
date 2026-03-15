@@ -62,7 +62,7 @@ async function safeMigration() {
     // Step 4: Process each cooperative
     for (const [cooperativeName, users] of cooperativeMap.entries()) {
       console.log(`📦 Processing: "${cooperativeName}"`);
-      console.log(`   Users: ${users.map(u => u.email).join(', ')}`);
+      console.log(`   Users: ${users.map((u) => u.email).join(', ')}`);
 
       if (!DRY_RUN) {
         try {
@@ -93,11 +93,11 @@ async function safeMigration() {
             }
 
             // Migrate related data for all users in this cooperative
-            const userIds = users.map(u => u.id);
+            const userIds = users.map((u) => u.id);
 
             // Migrate Borrowers
             const borrowersCount = await tx.borrower.updateMany({
-              where: { 
+              where: {
                 userId: { in: userIds },
                 entityId: null,
               },
@@ -109,7 +109,7 @@ async function safeMigration() {
 
             // Migrate KeyTypes
             const keyTypesCount = await tx.keyType.updateMany({
-              where: { 
+              where: {
                 userId: { in: userIds },
                 entityId: null,
               },
@@ -121,7 +121,7 @@ async function safeMigration() {
 
             // Migrate IssueRecords
             const issueRecordsCount = await tx.issueRecord.updateMany({
-              where: { 
+              where: {
                 userId: { in: userIds },
                 entityId: null,
               },
@@ -169,7 +169,6 @@ async function safeMigration() {
       console.log(`  - Would migrate ${usersToMigrate.length} users`);
       console.log('\nRun without DRY_RUN=true to apply changes.\n');
     }
-
   } catch (error) {
     console.error('\n❌ MIGRATION FAILED:', error);
     console.error('\n🔄 No changes were committed due to transaction rollback.');
@@ -191,17 +190,3 @@ safeMigration()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
-
-
-
-
-
-
-
-
-
-
-
-
-

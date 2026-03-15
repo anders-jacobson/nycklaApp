@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { getOnboardingSession, updateOnboardingDraft } from '@/app/actions/onboarding';
 import { IconArrowRight } from '@tabler/icons-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Step1Page() {
   const router = useRouter();
@@ -38,8 +39,12 @@ export default function Step1Page() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-64" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+        <Skeleton className="h-11 w-full" />
       </div>
     );
   }
@@ -66,7 +71,7 @@ export default function Step1Page() {
             value={orgName}
             onChange={(e) => setOrgName(e.target.value)}
             placeholder="e.g., Strandvägen Bostadsrättsförening"
-            className="h-12 text-base mt-2"
+            className="h-11 mt-2"
             maxLength={200}
             autoFocus={!orgName} // Only autofocus if empty
           />
@@ -78,11 +83,11 @@ export default function Step1Page() {
         <Button
           onClick={handleNext}
           disabled={!orgName.trim() || isPending}
-          className="ml-auto h-11 min-w-32"
+          className="ml-auto min-w-32"
           size="lg"
         >
           {isPending ? 'Saving...' : 'Next'}
-          <IconArrowRight className="ml-2 h-5 w-5" />
+          <IconArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </div>
     </div>

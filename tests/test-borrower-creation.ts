@@ -166,4 +166,3 @@ async function testBorrowerCreation() {
 }
 
 testBorrowerCreation();
-

@@ -157,7 +157,11 @@ export async function createOnboardingKeys(): Promise<ActionResult<void>> {
       const allLabels: string[] = [
         ...(draft.letterLabels || []),
         ...(draft.seriesPreset
-          ? generateSeries(draft.seriesPreset.prefix, draft.seriesPreset.from, draft.seriesPreset.to)
+          ? generateSeries(
+              draft.seriesPreset.prefix,
+              draft.seriesPreset.from,
+              draft.seriesPreset.to,
+            )
           : []),
         ...(draft.customLabels || []),
       ];
@@ -232,11 +236,10 @@ export async function skipOnboarding(): Promise<ActionResult<void>> {
     // Revalidate both the keys page and the layout to prevent redirect loop
     revalidatePath('/keys');
     revalidatePath('/', 'layout');
-    
+
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to skip onboarding';
     return { success: false, error: message };
   }
 }
-

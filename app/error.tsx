@@ -13,7 +13,8 @@ export default function Error({
   reset: () => void;
 }) {
   // Check for specific error scenarios
-  const isUserNotFound = error.message === 'USER_NOT_IN_DB' || error.message.includes('User not found');
+  const isUserNotFound =
+    error.message === 'USER_NOT_IN_DB' || error.message.includes('User not found');
   const isNotAuthenticated = error.message.includes('Not authenticated');
   const hasNoOrganisations = error.message === 'USER_HAS_NO_ORGANISATIONS';
 
@@ -42,20 +43,14 @@ export default function Error({
             <IconAlertCircle className="h-6 w-6" />
             <CardTitle>Something went wrong</CardTitle>
           </div>
-          <CardDescription>
-            An error occurred while loading this page.
-          </CardDescription>
+          <CardDescription>An error occurred while loading this page.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {process.env.NODE_ENV === 'development' && (
             <div className="rounded-md bg-muted p-4">
-              <p className="text-sm font-mono text-destructive">
-                {error.message}
-              </p>
+              <p className="text-sm font-mono text-destructive">{error.message}</p>
               {error.digest && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Error ID: {error.digest}
-                </p>
+                <p className="mt-2 text-xs text-muted-foreground">Error ID: {error.digest}</p>
               )}
             </div>
           )}
@@ -75,17 +70,3 @@ export default function Error({
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

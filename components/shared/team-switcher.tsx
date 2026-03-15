@@ -162,16 +162,16 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
         description="Create a new organisation to manage keys, borrowers, and team members. You will be the owner."
         footer={
           <>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setShowCreateDialog(false)}
               disabled={isCreating}
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               form="create-org-form"
               disabled={isCreating || !newOrgName.trim()}
             >
@@ -199,7 +199,7 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
                 This will be the name of your housing cooperative or organisation.
               </p>
             </div>
-            
+
             {createError && (
               <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
                 {createError}

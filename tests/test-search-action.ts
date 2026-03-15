@@ -3,7 +3,6 @@
  */
 
 import { prisma } from './lib/prisma';
-import { searchBorrowers } from './app/actions/dashboard';
 
 async function testSearchAction() {
   console.log('🔍 Testing SearchBorrowers Server Action...\n');
@@ -190,4 +189,3 @@ async function testSearchAction() {
 }
 
 testSearchAction();
-

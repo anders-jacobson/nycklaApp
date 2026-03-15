@@ -40,10 +40,7 @@ export default async function OrganizationSettingsPage() {
 
       <Separator />
 
-      <OrganizationOverview 
-        organizationName={entity?.name || ''} 
-        isOwner={isOwner}
-      />
+      <OrganizationOverview organizationName={entity?.name || ''} isOwner={isOwner} />
 
       <Separator />
 
@@ -65,4 +62,3 @@ export default async function OrganizationSettingsPage() {
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 /**
  * Test script for Auth & Prisma User ID alignment
- * 
+ *
  * Run with: npx tsx tests/test-auth-alignment.ts
  */
 
@@ -30,7 +30,9 @@ async function testAuthAlignment() {
     });
     console.log(`   ✅ Found ${memberships.length} memberships`);
     if (memberships.length > 0) {
-      console.log(`   📋 Oldest: ${memberships[0].role} joined ${memberships[0].joinedAt.toISOString()}`);
+      console.log(
+        `   📋 Oldest: ${memberships[0].role} joined ${memberships[0].joinedAt.toISOString()}`,
+      );
     }
 
     // Test 3: Check Invitation model for accepted field
@@ -40,7 +42,7 @@ async function testAuthAlignment() {
       take: 3,
     });
     console.log(`   ✅ Found ${invitations.length} invitations`);
-    const acceptedCount = invitations.filter(i => i.accepted).length;
+    const acceptedCount = invitations.filter((i) => i.accepted).length;
     console.log(`   📊 ${acceptedCount} accepted, ${invitations.length - acceptedCount} pending`);
 
     // Test 4: Verify composite unique key on UserOrganisation
@@ -82,7 +84,7 @@ async function testAuthAlignment() {
               not: {
                 in: await prisma.userOrganisation
                   .findMany({ select: { organisationId: true } })
-                  .then(orgs => orgs.map(o => o.organisationId)),
+                  .then((orgs) => orgs.map((o) => o.organisationId)),
               },
             },
           },
@@ -94,9 +96,11 @@ async function testAuthAlignment() {
         },
       },
     });
-    const staleWithMemberships = usersWithStaleOrg.filter(u => u.organisations.length > 0);
+    const staleWithMemberships = usersWithStaleOrg.filter((u) => u.organisations.length > 0);
     if (staleWithMemberships.length > 0) {
-      console.log(`   ⚠️  Found ${staleWithMemberships.length} users with stale activeOrganisationId`);
+      console.log(
+        `   ⚠️  Found ${staleWithMemberships.length} users with stale activeOrganisationId`,
+      );
       console.log('   💡 These will be auto-fixed on next login');
     } else {
       console.log('   ✅ No users with stale activeOrganisationId');
@@ -108,7 +112,6 @@ async function testAuthAlignment() {
     console.log('   2. Test invitation flow (invite + accept)');
     console.log('   3. Test OAuth login (Google)');
     console.log('   4. Test edge cases (retries, concurrent accepts)');
-
   } catch (error) {
     console.error('\n❌ Test failed:', error);
     throw error;
@@ -118,5 +121,3 @@ async function testAuthAlignment() {
 }
 
 testAuthAlignment().catch(console.error);
-
-

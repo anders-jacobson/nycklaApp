@@ -56,7 +56,7 @@ export function NoOrganizationContent() {
 
         {/* Header */}
         <div className="space-y-3">
-          <h1 className="text-3xl font-bold">Welcome!</h1>
+          <h1 className="text-3xl font-bold">Welcome to Nyckla</h1>
           <p className="text-base text-muted-foreground px-4">
             Your account is ready. Create a new organization or join an existing one with an
             invitation code.
@@ -66,7 +66,7 @@ export function NoOrganizationContent() {
         {/* Actions */}
         <div className="space-y-3 pt-4">
           <Link href="/create-organization" className="block">
-            <Button className="w-full h-11" size="lg">
+            <Button className="w-full" size="lg">
               <IconBuilding className="mr-2 h-4 w-4" />
               Create Organization
             </Button>
@@ -74,7 +74,7 @@ export function NoOrganizationContent() {
 
           <Button
             variant="outline"
-            className="w-full h-11"
+            className="w-full"
             size="lg"
             onClick={() => setIsJoinDialogOpen(true)}
           >

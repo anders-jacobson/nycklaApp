@@ -199,6 +199,7 @@ describe('Multi-tenant data isolation', () => {
   describe('getCurrentUser() returns entityId', () => {
     it('should return entityId matching activeOrganisationId', async () => {
       // Mock the Supabase auth response
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { createClient } = require('@/lib/supabase/server');
       const mockSupabase = {
         auth: {
@@ -243,9 +244,3 @@ describe('Multi-tenant data isolation', () => {
     });
   });
 });
-
-
-
-
-
-

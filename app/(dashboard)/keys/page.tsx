@@ -27,47 +27,52 @@ async function getKeyTypes() {
     redirect('/onboarding/keys');
   }
 
-  const keyTypes = await prisma.keyType.findMany({
-    where: { entityId },
-    orderBy: [{ label: 'asc' }],
-    include: {
-      keyCopies: {
-        select: {
-          id: true,
-          copyNumber: true,
-          status: true,
-          issueRecords: {
-            where: { returnedDate: null },
-            select: {
-              borrower: {
-                select: {
-                  id: true,
-                  affiliation: true,
-                  createdAt: true,
-                  entityId: true,
-                  residentBorrowerId: true,
-                  externalBorrowerId: true,
-                  residentBorrower: true,
-                  externalBorrower: true,
+  const [keyTypes, allAreas] = await Promise.all([
+    prisma.keyType.findMany({
+      where: { entityId },
+      orderBy: [{ label: 'asc' }],
+      include: {
+        keyCopies: {
+          select: {
+            id: true,
+            copyNumber: true,
+            status: true,
+            issueRecords: {
+              where: { returnedDate: null },
+              select: {
+                borrower: {
+                  select: {
+                    id: true,
+                    affiliation: true,
+                    createdAt: true,
+                    entityId: true,
+                    residentBorrowerId: true,
+                    externalBorrowerId: true,
+                    residentBorrower: true,
+                    externalBorrower: true,
+                  },
                 },
               },
+              take: 1,
             },
-            take: 1,
           },
+          orderBy: { copyNumber: 'asc' },
         },
-        orderBy: { copyNumber: 'asc' },
-      },
-      accessAreas: {
-        include: {
-          accessArea: {
-            select: {
-              name: true,
+        accessAreas: {
+          include: {
+            accessArea: {
+              select: { id: true, name: true },
             },
           },
         },
       },
-    },
-  });
+    }),
+    prisma.accessArea.findMany({
+      where: { entityId },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true },
+    }),
+  ]);
 
   // Decrypt borrower names
   const keyTypesWithDecryptedNames = await Promise.all(
@@ -102,7 +107,7 @@ async function getKeyTypes() {
         }),
       );
 
-      // Join access area names into comma-separated string for UI compatibility
+      // Join access area names into comma-separated string for display
       const accessAreaNames = kt.accessAreas.map((aa) => aa.accessArea.name).join(', ');
 
       return {
@@ -110,12 +115,13 @@ async function getKeyTypes() {
         label: kt.label,
         name: kt.function,
         accessArea: accessAreaNames,
+        accessAreaIds: kt.accessAreas.map((aa) => aa.accessArea.id),
         copies,
       };
     }),
   );
 
-  return keyTypesWithDecryptedNames;
+  return { keyTypes: keyTypesWithDecryptedNames, allAreas };
 }
 
 // Wrapper server actions to satisfy form action typing (void return)
@@ -126,12 +132,12 @@ async function createKeyTypeAction(formData: FormData) {
 
 async function updateKeyTypeAction(formData: FormData) {
   'use server';
-  await updateKeyType(formData);
+  return updateKeyType(formData);
 }
 
 async function deleteKeyTypeAction(formData: FormData) {
   'use server';
-  await deleteKeyType(formData);
+  return deleteKeyType(formData);
 }
 
 async function addKeyCopyAction(formData: FormData) {
@@ -152,8 +158,11 @@ async function markFoundAction(formData: FormData) {
 }
 
 export default async function Page() {
-  // Fetch both key types and key status data
-  const [keyTypes, keyChartResult] = await Promise.all([getKeyTypes(), getKeyStatusSummary()]);
+  // Fetch key types (includes allAreas) and chart data in parallel
+  const [{ keyTypes, allAreas }, keyChartResult] = await Promise.all([
+    getKeyTypes(),
+    getKeyStatusSummary(),
+  ]);
   const keyChartData = keyChartResult.success ? keyChartResult.data : [];
 
   // Show empty state for new organisations
@@ -178,7 +187,7 @@ export default async function Page() {
                   <div>
                     <p className="font-medium mb-1">Quick Start:</p>
                     <ol className="list-decimal list-inside space-y-1">
-                      <li>Create a key type (e.g., "A" for apartment keys)</li>
+                      <li>Create a key type (e.g., &quot;A&quot; for apartment keys)</li>
                       <li>Add copies with unique numbers</li>
                       <li>Start tracking who borrows each key</li>
                     </ol>
@@ -190,6 +199,7 @@ export default async function Page() {
 
           <KeyTypesTable
             data={keyTypes}
+            allAreas={allAreas}
             updateAction={updateKeyTypeAction}
             deleteAction={deleteKeyTypeAction}
             createAction={createKeyTypeAction}
@@ -215,6 +225,7 @@ export default async function Page() {
           <div className="px-4 lg:px-6">
             <KeyTypesTable
               data={keyTypes}
+              allAreas={allAreas}
               updateAction={updateKeyTypeAction}
               deleteAction={deleteKeyTypeAction}
               createAction={createKeyTypeAction}

@@ -1,6 +1,6 @@
 /**
  * Re-encrypt all entity encryption keys with new ENCRYPTION_KEY
- * 
+ *
  * Usage:
  * 1. Set OLD_ENCRYPTION_KEY=<your-old-key> in .env
  * 2. Set ENCRYPTION_KEY=<your-new-key> in .env
@@ -112,7 +112,9 @@ async function rotateEncryptionKey() {
         console.log(`   ✅ Successfully re-encrypted\n`);
         successCount++;
       } catch (error) {
-        console.error(`   ❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}\n`);
+        console.error(
+          `   ❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}\n`,
+        );
         failCount++;
       }
     }
@@ -137,11 +139,3 @@ async function rotateEncryptionKey() {
 }
 
 rotateEncryptionKey();
-
-
-
-
-
-
-
-

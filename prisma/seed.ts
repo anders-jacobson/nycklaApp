@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 /**
  * Database Seed Script for Key Management System Nyckla
@@ -238,7 +239,9 @@ async function main() {
   const testEmail = process.env.SEED_TEST_EMAIL;
   const testPassword = process.env.SEED_TEST_PASSWORD;
   if (!testEmail || !testPassword) {
-    throw new Error('SEED_TEST_EMAIL and SEED_TEST_PASSWORD env vars are required to run the seed script.');
+    throw new Error(
+      'SEED_TEST_EMAIL and SEED_TEST_PASSWORD env vars are required to run the seed script.',
+    );
   }
 
   // Create or update Supabase Auth user

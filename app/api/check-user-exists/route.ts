@@ -20,17 +20,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ exists: false }, { status: 500 });
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
