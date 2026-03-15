@@ -1,6 +1,8 @@
 'use client';
 
 import { IconDotsVertical, IconLogout, IconBell, IconUserCircle } from '@tabler/icons-react';
+import { LanguageSwitcher } from './language-switcher';
+import { useTranslations } from 'next-intl';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -28,6 +30,7 @@ export function NavUser({
     avatar: string;
   };
 }) {
+  const t = useTranslations('nav');
   const { isMobile } = useSidebar();
 
   return (
@@ -72,17 +75,21 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <IconUserCircle />
-                Account
+                {t('account')}
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <IconBell />
-                Notifications
+                {t('notifications')}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
+            <div className="px-2 py-1">
+              <LanguageSwitcher />
+            </div>
+            <DropdownMenuSeparator />
             <DropdownMenuItem>
               <IconLogout />
-              Log out
+              {t('logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

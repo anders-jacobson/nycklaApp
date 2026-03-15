@@ -1,30 +1,27 @@
 'use client';
 
 import { IconKey, IconMoon, IconSun } from '@tabler/icons-react';
-import Link from 'next/link';
+import { Link, usePathname } from '@/i18n/navigation';
 import { useTheme } from 'next-themes';
-import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-// Map pathnames to page titles
-const getPageTitle = (pathname: string): string => {
-  if (pathname === '/active-loans') return 'Active Loans';
-  if (pathname.startsWith('/keys')) return 'Keys';
-  if (pathname.startsWith('/settings')) return 'Settings';
-  if (pathname.startsWith('/lifecycle')) return 'Lifecycle';
-  if (pathname.startsWith('/analytics')) return 'Analytics';
-  if (pathname.startsWith('/projects')) return 'Projects';
-  if (pathname.startsWith('/team')) return 'Team';
-  return 'Active Loans'; // fallback
-};
-
 export function SiteHeader() {
   const pathname = usePathname();
-  const pageTitle = getPageTitle(pathname);
   const { resolvedTheme, setTheme } = useTheme();
+  const t = useTranslations('nav');
+
+  const getPageTitle = (path: string): string => {
+    if (path === '/active-loans') return t('activeLoans');
+    if (path.startsWith('/keys')) return t('keys');
+    if (path.startsWith('/settings')) return t('settings');
+    return t('activeLoans');
+  };
+
+  const pageTitle = getPageTitle(pathname);
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">

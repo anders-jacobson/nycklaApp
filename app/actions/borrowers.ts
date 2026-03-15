@@ -115,7 +115,7 @@ export async function updateBorrowerAffiliation(params: {
       }
     });
 
-    revalidatePath('/active-loans');
+    revalidatePath('/[locale]/active-loans');
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to update borrower affiliation';

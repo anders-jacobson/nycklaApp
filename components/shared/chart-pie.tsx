@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Label, Pie, PieChart } from 'recharts';
+import { useTranslations, useFormatter } from 'next-intl';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -13,26 +14,29 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 
-const chartConfig = {
-  Available: {
-    label: 'Available',
-    color: 'var(--chart-1)',
-  },
-  InUse: {
-    label: 'In Use',
-    color: 'var(--chart-2)',
-  },
-  Lost: {
-    label: 'Lost',
-    color: 'var(--chart-3)',
-  },
-} satisfies ChartConfig;
-
 export default function TotalStatusPieChart({
   data,
 }: {
   data: { keyType: string; keyFunction: string; Available: number; InUse: number; Lost: number }[];
 }) {
+  const t = useTranslations('charts');
+  const format = useFormatter();
+
+  const chartConfig = {
+    Available: {
+      label: t('available'),
+      color: 'var(--chart-1)',
+    },
+    InUse: {
+      label: t('inUse'),
+      color: 'var(--chart-2)',
+    },
+    Lost: {
+      label: t('lost'),
+      color: 'var(--chart-3)',
+    },
+  } satisfies ChartConfig;
+
   // Aggregate totals from all key types
   const totalCounts = data.reduce(
     (acc, item) => ({
@@ -69,8 +73,8 @@ export default function TotalStatusPieChart({
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Status all keys</CardTitle>
-        <CardDescription>Overview of key status distribution</CardDescription>
+        <CardTitle>{t('pieTitle')}</CardTitle>
+        <CardDescription>{t('pieDescription')}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
@@ -92,14 +96,14 @@ export default function TotalStatusPieChart({
                           y={viewBox.cy}
                           className="fill-foreground text-3xl font-bold"
                         >
-                          {totalKeys.toLocaleString()}
+                          {format.number(totalKeys)}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 24}
                           className="fill-muted-foreground"
                         >
-                          Total Keys
+                          {t('totalKeys')}
                         </tspan>
                       </text>
                     );

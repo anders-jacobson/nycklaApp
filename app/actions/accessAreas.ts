@@ -53,8 +53,8 @@ export async function createAccessArea(formData: FormData): Promise<ActionResult
       select: { id: true },
     });
 
-    revalidatePath('/keys');
-    revalidatePath('/settings/access-areas');
+    revalidatePath('/[locale]/keys');
+    revalidatePath('/[locale]/settings/access-areas');
     return { success: true, data: { id: area.id } };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to create access area.';
@@ -83,8 +83,8 @@ export async function updateAccessArea(formData: FormData): Promise<ActionResult
 
     await prisma.accessArea.update({ where: { id }, data: { name } });
 
-    revalidatePath('/keys');
-    revalidatePath('/settings/access-areas');
+    revalidatePath('/[locale]/keys');
+    revalidatePath('/[locale]/settings/access-areas');
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to update access area.';
@@ -110,8 +110,8 @@ export async function deleteAccessArea(formData: FormData): Promise<ActionResult
 
     await prisma.accessArea.delete({ where: { id } });
 
-    revalidatePath('/keys');
-    revalidatePath('/settings/access-areas');
+    revalidatePath('/[locale]/keys');
+    revalidatePath('/[locale]/settings/access-areas');
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to delete access area.';

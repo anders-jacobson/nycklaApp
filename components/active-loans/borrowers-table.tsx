@@ -27,10 +27,11 @@ import {
 import { IconPlus } from '@tabler/icons-react';
 import { ColumnCustomizer } from './column-customizer';
 import { AffiliationFilter, AffiliationFilterValue } from './affiliation-filter';
-import { getVisibleColumns, BorrowerWithKeys } from './borrower-columns';
+import { getVisibleColumns, BorrowerWithKeys, type BorrowerColumnLabels } from './borrower-columns';
 import { useColumnPreferences } from '@/hooks/useColumnPreferences';
 import Link from 'next/link';
 import { DataTablePagination } from '@/components/shared/data-table-pagination';
+import { useTranslations, useFormatter } from 'next-intl';
 import { ReturnKeysDialog } from './dialogs/return-keys-dialog';
 import { LostKeyDialog } from './dialogs/lost-key-dialog';
 import { ReplaceKeyDialog } from './dialogs/replace-key-dialog';
@@ -48,6 +49,8 @@ type DialogState = {
 };
 
 export function DataTable<TData>({ data, highlightBorrowerId }: DataTableProps<TData>) {
+  const t = useTranslations('activeLoans');
+  const format = useFormatter();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [dialogState, setDialogState] = React.useState<DialogState>({
@@ -75,8 +78,33 @@ export function DataTable<TData>({ data, highlightBorrowerId }: DataTableProps<T
 
   // Generate columns based on visibility settings
   const columns = React.useMemo(() => {
-    return getVisibleColumns(columnVisibility) as ColumnDef<TData>[];
-  }, [columnVisibility]);
+    const formatDate = (dateStr: string) => {
+      try {
+        return format.dateTime(new Date(dateStr), {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+      } catch {
+        return dateStr;
+      }
+    };
+    const labels: BorrowerColumnLabels = {
+      name: t('colName'),
+      affiliation: t('colAffiliation'),
+      resident: t('colResident'),
+      external: t('colExternal'),
+      borrowedKeys: t('colBorrowedKeys'),
+      dateIssued: t('colDateIssued'),
+      dueDate: t('colDueDate'),
+      noDueDate: t('noDueDate'),
+      due: t('due'),
+      daysOverdue: (days) => t('daysOverdue', { days }),
+      allIssueDates: t('allIssueDates'),
+      allDueDates: t('allDueDates'),
+    };
+    return getVisibleColumns(columnVisibility, formatDate, labels) as ColumnDef<TData>[];
+  }, [columnVisibility, format, t]);
 
   // Dialog control functions
   const openDialog = React.useCallback((type: DialogType, borrower: BorrowerWithKeys) => {
@@ -176,17 +204,15 @@ export function DataTable<TData>({ data, highlightBorrowerId }: DataTableProps<T
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">All Borrowers</h2>
-            <p className="text-muted-foreground">
-              Manage borrower contacts and track borrowed keys
-            </p>
+            <h2 className="text-2xl font-bold tracking-tight">{t('borrowersHeading')}</h2>
+            <p className="text-muted-foreground">{t('borrowersDescription')}</p>
           </div>
         </div>
 
         {/* Search, Filter and Actions */}
         <div className="flex items-center justify-between gap-2 py-4">
           <Input
-            placeholder="Filter by name or company..."
+            placeholder={t('filterPlaceholder')}
             value={(columnFilters.find((f) => f.id === 'name')?.value as string) ?? ''}
             onChange={(event) => handleNameFilter(event.target.value)}
             className="flex-1 min-w-60 max-w-sm"
@@ -200,7 +226,7 @@ export function DataTable<TData>({ data, highlightBorrowerId }: DataTableProps<T
             <Button asChild className="gap-1">
               <Link href="/issue-key">
                 <IconPlus className="h-3.5 w-3.5" />
-                <span className="sr-only md:not-sr-only md:whitespace-nowrap">Issue Key</span>
+                <span className="sr-only md:not-sr-only md:whitespace-nowrap">{t('issueKey')}</span>
               </Link>
             </Button>
           </div>
@@ -247,7 +273,7 @@ export function DataTable<TData>({ data, highlightBorrowerId }: DataTableProps<T
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-24 text-center">
-                    <div className="text-muted-foreground">No borrowers found</div>
+                    <div className="text-muted-foreground">{t('empty')}</div>
                   </TableCell>
                 </TableRow>
               )}

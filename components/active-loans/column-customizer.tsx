@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { IconColumns, IconEye } from '@tabler/icons-react';
 import { ColumnVisibility } from './borrower-columns';
+import { useTranslations } from 'next-intl';
 
 type Checked = DropdownMenuCheckboxItemProps['checked'];
 
@@ -25,6 +26,8 @@ export function ColumnCustomizer({
   columnVisibility,
   onColumnVisibilityChange,
 }: ColumnCustomizerProps) {
+  const t = useTranslations('activeLoans');
+
   const handleColumnToggle = (columnKey: keyof ColumnVisibility, checked: Checked) => {
     onColumnVisibilityChange({
       ...columnVisibility,
@@ -37,13 +40,15 @@ export function ColumnCustomizer({
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="gap-1">
           <IconColumns className="h-3.5 w-3.5" />
-          <span className="sr-only md:not-sr-only md:whitespace-nowrap">Customize Columns</span>
+          <span className="sr-only md:not-sr-only md:whitespace-nowrap">
+            {t('customizeColumns')}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel className="flex items-center gap-2">
           <IconEye className="h-4 w-4" />
-          Show Columns
+          {t('showColumns')}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
@@ -51,24 +56,22 @@ export function ColumnCustomizer({
           checked={columnVisibility.affiliation}
           onCheckedChange={(checked) => handleColumnToggle('affiliation', checked)}
         >
-          Affiliation
+          {t('colAffiliation')}
         </DropdownMenuCheckboxItem>
 
         <DropdownMenuCheckboxItem
           checked={columnVisibility.dateIssued}
           onCheckedChange={(checked) => handleColumnToggle('dateIssued', checked)}
         >
-          Issued
+          {t('colIssuedShort')}
         </DropdownMenuCheckboxItem>
 
         <DropdownMenuCheckboxItem
           checked={columnVisibility.returnDate}
           onCheckedChange={(checked) => handleColumnToggle('returnDate', checked)}
         >
-          Due
+          {t('colDueShort')}
         </DropdownMenuCheckboxItem>
-
-        {/* Notes column removed per requirements */}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { useTranslations } from 'next-intl';
 
 export type KeyCopy = {
   id: string;
@@ -70,6 +71,15 @@ export const defaultKeyTypeColumnVisibility: KeyTypeColumnVisibility = {
   accessArea: true,
 };
 
+export type KeyTypeColumnLabels = {
+  colLabel: string;
+  colName: string;
+  colAccessArea: string;
+  colCopies: string;
+  collapseRow: string;
+  expandRow: string;
+};
+
 export function getKeyTypeColumns(params: {
   updateAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   deleteAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
@@ -78,6 +88,7 @@ export function getKeyTypeColumns(params: {
   expandedRows: Set<string>;
   onToggleExpand: (keyTypeId: string) => void;
   allAreas: { id: string; name: string }[];
+  labels: KeyTypeColumnLabels;
 }): ColumnDef<KeyTypeRow>[] {
   const {
     updateAction,
@@ -87,6 +98,7 @@ export function getKeyTypeColumns(params: {
     expandedRows,
     onToggleExpand,
     allAreas,
+    labels,
   } = params;
 
   const columns: ColumnDef<KeyTypeRow>[] = [];
@@ -118,7 +130,7 @@ export function getKeyTypeColumns(params: {
           ) : (
             <IconChevronRight className="h-4 w-4" />
           )}
-          <span className="sr-only">{isExpanded ? 'Collapse' : 'Expand'}</span>
+          <span className="sr-only">{isExpanded ? labels.collapseRow : labels.expandRow}</span>
         </Button>
       );
     },
@@ -134,7 +146,7 @@ export function getKeyTypeColumns(params: {
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         className="h-auto p-0 font-medium justify-start text-left"
       >
-        Label
+        {labels.colLabel}
         <IconArrowsUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
@@ -148,7 +160,7 @@ export function getKeyTypeColumns(params: {
     columns.push({
       id: 'name',
       accessorKey: 'name',
-      header: 'Name',
+      header: labels.colName,
       cell: ({ row }: CellContext<KeyTypeRow, unknown>) => <div>{row.original.name}</div>,
     });
   }
@@ -158,7 +170,7 @@ export function getKeyTypeColumns(params: {
     columns.push({
       id: 'accessArea',
       accessorKey: 'accessArea',
-      header: 'Access Area',
+      header: labels.colAccessArea,
       cell: ({ row }: CellContext<KeyTypeRow, unknown>) => {
         const kt = row.original;
         if (!kt.accessArea) return <div className="text-muted-foreground">—</div>;
@@ -179,7 +191,7 @@ export function getKeyTypeColumns(params: {
   columns.push({
     id: 'copies',
     accessorKey: 'copies',
-    header: 'Copies',
+    header: labels.colCopies,
     cell: ({ row }: CellContext<KeyTypeRow, unknown>) => <div>{row.original.copies.length}</div>,
   });
 
@@ -216,6 +228,7 @@ function KeyTypeActionsCell({
   addCopyAction: (formData: FormData) => void | Promise<void>;
   allAreas: { id: string; name: string }[];
 }) {
+  const t = useTranslations('keys');
   const [editOpen, setEditOpen] = useState(false);
   const [, startTransition] = useTransition();
   const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>(kt.accessAreaIds);
@@ -255,18 +268,18 @@ function KeyTypeActionsCell({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">
-            <span className="sr-only">Open menu</span>
+            <span className="sr-only">{t('openMenu')}</span>
             <IconDotsVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Key Type Actions</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('actionsLabel')}</DropdownMenuLabel>
           <form action={addCopyAction}>
             <Input type="hidden" name="id" value={kt.id} />
             <DropdownMenuItem asChild>
               <button type="submit" className="w-full">
                 <IconPlus className="h-3.5 w-3.5 mr-2" />
-                Add Copy
+                {t('addCopy')}
               </button>
             </DropdownMenuItem>
           </form>
@@ -275,12 +288,12 @@ function KeyTypeActionsCell({
             <DialogTrigger asChild>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                 <IconEdit className="h-3.5 w-3.5 mr-2" />
-                Edit
+                {t('edit')}
               </DropdownMenuItem>
             </DialogTrigger>
             <DialogContent onInteractOutside={(e) => e.preventDefault()}>
               <DialogHeader>
-                <DialogTitle>Edit Key Type</DialogTitle>
+                <DialogTitle>{t('editTitle')}</DialogTitle>
               </DialogHeader>
               <form action={handleUpdate} className="grid gap-3">
                 <Input type="hidden" name="id" value={kt.id} />
@@ -290,7 +303,7 @@ function KeyTypeActionsCell({
                 <Input
                   name="name"
                   defaultValue={kt.name}
-                  placeholder="Name / Function"
+                  placeholder={t('namePlaceholder')}
                   required
                   minLength={2}
                 />
@@ -299,11 +312,11 @@ function KeyTypeActionsCell({
                     options={areaOptions}
                     selectedValues={selectedAreaIds}
                     onValueChange={setSelectedAreaIds}
-                    placeholder="Select access areas..."
+                    placeholder={t('accessAreasPlaceholder')}
                   />
                 )}
                 <DialogFooter>
-                  <Button type="submit">Save</Button>
+                  <Button type="submit">{t('save')}</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -314,7 +327,7 @@ function KeyTypeActionsCell({
             <DropdownMenuItem asChild>
               <button type="submit" className="w-full text-destructive">
                 <IconTrash className="h-3.5 w-3.5 mr-2" />
-                Delete
+                {t('delete')}
               </button>
             </DropdownMenuItem>
           </form>
@@ -322,30 +335,6 @@ function KeyTypeActionsCell({
       </DropdownMenu>
     </div>
   );
-}
-
-// Helper function to get status badge variant and text
-function getStatusBadge(status: KeyCopy['status']) {
-  switch (status) {
-    case 'AVAILABLE':
-      return {
-        variant: 'default' as const,
-        text: 'Available',
-        className: 'bg-green-100 text-green-800 hover:bg-green-100',
-      };
-    case 'OUT':
-      return {
-        variant: 'secondary' as const,
-        text: 'In Use',
-        className: 'bg-amber-100 text-amber-800 hover:bg-amber-100',
-      };
-    case 'LOST':
-      return {
-        variant: 'destructive' as const,
-        text: 'Lost',
-        className: 'bg-red-100 text-red-800 hover:bg-red-100',
-      };
-  }
 }
 
 // Expanded Copies Row Component
@@ -360,7 +349,27 @@ export function ExpandedCopiesRow({
   markFoundAction: (formData: FormData) => void | Promise<void>;
   colSpan: number;
 }) {
+  const t = useTranslations('keys');
+  const tCharts = useTranslations('charts');
+
   if (copies.length === 0) return null;
+
+  const getStatusBadge = (status: KeyCopy['status']) => {
+    switch (status) {
+      case 'AVAILABLE':
+        return {
+          text: tCharts('available'),
+          className: 'bg-green-100 text-green-800 hover:bg-green-100',
+        };
+      case 'OUT':
+        return {
+          text: tCharts('inUse'),
+          className: 'bg-amber-100 text-amber-800 hover:bg-amber-100',
+        };
+      case 'LOST':
+        return { text: tCharts('lost'), className: 'bg-red-100 text-red-800 hover:bg-red-100' };
+    }
+  };
 
   return (
     <tr className="bg-muted/50 hover:bg-muted/50">
@@ -375,7 +384,7 @@ export function ExpandedCopiesRow({
               >
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-muted-foreground">
-                    Copy #{copy.copyNumber}
+                    {t('copyLabel', { number: copy.copyNumber })}
                   </span>
                   <Badge className={badge.className}>{badge.text}</Badge>
                 </div>
@@ -385,14 +394,14 @@ export function ExpandedCopiesRow({
                       <Input type="hidden" name="copyId" value={copy.id} />
                       <Button type="submit" size="sm" variant="outline" className="h-8 gap-1.5">
                         <IconAlertCircle className="h-3.5 w-3.5" />
-                        Mark Lost
+                        {t('markLost')}
                       </Button>
                     </form>
                   )}
                   {copy.status === 'OUT' && copy.borrower && (
                     <>
                       <span className="text-sm text-muted-foreground">
-                        In use by <span className="font-medium">{copy.borrower.name}</span>
+                        {t('inUseBy', { name: copy.borrower.name })}
                       </span>
                       <Button
                         variant="link"
@@ -402,13 +411,13 @@ export function ExpandedCopiesRow({
                           window.location.href = `/active-loans?borrowerId=${copy.borrower!.id}`;
                         }}
                       >
-                        View →
+                        {t('viewLink')}
                       </Button>
                     </>
                   )}
                   {copy.status === 'OUT' && !copy.borrower && (
                     <span className="text-sm text-muted-foreground italic">
-                      In use (borrower unknown)
+                      {t('inUseUnknown')}
                     </span>
                   )}
                   {copy.status === 'LOST' && (
@@ -416,7 +425,7 @@ export function ExpandedCopiesRow({
                       <Input type="hidden" name="copyId" value={copy.id} />
                       <Button type="submit" size="sm" variant="outline" className="h-8 gap-1.5">
                         <IconCheck className="h-3.5 w-3.5" />
-                        Mark Found
+                        {t('markFound')}
                       </Button>
                     </form>
                   )}

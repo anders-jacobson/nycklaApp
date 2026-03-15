@@ -212,7 +212,7 @@ export async function createOnboardingKeys(): Promise<ActionResult<void>> {
       });
     });
 
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/keys');
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to create keys';
@@ -234,7 +234,7 @@ export async function skipOnboarding(): Promise<ActionResult<void>> {
     });
 
     // Revalidate both the keys page and the layout to prevent redirect loop
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/keys');
     revalidatePath('/', 'layout');
 
     return { success: true };

@@ -73,8 +73,8 @@ export async function createKeyType(formData: FormData): Promise<ActionResult<{ 
       return keyType;
     });
 
-    revalidatePath('/active-loans');
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/active-loans');
+    revalidatePath('/[locale]/keys');
     return { success: true, data: { id: result.id } };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to create key type.';
@@ -124,8 +124,8 @@ export async function updateKeyType(formData: FormData): Promise<ActionResult<un
       }
     });
 
-    revalidatePath('/active-loans');
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/active-loans');
+    revalidatePath('/[locale]/keys');
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to update key type.';
@@ -162,8 +162,8 @@ export async function deleteKeyType(formData: FormData): Promise<ActionResult<un
 
     await prisma.keyType.delete({ where: { id: keyTypeId } });
 
-    revalidatePath('/active-loans');
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/active-loans');
+    revalidatePath('/[locale]/keys');
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to delete key type.';
@@ -207,8 +207,8 @@ export async function addKeyCopy(formData: FormData): Promise<ActionResult<undef
       },
     });
 
-    revalidatePath('/active-loans');
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/active-loans');
+    revalidatePath('/[locale]/keys');
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to add key copy.';
@@ -269,8 +269,8 @@ export async function markAvailableCopyLost(copyId: string): Promise<ActionResul
     }
 
     await prisma.keyCopy.update({ where: { id: copyId }, data: { status: 'LOST' } });
-    revalidatePath('/keys');
-    revalidatePath('/active-loans');
+    revalidatePath('/[locale]/keys');
+    revalidatePath('/[locale]/active-loans');
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to mark copy as lost.';
@@ -296,8 +296,8 @@ export async function markLostCopyFound(copyId: string): Promise<ActionResult<un
     }
 
     await prisma.keyCopy.update({ where: { id: copyId }, data: { status: 'AVAILABLE' } });
-    revalidatePath('/keys');
-    revalidatePath('/active-loans');
+    revalidatePath('/[locale]/keys');
+    revalidatePath('/[locale]/active-loans');
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to mark copy as found.';

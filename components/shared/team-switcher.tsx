@@ -16,7 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { switchOrganisation, createOrganisation } from '@/app/actions/organisation';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 
 interface Organisation {
   id: string;
@@ -30,6 +31,7 @@ interface TeamSwitcherProps {
 }
 
 export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProps) {
+  const t = useTranslations('org');
   const router = useRouter();
   const [isSwitching, setIsSwitching] = React.useState(false);
   const [showCreateDialog, setShowCreateDialog] = React.useState(false);
@@ -82,7 +84,7 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
         setCreateError(result.error);
       }
     } catch (error) {
-      setCreateError('An unexpected error occurred.');
+      setCreateError(t('unexpectedError'));
       console.error('Error creating organisation:', error);
     } finally {
       setIsCreating(false);
@@ -120,7 +122,7 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
             sideOffset={4}
           >
             <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Organisations
+              {t('switcherLabel')}
             </DropdownMenuLabel>
             {organisations.map((org) => (
               <DropdownMenuItem
@@ -149,7 +151,7 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
               <div className="flex size-6 items-center justify-center rounded-sm border bg-background">
                 <IconPlus className="h-4 w-4" />
               </div>
-              <span className="font-medium">Create Organisation</span>
+              <span className="font-medium">{t('createOrg')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -158,8 +160,8 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
       <ResponsiveDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        title="Create New Organisation"
-        description="Create a new organisation to manage keys, borrowers, and team members. You will be the owner."
+        title={t('createOrgTitle')}
+        description={t('createOrgDescription')}
         footer={
           <>
             <Button
@@ -168,14 +170,14 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
               onClick={() => setShowCreateDialog(false)}
               disabled={isCreating}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               type="submit"
               form="create-org-form"
               disabled={isCreating || !newOrgName.trim()}
             >
-              {isCreating ? 'Creating...' : 'Create Organisation'}
+              {isCreating ? t('creating') : t('createOrg')}
             </Button>
           </>
         }
@@ -183,10 +185,10 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
         <form id="create-org-form" onSubmit={handleCreateOrganisation}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="organisation-name">Organisation Name</Label>
+              <Label htmlFor="organisation-name">{t('orgNameLabel')}</Label>
               <Input
                 id="organisation-name"
-                placeholder="e.g., Brf Solrosen"
+                placeholder={t('orgNamePlaceholder')}
                 value={newOrgName}
                 onChange={(e) => setNewOrgName(e.target.value)}
                 required
@@ -196,9 +198,7 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
               />
-              <p className="text-sm text-muted-foreground">
-                This will be the name of your housing cooperative or organisation.
-              </p>
+              <p className="text-sm text-muted-foreground">{t('orgNameHint')}</p>
             </div>
 
             {createError && (

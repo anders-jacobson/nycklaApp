@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { useTranslations } from 'next-intl';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -10,29 +11,6 @@ import {
   ChartLegendContent,
   ChartTooltip,
 } from '@/components/ui/chart';
-
-const chartConfig = {
-  Critical: {
-    label: 'Critical (7+ days overdue)',
-    color: 'var(--chart-1)',
-  },
-  Urgent: {
-    label: 'Urgent (1-6 days overdue)',
-    color: 'var(--chart-2)',
-  },
-  DueSoon: {
-    label: 'Due Soon (0-2 days)',
-    color: 'var(--chart-3)',
-  },
-  ThisWeek: {
-    label: 'This Week (3-7 days)',
-    color: 'var(--chart-4)',
-  },
-  Later: {
-    label: 'Later (8+ days)',
-    color: 'var(--chart-5)',
-  },
-} satisfies ChartConfig;
 
 export default function OverdueChart({
   data,
@@ -47,6 +25,31 @@ export default function OverdueChart({
     total: number;
   };
 }) {
+  const t = useTranslations('activeLoans');
+
+  const chartConfig = {
+    Critical: {
+      label: t('critical'),
+      color: 'var(--chart-1)',
+    },
+    Urgent: {
+      label: t('urgent'),
+      color: 'var(--chart-2)',
+    },
+    DueSoon: {
+      label: t('dueSoon'),
+      color: 'var(--chart-3)',
+    },
+    ThisWeek: {
+      label: t('thisWeek'),
+      color: 'var(--chart-4)',
+    },
+    Later: {
+      label: t('later'),
+      color: 'var(--chart-5)',
+    },
+  } satisfies ChartConfig;
+
   // Don't show chart if there are no active loans
   if (data.total === 0) {
     return null;
@@ -55,10 +58,8 @@ export default function OverdueChart({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Active Loans Timeline</CardTitle>
-        <CardDescription>
-          Overview of {data.total} active loan{data.total === 1 ? '' : 's'} by due date
-        </CardDescription>
+        <CardTitle>{t('overdueTitle')}</CardTitle>
+        <CardDescription>{t('overdueDescription', { total: data.total })}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[120px] w-full">

@@ -6,6 +6,7 @@ import { DeleteOrganizationDialog } from './delete-organization-dialog';
 import { getOrganisationDeletionStats } from '@/app/actions/organisation';
 import { IconTrash } from '@tabler/icons-react';
 import { toastError } from '@/components/ui/toast-store';
+import { useTranslations } from 'next-intl';
 
 interface DeleteOrganizationSectionProps {
   organizationName: string;
@@ -16,6 +17,7 @@ export function DeleteOrganizationSection({
   organizationName,
   isOwner,
 }: DeleteOrganizationSectionProps) {
+  const t = useTranslations('settings');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [stats, setStats] = useState<{
     memberCount: number;
@@ -50,20 +52,17 @@ export function DeleteOrganizationSection({
       <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6">
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-semibold text-destructive">Delete Organization</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Permanently delete this organization and all of its data. This action cannot be
-              undone.
-            </p>
+            <h3 className="text-lg font-semibold text-destructive">{t('deleteHeading')}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{t('deleteDescription')}</p>
           </div>
 
           <div className="flex items-start gap-3 rounded-md border border-muted-foreground/20 bg-background p-3 text-sm">
             <div className="space-y-1">
-              <p className="font-medium">Before you can delete:</p>
+              <p className="font-medium">{t('deletePrereqHeading')}</p>
               <ul className="list-inside list-disc space-y-1 text-muted-foreground">
-                <li>All other members must leave the organization first</li>
-                <li>You must be the last remaining member</li>
-                <li>All data including keys, borrowers, and loan history will be deleted</li>
+                <li>{t('deletePrereq1')}</li>
+                <li>{t('deletePrereq2')}</li>
+                <li>{t('deletePrereq3')}</li>
               </ul>
             </div>
           </div>
@@ -75,7 +74,7 @@ export function DeleteOrganizationSection({
             className="w-full sm:w-auto"
           >
             <IconTrash className="h-4 w-4" />
-            {loadingStats ? 'Loading...' : 'Delete Organization'}
+            {loadingStats ? t('deleteLoading') : t('deleteButton')}
           </Button>
         </div>
       </div>

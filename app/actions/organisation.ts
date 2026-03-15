@@ -40,9 +40,9 @@ export async function switchOrganisation(organisationId: string): Promise<Action
 
     // Revalidate all pages to reflect the organisation switch
     revalidatePath('/', 'layout');
-    revalidatePath('/settings/organization');
-    revalidatePath('/active-loans');
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/settings/organization');
+    revalidatePath('/[locale]/active-loans');
+    revalidatePath('/[locale]/keys');
 
     return { success: true };
   } catch (error) {
@@ -190,7 +190,7 @@ export async function updateOrganisationName(name: string): Promise<ActionResult
     });
 
     revalidatePath('/', 'layout');
-    revalidatePath('/settings/organization');
+    revalidatePath('/[locale]/settings/organization');
 
     return { success: true };
   } catch (error) {
@@ -282,9 +282,9 @@ export async function createOrganisation(
     });
 
     revalidatePath('/', 'layout');
-    revalidatePath('/settings/organization');
-    revalidatePath('/active-loans');
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/settings/organization');
+    revalidatePath('/[locale]/active-loans');
+    revalidatePath('/[locale]/keys');
 
     // Redirect to welcome screen for new org
     redirect('/welcome?from=create');
@@ -449,9 +449,9 @@ export async function deleteOrganisation(): Promise<
     });
 
     revalidatePath('/', 'layout');
-    revalidatePath('/settings/organization');
-    revalidatePath('/active-loans');
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/settings/organization');
+    revalidatePath('/[locale]/active-loans');
+    revalidatePath('/[locale]/keys');
 
     console.log(`Organisation "${organisation?.name}" deleted by user ${user.email}`);
 
