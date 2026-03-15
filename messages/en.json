@@ -69,6 +69,14 @@
       "loggingOut": "Logging out..."
     }
   },
+  "pagination": {
+    "page": "Page {page} of {total}",
+    "rowsPerPage": "Rows per page",
+    "goToFirst": "Go to first page",
+    "goToPrevious": "Go to previous page",
+    "goToNext": "Go to next page",
+    "goToLast": "Go to last page"
+  },
   "activeLoans": {
     "borrowersHeading": "All Borrowers",
     "borrowersDescription": "Manage borrower contacts and track borrowed keys",

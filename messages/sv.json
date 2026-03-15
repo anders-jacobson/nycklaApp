@@ -69,6 +69,14 @@
       "loggingOut": "Loggar ut..."
     }
   },
+  "pagination": {
+    "page": "Sida {page} av {total}",
+    "rowsPerPage": "Rader per sida",
+    "goToFirst": "Gå till första sidan",
+    "goToPrevious": "Gå till föregående sida",
+    "goToNext": "Gå till nästa sida",
+    "goToLast": "Gå till sista sidan"
+  },
   "activeLoans": {
     "borrowersHeading": "Alla låntagare",
     "borrowersDescription": "Hantera låntagare och spåra utlånade nycklar",
