@@ -50,7 +50,7 @@ import { DataTablePagination } from '@/components/shared/data-table-pagination';
 type KeyTypesTableProps = {
   data: KeyTypeRow[];
   allAreas: { id: string; name: string }[];
-  updateAction: (formData: FormData) => void | Promise<void>;
+  updateAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   deleteAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   createAction: (formData: FormData) => void | Promise<void>;
   addCopyAction: (formData: FormData) => void | Promise<void>;
@@ -170,7 +170,7 @@ export function KeyTypesTable({
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Add Key Type</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
               <DialogHeader>
                 <DialogTitle>Create Key Type</DialogTitle>
               </DialogHeader>

@@ -286,6 +286,7 @@ export function MultiSelect({
           </CommandList>
           <div className="p-2 border-t flex justify-end">
             <Button
+              type="button"
               size="sm"
               onClick={() => {
                 onValueChange(pendingValues || []);

@@ -71,7 +71,7 @@ export const defaultKeyTypeColumnVisibility: KeyTypeColumnVisibility = {
 };
 
 export function getKeyTypeColumns(params: {
-  updateAction: (formData: FormData) => void | Promise<void>;
+  updateAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   deleteAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   addCopyAction: (formData: FormData) => void | Promise<void>;
   columnVisibility: KeyTypeColumnVisibility;
@@ -211,7 +211,7 @@ function KeyTypeActionsCell({
   allAreas,
 }: {
   kt: KeyTypeRow;
-  updateAction: (formData: FormData) => void | Promise<void>;
+  updateAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   deleteAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   addCopyAction: (formData: FormData) => void | Promise<void>;
   allAreas: { id: string; name: string }[];
@@ -228,7 +228,11 @@ function KeyTypeActionsCell({
 
   const handleUpdate = (formData: FormData) => {
     startTransition(async () => {
-      await updateAction(formData);
+      const result = await updateAction(formData);
+      if (!result.success && result.error) {
+        toastError(result.error);
+        return;
+      }
       setEditOpen(false);
     });
   };
@@ -274,7 +278,7 @@ function KeyTypeActionsCell({
                 Edit
               </DropdownMenuItem>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent onInteractOutside={(e) => e.preventDefault()}>
               <DialogHeader>
                 <DialogTitle>Edit Key Type</DialogTitle>
               </DialogHeader>
