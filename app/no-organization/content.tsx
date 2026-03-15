@@ -107,6 +107,7 @@ export function NoOrganizationContent() {
               onChange={(e) => setInviteCode(e.target.value)}
               placeholder="Enter code here"
               required
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
             />
           </div>

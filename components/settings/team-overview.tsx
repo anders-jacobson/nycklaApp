@@ -39,19 +39,19 @@ export function TeamOverview({ user }: TeamOverviewProps) {
 
       <div className="space-y-3">
         <div>
-          <label className="text-sm font-medium text-muted-foreground">Email</label>
+          <p className="text-sm font-medium text-muted-foreground">Email</p>
           <p className="text-sm mt-1">{user.email}</p>
         </div>
 
         {user.name && (
           <div>
-            <label className="text-sm font-medium text-muted-foreground">Name</label>
+            <p className="text-sm font-medium text-muted-foreground">Name</p>
             <p className="text-sm mt-1">{user.name}</p>
           </div>
         )}
 
         <div>
-          <label className="text-sm font-medium text-muted-foreground">Role</label>
+          <p className="text-sm font-medium text-muted-foreground">Role</p>
           <div className="mt-1">
             <Badge className={roleColors[user.roleInActiveOrg]}>
               <Icon className="h-3 w-3 mr-1" />

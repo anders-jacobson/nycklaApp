@@ -63,7 +63,7 @@ export default function SyncSessionPage() {
           </CardHeader>
           <CardContent>
             <div className="flex justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           </CardContent>
         </Card>

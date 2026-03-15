@@ -31,7 +31,6 @@ export function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [invitationInfo, setInvitationInfo] = useState<InvitationInfo | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const turnstileRef = useRef<any>(null);
 
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
@@ -160,6 +159,7 @@ export function LoginForm() {
                 placeholder="name@example.com"
                 required
                 className="h-11 text-base"
+                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
               />
             </div>
@@ -249,6 +249,7 @@ export function LoginForm() {
                 maxLength={6}
                 className="h-16 text-2xl text-center tracking-[0.5em] font-mono"
                 autoComplete="one-time-code"
+                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
               />
             </div>

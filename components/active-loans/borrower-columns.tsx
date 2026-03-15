@@ -124,7 +124,7 @@ function AffiliationInfoDialog({ borrower }: { borrower: BorrowerWithKeys }) {
         </Button>
       }
     >
-      <div className="space-y-4" onKeyDown={handleKeyDown}>
+      <div className="space-y-4" role="presentation" onKeyDown={handleKeyDown}>
         <div>
           <label htmlFor="purpose" className="text-sm font-medium flex items-center gap-2">
             Purpose Description

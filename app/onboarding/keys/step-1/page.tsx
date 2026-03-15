@@ -73,6 +73,7 @@ export default function Step1Page() {
             placeholder="e.g., Strandvägen Bostadsrättsförening"
             className="h-11 mt-2"
             maxLength={200}
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus={!orgName} // Only autofocus if empty
           />
           <p className="text-sm text-muted-foreground mt-1">{orgName.length}/200 characters</p>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { IconSparkles, IconKey, IconFileDescription, IconClock } from '@tabler/icons-react';
@@ -20,7 +20,7 @@ export function WelcomeContent({ organizationName, stats, from }: WelcomeContent
   const [secondsLeft, setSecondsLeft] = useState(5);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const handleContinue = () => {
+  const handleContinue = useCallback(() => {
     setIsRedirecting(true);
 
     // If organization was just created and has no keys, go to onboarding
@@ -30,7 +30,7 @@ export function WelcomeContent({ organizationName, stats, from }: WelcomeContent
     } else {
       router.push('/active-loans');
     }
-  };
+  }, [from, router, stats.keyTypes]);
 
   useEffect(() => {
     // Countdown timer
@@ -42,7 +42,7 @@ export function WelcomeContent({ organizationName, stats, from }: WelcomeContent
       // eslint-disable-next-line react-hooks/set-state-in-effect
       handleContinue();
     }
-  }, [secondsLeft, isRedirecting]);
+  }, [secondsLeft, isRedirecting, handleContinue]);
 
   const getMessage = () => {
     switch (from) {

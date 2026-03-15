@@ -76,6 +76,7 @@ export function CreateOrganizationForm() {
               placeholder="My Housing Cooperative"
               disabled={loading}
               required
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               className="h-11 text-base"
             />

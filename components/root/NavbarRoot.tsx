@@ -63,8 +63,8 @@ export default function NavbarRoot() {
         <div className="max-w-[1140px] mx-auto flex h-16 items-center justify-between px-4">
           <div className="font-bold text-lg tracking-tight text-primary">LOGO</div>
           <div className="flex gap-2">
-            <div className="w-20 h-9 bg-muted animate-pulse rounded-md"></div>
-            <div className="w-16 h-9 bg-muted animate-pulse rounded-md"></div>
+            <div className="w-20 h-9 bg-muted animate-pulse rounded-md" />
+            <div className="w-16 h-9 bg-muted animate-pulse rounded-md" />
           </div>
         </div>
       </nav>

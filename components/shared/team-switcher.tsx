@@ -193,6 +193,7 @@ export function TeamSwitcher({ organisations, activeEntityId }: TeamSwitcherProp
                 minLength={2}
                 maxLength={200}
                 disabled={isCreating}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
               />
               <p className="text-sm text-muted-foreground">

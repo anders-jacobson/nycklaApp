@@ -111,6 +111,7 @@ export function MultiSelect({
         onValueChange(pendingValues || []);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   return (
@@ -242,7 +243,11 @@ export function MultiSelect({
                     )}
                     disabled={option.disabled}
                   >
+                    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events */}
                     <div
+                      role="checkbox"
+                      aria-checked={isSelected}
+                      tabIndex={-1}
                       className={cn(
                         'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary cursor-pointer hover:border-primary/80',
                         isSelected ? 'bg-primary text-white' : 'opacity-50',
@@ -255,6 +260,7 @@ export function MultiSelect({
                       {isSelected && <IconCheck className="h-4 w-4 text-white" />}
                     </div>
                     <div
+                      role="presentation"
                       className="flex-1 flex items-center justify-between cursor-pointer gap-4"
                       onClick={(e) => {
                         e.stopPropagation();

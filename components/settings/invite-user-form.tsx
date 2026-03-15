@@ -15,7 +15,6 @@ import {
 import type { UserRole } from '@prisma/client';
 import { IconUserPlus } from '@tabler/icons-react';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function inviteAction(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const role = formData.get('role') as UserRole;

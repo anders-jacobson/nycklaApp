@@ -36,6 +36,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
   };
 
   if (isDonePage) {
+    // eslint-disable-next-line react/jsx-no-useless-fragment
     return <>{children}</>;
   }
 

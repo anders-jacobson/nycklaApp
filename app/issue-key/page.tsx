@@ -13,7 +13,7 @@ export default async function IssueKeyPage() {
         fallback={
           <div className="h-full flex items-center justify-center">
             <div className="text-center space-y-2">
-              <div className="animate-pulse h-4 w-32 bg-muted rounded mx-auto"></div>
+              <div className="animate-pulse h-4 w-32 bg-muted rounded mx-auto" />
               <div className="text-sm text-muted-foreground">Loading workflow...</div>
             </div>
           </div>

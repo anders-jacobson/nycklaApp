@@ -262,7 +262,6 @@ async function main() {
     );
 
     // Re-encrypt ResidentBorrower PII
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const residentBorrowers = await prisma.$queryRaw<any[]>`
       SELECT rb.id, rb.name, rb.email, rb.phone, b."entityId"
       FROM "ResidentBorrower" rb
@@ -301,7 +300,6 @@ async function main() {
     }
 
     // Re-encrypt ExternalBorrower PII
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const externalBorrowers = await prisma.$queryRaw<any[]>`
       SELECT eb.id, eb.name, eb.email, eb.phone, eb.address, eb.company, eb."borrowerPurpose", b."entityId"
       FROM "ExternalBorrower" eb

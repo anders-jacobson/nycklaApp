@@ -109,9 +109,7 @@ describe('Encryption Utilities', () => {
     });
 
     it('should handle null and undefined', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(isEncrypted(null as any)).toBe(false);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(isEncrypted(undefined as any)).toBe(false);
     });
   });

@@ -13,7 +13,6 @@ import { generateSeries } from '@/lib/label-generators';
 
 export default function ReviewPage() {
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [draft, setDraft] = useState<any>(null);
   const [currentOrgName, setCurrentOrgName] = useState('');
   const [allLabels, setAllLabels] = useState<string[]>([]);
