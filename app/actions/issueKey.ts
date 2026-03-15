@@ -21,7 +21,7 @@ export async function getAvailableKeyTypes(): Promise<
     Array<{
       id: string;
       label: string;
-      function: string;
+      name: string;
       totalCopies: number;
       availableCopies: number;
       availableCopyDetails: Array<{ id: string; copyNumber: number }>;
@@ -44,7 +44,7 @@ export async function getAvailableKeyTypes(): Promise<
     const result = keyTypes.map((kt) => ({
       id: kt.id,
       label: kt.label,
-      function: kt.function,
+      name: kt.name,
       totalCopies: kt.keyCopies.length,
       availableCopies: kt.keyCopies.filter((copy) => copy.status === 'AVAILABLE').length,
       availableCopyDetails: kt.keyCopies
@@ -68,7 +68,7 @@ export async function checkKeyAvailability(keyTypeId: string): Promise<
     availableCount: number;
     keyType: {
       label: string;
-      function: string;
+      name: string;
     };
   }>
 > {
@@ -79,7 +79,7 @@ export async function checkKeyAvailability(keyTypeId: string): Promise<
       where: { id: keyTypeId, entityId },
       select: {
         label: true,
-        function: true,
+        name: true,
         keyCopies: {
           where: { status: 'AVAILABLE' },
           select: { id: true },
@@ -98,7 +98,7 @@ export async function checkKeyAvailability(keyTypeId: string): Promise<
         availableCount: keyType.keyCopies.length,
         keyType: {
           label: keyType.label,
-          function: keyType.function,
+          name: keyType.name,
         },
       },
     };
@@ -162,7 +162,7 @@ export async function issueKey(formData: FormData): Promise<
     if (!availabilityCheck.data?.hasAvailable) {
       return {
         success: false,
-        error: `No available copies of ${availabilityCheck.data?.keyType.label} - ${availabilityCheck.data?.keyType.function}. Would you like to create a new copy first?`,
+        error: `No available copies of ${availabilityCheck.data?.keyType.label} - ${availabilityCheck.data?.keyType.name}. Would you like to create a new copy first?`,
       };
     }
 
@@ -176,11 +176,11 @@ export async function issueKey(formData: FormData): Promise<
               keyTypeId,
               status: 'AVAILABLE',
             },
-            include: { keyType: { select: { label: true, function: true } } },
+            include: { keyType: { select: { label: true, name: true } } },
           })
         : await tx.keyCopy.findFirst({
             where: { keyTypeId, status: 'AVAILABLE' },
-            include: { keyType: { select: { label: true, function: true } } },
+            include: { keyType: { select: { label: true, name: true } } },
             orderBy: { copyNumber: 'asc' },
           });
 
@@ -249,7 +249,7 @@ export async function issueKey(formData: FormData): Promise<
 
       return {
         issueId: issueRecord.id,
-        keyInfo: `${availableCopy.keyType.label}-${availableCopy.copyNumber} (${availableCopy.keyType.function})`,
+        keyInfo: `${availableCopy.keyType.label}-${availableCopy.copyNumber} (${availableCopy.keyType.name})`,
         borrowerName: borrowerDetails.name,
       };
     });
@@ -272,7 +272,7 @@ export async function getAvailableKeyCopy(keyTypeId: string): Promise<
   ActionResult<{
     copyNumber: number;
     keyLabel: string;
-    keyFunction: string;
+    keyName: string;
   }>
 > {
   try {
@@ -286,7 +286,7 @@ export async function getAvailableKeyCopy(keyTypeId: string): Promise<
       },
       include: {
         keyType: {
-          select: { label: true, function: true },
+          select: { label: true, name: true },
         },
       },
       orderBy: { copyNumber: 'asc' },
@@ -301,7 +301,7 @@ export async function getAvailableKeyCopy(keyTypeId: string): Promise<
       data: {
         copyNumber: keyCopy.copyNumber,
         keyLabel: keyCopy.keyType.label,
-        keyFunction: keyCopy.keyType.function,
+        keyName: keyCopy.keyType.name,
       },
     };
   } catch (err) {

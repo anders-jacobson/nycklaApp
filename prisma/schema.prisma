@@ -64,13 +64,14 @@ enum UserRole {
 model KeyType {
   id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   label       String              @db.VarChar(50)
-  function    String              @db.VarChar(100)
+  name        String              @db.VarChar(100)
   createdAt   DateTime            @default(now())
   entityId    String              @db.Uuid
   keyCopies   KeyCopy[]
   entity      Entity              @relation(fields: [entityId], references: [id], onDelete: Cascade)
   accessAreas KeyTypeAccessArea[]
 
+  @@unique([entityId, label])
   @@index([entityId])
 }
 
@@ -84,6 +85,7 @@ model KeyCopy {
   issueRecords IssueRecord[]
 
   @@unique([keyTypeId, copyNumber])
+  @@index([status])
 }
 
 model Borrower {
@@ -114,9 +116,6 @@ model ResidentBorrower {
   phone     String?   @db.VarChar(200) // Encrypted: AES-256-GCM
   createdAt DateTime  @default(now())
   borrower  Borrower?
-
-  // Ensure email uniqueness for residents within the system
-  @@unique([email])
 }
 
 model ExternalBorrower {
@@ -130,9 +129,6 @@ model ExternalBorrower {
   borrowerPurpose String?   @db.VarChar(2000) // Encrypted: AES-256-GCM
   createdAt       DateTime  @default(now())
   borrower        Borrower?
-
-  // Ensure email uniqueness for external borrowers within the system
-  @@unique([email])
 }
 
 model IssueRecord {
@@ -154,6 +150,7 @@ model IssueRecord {
 
   @@index([entityId])
   @@index([userId])
+  @@index([borrowerId])
 }
 
 enum KeyStatus {

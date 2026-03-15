@@ -71,7 +71,7 @@ describe('Multi-tenant data isolation', () => {
     const key1 = await prisma.keyType.create({
       data: {
         label: 'A1',
-        function: 'Org 1 Key',
+        name: 'Org 1 Key',
         entityId: org1Id,
       },
     });
@@ -80,7 +80,7 @@ describe('Multi-tenant data isolation', () => {
     const key2 = await prisma.keyType.create({
       data: {
         label: 'B1',
-        function: 'Org 2 Key',
+        name: 'Org 2 Key',
         entityId: org2Id,
       },
     });

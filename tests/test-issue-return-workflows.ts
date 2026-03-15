@@ -8,6 +8,7 @@
  * - Error handling and validation
  */
 
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { prisma } from '../lib/prisma';
 import { createBorrowerWithAffiliation, getBorrowerDetails } from '../lib/borrower-utils';
 
@@ -75,7 +76,7 @@ async function testIssueSingleKeyNewBorrower() {
     }
 
     console.log(`📝 Using key: ${availableKey.keyType.label}-${availableKey.copyNumber}`);
-    console.log(`   Function: ${availableKey.keyType.function}`);
+    console.log(`   Name: ${availableKey.keyType.name}`);
 
     // Create new borrower
     const borrower = await createBorrowerWithAffiliation(
@@ -166,7 +167,7 @@ async function testIssueMultipleKeysNewBorrower() {
 
     console.log(`📝 Using ${availableKeys.length} keys:`);
     availableKeys.forEach((key) => {
-      console.log(`   - ${key.keyType.label}-${key.copyNumber} (${key.keyType.function})`);
+      console.log(`   - ${key.keyType.label}-${key.copyNumber} (${key.keyType.name})`);
     });
 
     // Create new borrower
@@ -963,6 +964,122 @@ async function testDataIsolation() {
 }
 
 // =============================================================================
+// DB-LEVEL CONSTRAINT TESTS
+// =============================================================================
+
+async function testDuplicateActiveIssueRecordRejected() {
+  logSection('TEST 11: Prevent Duplicate Active IssueRecord at DB Level');
+
+  try {
+    const user = await getTestUser();
+    const [availableKey] = await getAvailableKeys(1);
+
+    if (!availableKey) {
+      console.log('⚠️  Skipping test - no available keys found (run prisma db seed)');
+      return true;
+    }
+
+    // Create a borrower and issue the key
+    const borrower = await createBorrowerWithAffiliation(
+      {
+        name: 'Test DB Constraint User',
+        email: 'test.dbconstraint@workflow.test',
+        phone: '070-777-0007',
+      },
+      user.activeOrganisationId!,
+    );
+
+    await prisma.$transaction(async (tx) => {
+      await tx.keyCopy.update({
+        where: { id: availableKey.id },
+        data: { status: 'OUT' },
+      });
+
+      await tx.issueRecord.create({
+        data: {
+          keyCopyId: availableKey.id,
+          borrowerId: borrower.id,
+          entityId: user.activeOrganisationId!,
+          userId: user.id,
+          idChecked: true,
+        },
+      });
+    });
+
+    console.log(
+      `📝 First issue created for key: ${availableKey.keyType.label}-${availableKey.copyNumber}`,
+    );
+
+    // Attempt a second active IssueRecord for the same keyCopy — bypassing app logic
+    let constraintFired = false;
+    try {
+      await prisma.issueRecord.create({
+        data: {
+          keyCopyId: availableKey.id,
+          borrowerId: borrower.id,
+          entityId: user.activeOrganisationId!,
+          userId: user.id,
+          idChecked: true,
+          // returnedDate intentionally omitted — this is an active loan
+        },
+      });
+      logTest(
+        'DB constraint rejects duplicate active loan',
+        false,
+        'Insert should have thrown P2002',
+      );
+    } catch (error: unknown) {
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+        constraintFired = true;
+        logTest(
+          'DB constraint rejects duplicate active loan',
+          true,
+          `Prisma error P2002 as expected`,
+        );
+      } else {
+        logTest(
+          'DB constraint rejects duplicate active loan',
+          false,
+          `Unexpected error: ${String(error)}`,
+        );
+      }
+    }
+
+    // Verify the original IssueRecord is still intact and key is still OUT
+    const [originalIssue, keyCopyAfter] = await Promise.all([
+      prisma.issueRecord.findFirst({ where: { keyCopyId: availableKey.id, returnedDate: null } }),
+      prisma.keyCopy.findUnique({ where: { id: availableKey.id } }),
+    ]);
+
+    const originalIntact = !!originalIssue;
+    const keyStillOut = keyCopyAfter?.status === 'OUT';
+
+    logTest('Original IssueRecord still intact', originalIntact);
+    logTest('KeyCopy still OUT', keyStillOut);
+
+    // Cleanup
+    await prisma.$transaction(async (tx) => {
+      if (originalIssue) {
+        await tx.issueRecord.update({
+          where: { id: originalIssue.id },
+          data: { returnedDate: new Date() },
+        });
+      }
+      await tx.keyCopy.update({
+        where: { id: availableKey.id },
+        data: { status: 'AVAILABLE' },
+      });
+      await tx.borrower.delete({ where: { id: borrower.id } });
+    });
+
+    return constraintFired && originalIntact && keyStillOut;
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    return false;
+  }
+}
+
+// =============================================================================
 // CLEANUP
 // =============================================================================
 
@@ -1084,6 +1201,12 @@ async function runAllTests() {
     results.push({
       name: 'Data Isolation Between Users',
       passed: await testDataIsolation(),
+    });
+
+    // DB-Level Constraint Tests
+    results.push({
+      name: 'Prevent Duplicate Active IssueRecord at DB Level',
+      passed: await testDuplicateActiveIssueRecordRejected(),
     });
 
     // Cleanup

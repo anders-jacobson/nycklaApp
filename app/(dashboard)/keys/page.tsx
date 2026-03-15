@@ -113,7 +113,7 @@ async function getKeyTypes() {
       return {
         id: kt.id,
         label: kt.label,
-        name: kt.function,
+        name: kt.name,
         accessArea: accessAreaNames,
         accessAreaIds: kt.accessAreas.map((aa) => aa.accessArea.id),
         copies,
@@ -127,7 +127,7 @@ async function getKeyTypes() {
 // Wrapper server actions to satisfy form action typing (void return)
 async function createKeyTypeAction(formData: FormData) {
   'use server';
-  await createKeyType(formData);
+  return createKeyType(formData);
 }
 
 async function updateKeyTypeAction(formData: FormData) {

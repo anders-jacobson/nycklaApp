@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { IconArrowLeft, IconX, IconCheck, IconKey, IconCalendar } from '@tabler/icons-react';
 import {
   Select,
@@ -23,7 +25,7 @@ import { toastSuccess } from '@/components/ui/toast-store';
 interface KeyType {
   id: string;
   label: string;
-  function: string;
+  name: string;
   accessArea?: string | null;
   totalCopies: number;
   availableCopies: number;
@@ -254,7 +256,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
   ]);
 
   const availableKeyOptions: MultiSelectOption[] = keyTypes.map((keyType) => ({
-    label: `${keyType.label} - ${keyType.function}`,
+    label: `${keyType.label} - ${keyType.name}`,
     value: keyType.id,
     badge: `${keyType.availableCopies}`,
     description: keyType.accessArea || 'No specific access area',
@@ -318,7 +320,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                         <div key={typeId} className="flex items-center gap-3">
                           <div className="min-w-0 flex-1">
                             <div className="font-medium truncate">
-                              {kt.label} — {kt.function}
+                              {kt.label} — {kt.name}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               Select copy to issue
@@ -387,13 +389,13 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <input
+                <Input
                   type="date"
                   value={lendingDetails.dueDate}
                   onChange={(e) =>
                     setLendingDetails({ ...lendingDetails, dueDate: e.target.value })
                   }
-                  className="w-full p-2 border rounded-md"
+                  className="w-full"
                 />
               </CardContent>
             </Card>
@@ -403,14 +405,12 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     id="idChecked"
                     checked={lendingDetails.idChecked}
-                    onChange={(e) =>
-                      setLendingDetails({ ...lendingDetails, idChecked: e.target.checked })
+                    onCheckedChange={(checked) =>
+                      setLendingDetails({ ...lendingDetails, idChecked: checked === true })
                     }
-                    className="h-4 w-4"
                   />
                   <label htmlFor="idChecked" className="text-sm font-medium">
                     I have verified the borrower&apos;s ID
@@ -445,7 +445,7 @@ export function IssueKeyWorkflow({ initialKeyTypes }: IssueKeyWorkflowProps) {
                         )?.copyNumber;
                         return (
                           <li key={key.id}>
-                            {key.label} - {key.function}
+                            {key.label} - {key.name}
                             {copyNum ? ` (copy #${copyNum})` : ''}
                           </li>
                         );

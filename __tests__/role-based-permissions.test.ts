@@ -88,7 +88,7 @@ describe('Role-Based Access Control', () => {
     const keyType = await prisma.keyType.create({
       data: {
         label: 'T1',
-        function: 'Test Key',
+        name: 'Test Key',
         entityId: orgId,
       },
     });

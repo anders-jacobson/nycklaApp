@@ -114,7 +114,7 @@ export function MultiSelect({
   }, [open]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={true}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -219,7 +219,7 @@ export function MultiSelect({
         align="start"
         container={container}
       >
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search..."
             value={searchValue}

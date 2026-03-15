@@ -20,8 +20,8 @@ export async function createKeyType(formData: FormData): Promise<ActionResult<{ 
       return { success: false, error: 'Name must be at least 2 characters.' };
     }
     const label = labelRaw.toUpperCase();
-    if (!label || label.length > 2) {
-      return { success: false, error: 'Label is required and must be max 2 characters.' };
+    if (!label || label.length > 50) {
+      return { success: false, error: 'Label must be between 1 and 50 characters.' };
     }
 
     const totalCopies =
@@ -32,11 +32,20 @@ export async function createKeyType(formData: FormData): Promise<ActionResult<{ 
 
     const accessAreaIds = formData.getAll('accessAreaIds') as string[];
 
+    // Check for duplicate label within entity
+    const existing = await prisma.keyType.findFirst({
+      where: { entityId, label },
+      select: { id: true },
+    });
+    if (existing) {
+      return { success: false, error: `A key type with label "${label}" already exists.` };
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const keyType = await tx.keyType.create({
         data: {
           label,
-          function: name,
+          name: name,
           entityId,
         },
         select: { id: true },
@@ -97,7 +106,7 @@ export async function updateKeyType(formData: FormData): Promise<ActionResult<un
 
       if (typeof name === 'string') {
         if (name.length < 2) throw new Error('Name must be at least 2 characters.');
-        await tx.keyType.update({ where: { id: keyTypeId }, data: { function: name } });
+        await tx.keyType.update({ where: { id: keyTypeId }, data: { name } });
       }
 
       // Sync access areas: validate each ID belongs to the entity, then replace

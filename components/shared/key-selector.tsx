@@ -9,7 +9,7 @@ import { IconKey, IconCheck, IconAlertCircle, IconPlus } from '@tabler/icons-rea
 interface KeyType {
   id: string;
   label: string;
-  function: string;
+  name: string;
   accessArea: string | null;
   totalCopies: number;
   availableCopies: number;
@@ -109,7 +109,7 @@ export function KeySelector({
                     </div>
 
                     <div className="space-y-1">
-                      <h3 className="font-medium">{keyType.function}</h3>
+                      <h3 className="font-medium">{keyType.name}</h3>
                       {keyType.accessArea && (
                         <p className="text-sm text-muted-foreground">
                           Access: {keyType.accessArea}
