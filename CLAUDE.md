@@ -14,6 +14,7 @@ See WORKFLOW.md for the daily development checklist.
 - **Supabase** — Auth only (passwordless OTP + Google OAuth, no passwords)
 - **CryptoJS AES-256** — PII encryption via `lib/entity-encryption.ts`
 - **Resend** — invitation emails
+- **next-intl** — i18n (Swedish default, English); all routes live under `app/[locale]/`
 
 ## Architecture
 
@@ -105,6 +106,26 @@ const details = await getBorrowerDetails(borrower, entityId); // returns unified
 - **Tabler Icons only** — `import { IconPlus } from '@tabler/icons-react'`
 - Icon size in buttons: `className="h-3.5 w-3.5"`
 
+### i18n — Always translate user-visible strings
+**Every** user-visible string must come from the message files. Never hardcode English (or Swedish) text in components.
+
+```ts
+// Client component
+import { useTranslations, useFormatter } from 'next-intl';
+const t = useTranslations('myNamespace');
+const format = useFormatter();
+
+// Server component / RSC
+import { getTranslations } from 'next-intl/server';
+const t = await getTranslations('myNamespace');
+```
+
+- Message files: `messages/en.json` and `messages/sv.json` — both must be kept in sync
+- Namespaces: `nav`, `org`, `auth`, `pagination`, `activeLoans`, `charts`, `keys`, `settings`
+- Dates/numbers: always use `useFormatter().dateTime(...)` / `useFormatter().number(...)` — never `toLocaleDateString()` or `toLocaleString()`
+- Column definitions are plain functions (not hooks) — pass translated strings as a `labels` object from the parent React component
+- Routes: all pages live under `app/[locale]/`; use `@/i18n/navigation` for locale-aware `Link` and `redirect`
+
 ### Imports
 ```ts
 import { cn } from '@/lib/utils';
@@ -133,7 +154,11 @@ Use `prisma.$transaction()` for all multi-step writes. Pass `tx` into utility fu
 
 | File | Purpose |
 |---|---|
-| `middleware.ts` | Edge auth gate — redirects unauthenticated requests on protected routes |
+| `proxy.ts` | Edge auth + locale routing (replaces middleware.ts) |
+| `i18n/routing.ts` | next-intl locale config (`sv` default, `en` supported) |
+| `i18n/request.ts` | next-intl server-side locale resolution |
+| `messages/en.json` | English translations |
+| `messages/sv.json` | Swedish translations |
 | `prisma/schema.prisma` | Full data model |
 | `lib/auth-utils.ts` | `getCurrentUser`, role helpers |
 | `lib/entity-encryption.ts` | Per-entity PII encryption |

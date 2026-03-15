@@ -20,6 +20,7 @@ import {
 import { IconTrash, IconShieldCheck, IconShield, IconUser } from '@tabler/icons-react';
 import { changeUserRole, removeUser } from '@/app/actions/team';
 import { useState } from 'react';
+import { useFormatter } from 'next-intl';
 import type { UserRole } from '@prisma/client';
 
 interface TeamMember {
@@ -54,6 +55,7 @@ export function TeamMembersTable({
   members: TeamMember[];
   currentUser: CurrentUser;
 }) {
+  const format = useFormatter();
   const [loading, setLoading] = useState<string | null>(null);
   const isOwner = currentUser.roleInActiveOrg === 'OWNER';
 
@@ -131,7 +133,11 @@ export function TeamMembersTable({
                   )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {new Date(member.createdAt).toLocaleDateString()}
+                  {format.dateTime(new Date(member.createdAt), {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
                 </TableCell>
                 {isOwner && (
                   <TableCell className="text-right">

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { IconDashboard, IconHelp, IconListDetails, IconSettings } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
 
 import { NavMain } from './nav-main';
 import { NavSecondary } from './nav-secondary';
@@ -19,43 +20,22 @@ interface DashboardSidebarProps extends React.ComponentProps<typeof Sidebar> {
   };
 }
 
-const data = {
-  user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
-  navMain: [
-    {
-      title: 'Active Loans',
-      url: '/active-loans',
-      icon: IconDashboard,
-    },
-    {
-      title: 'Keys',
-      url: '/keys',
-      icon: IconListDetails,
-    },
-    {
-      title: 'Settings',
-      url: '/settings/organization',
-      icon: IconSettings,
-    },
-    {
-      title: 'Support',
-      url: '#',
-      icon: IconHelp,
-    },
-  ],
-  navSecondary: [],
-};
-
 export function DashboardSidebar({
   organisations,
   activeEntityId,
   user,
   ...props
 }: DashboardSidebarProps) {
+  const t = useTranslations('nav');
+  const navMain = React.useMemo(
+    () => [
+      { title: t('activeLoans'), url: '/active-loans', icon: IconDashboard },
+      { title: t('keys'), url: '/keys', icon: IconListDetails },
+      { title: t('settings'), url: '/settings/organization', icon: IconSettings },
+      { title: t('support'), url: '#', icon: IconHelp },
+    ],
+    [t],
+  );
   const userData = {
     name: user?.name || user?.email || '',
     email: user?.email || '',
@@ -70,9 +50,9 @@ export function DashboardSidebar({
         )}
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
 
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavSecondary items={[]} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={userData} />

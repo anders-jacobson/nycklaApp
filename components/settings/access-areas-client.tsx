@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { IconPlus, IconEdit, IconTrash, IconAlertCircle } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import type { AccessAreaData } from '@/app/actions/accessAreas';
+import { useTranslations } from 'next-intl';
 
 type Props = {
   areas: AccessAreaData[];
@@ -24,6 +25,7 @@ type Props = {
 };
 
 function AddAreaDialog({ createAction }: { createAction: (formData: FormData) => Promise<void> }) {
+  const t = useTranslations('settings');
   const [open, setOpen] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -39,17 +41,17 @@ function AddAreaDialog({ createAction }: { createAction: (formData: FormData) =>
       <DialogTrigger asChild>
         <Button className="gap-1">
           <IconPlus className="h-3.5 w-3.5" />
-          Add Access Area
+          {t('accessAdd')}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Access Area</DialogTitle>
+          <DialogTitle>{t('accessAddTitle')}</DialogTitle>
         </DialogHeader>
         <form action={handleCreate} className="grid gap-3">
-          <Input name="name" placeholder="e.g. Port, Basement, Garage" required minLength={1} />
+          <Input name="name" placeholder={t('accessPlaceholder')} required minLength={1} />
           <DialogFooter>
-            <Button type="submit">Add</Button>
+            <Button type="submit">{t('accessAddButton')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -64,6 +66,7 @@ function EditAreaDialog({
   area: AccessAreaData;
   updateAction: (formData: FormData) => Promise<void>;
 }) {
+  const t = useTranslations('settings');
   const [open, setOpen] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -84,13 +87,13 @@ function EditAreaDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Access Area</DialogTitle>
+          <DialogTitle>{t('accessEditTitle')}</DialogTitle>
         </DialogHeader>
         <form action={handleUpdate} className="grid gap-3">
           <input type="hidden" name="id" value={area.id} />
           <Input name="name" defaultValue={area.name} required minLength={1} />
           <DialogFooter>
-            <Button type="submit">Save</Button>
+            <Button type="submit">{t('accessSave')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -105,6 +108,7 @@ function DeleteAreaDialog({
   area: AccessAreaData;
   deleteAction: (formData: FormData) => Promise<void>;
 }) {
+  const t = useTranslations('settings');
   const [open, setOpen] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -129,30 +133,25 @@ function DeleteAreaDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Access Area</DialogTitle>
+          <DialogTitle>{t('accessDeleteTitle')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <p>
-            Are you sure you want to delete <strong>{area.name}</strong>?
-          </p>
+          <p>{t('accessConfirmDelete', { name: area.name })}</p>
           {area._count.keyTypes > 0 && (
             <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
               <IconAlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>
-                This area is associated with {area._count.keyTypes} key type
-                {area._count.keyTypes !== 1 ? 's' : ''}. Those associations will be removed.
-              </span>
+              <span>{t('accessAssociatedWarning', { count: area._count.keyTypes })}</span>
             </div>
           )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+            {t('accessCancel')}
           </Button>
           <form action={handleDelete}>
             <input type="hidden" name="id" value={area.id} />
             <Button type="submit" variant="destructive">
-              Delete
+              {t('accessDelete')}
             </Button>
           </form>
         </DialogFooter>
@@ -162,14 +161,14 @@ function DeleteAreaDialog({
 }
 
 export function AccessAreasClient({ areas, createAction, updateAction, deleteAction }: Props) {
+  const t = useTranslations('settings');
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Access Areas</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage the areas that keys grant access to (e.g. Port, Basement, Garage)
-          </p>
+          <h2 className="text-xl font-semibold">{t('accessHeading')}</h2>
+          <p className="text-sm text-muted-foreground">{t('accessDescription')}</p>
         </div>
         <AddAreaDialog createAction={createAction} />
       </div>
@@ -177,7 +176,7 @@ export function AccessAreasClient({ areas, createAction, updateAction, deleteAct
       <Separator />
 
       {areas.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4">No access areas defined yet.</p>
+        <p className="text-sm text-muted-foreground py-4">{t('accessEmpty')}</p>
       ) : (
         <div className="space-y-1">
           {areas.map((area) => (

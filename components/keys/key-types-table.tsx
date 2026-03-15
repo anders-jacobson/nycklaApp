@@ -43,10 +43,12 @@ import {
   KeyTypeColumnVisibility,
   defaultKeyTypeColumnVisibility,
   ExpandedCopiesRow,
+  type KeyTypeColumnLabels,
 } from './key-type-columns';
 import { IconPlus, IconInfoCircle } from '@tabler/icons-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DataTablePagination } from '@/components/shared/data-table-pagination';
+import { useTranslations } from 'next-intl';
 
 type KeyTypesTableProps = {
   data: KeyTypeRow[];
@@ -69,6 +71,7 @@ export function KeyTypesTable({
   markLostAction,
   markFoundAction,
 }: KeyTypesTableProps) {
+  const t = useTranslations('keys');
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
@@ -113,6 +116,18 @@ export function KeyTypesTable({
     });
   }, []);
 
+  const labels = React.useMemo<KeyTypeColumnLabels>(
+    () => ({
+      colLabel: t('colLabel'),
+      colName: t('colName'),
+      colAccessArea: t('colAccessArea'),
+      colCopies: t('colCopies'),
+      collapseRow: t('collapseRow'),
+      expandRow: t('expandRow'),
+    }),
+    [t],
+  );
+
   const columns = React.useMemo<ColumnDef<KeyTypeRow>[]>(
     () =>
       getKeyTypeColumns({
@@ -123,6 +138,7 @@ export function KeyTypesTable({
         expandedRows,
         onToggleExpand: toggleExpand,
         allAreas,
+        labels,
       }),
     [
       updateAction,
@@ -132,9 +148,11 @@ export function KeyTypesTable({
       expandedRows,
       toggleExpand,
       allAreas,
+      labels,
     ],
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
@@ -155,14 +173,14 @@ export function KeyTypesTable({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Key Types</h2>
-          <p className="text-muted-foreground">Manage key types in your organization</p>
+          <h2 className="text-2xl font-bold tracking-tight">{t('tableHeading')}</h2>
+          <p className="text-muted-foreground">{t('tableDescription')}</p>
         </div>
       </div>
 
       <div className="flex items-center justify-between gap-2 py-4">
         <Input
-          placeholder="Filter by label..."
+          placeholder={t('filterPlaceholder')}
           value={(table.getColumn('label')?.getFilterValue() as string) ?? ''}
           onChange={(event) => handleFilter(event.target.value)}
           className="max-w-xs"
@@ -176,18 +194,20 @@ export function KeyTypesTable({
             <DialogTrigger asChild>
               <Button className="gap-1">
                 <IconPlus className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Add Key Type</span>
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  {t('addKeyType')}
+                </span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
               <DialogHeader>
-                <DialogTitle>Create Key Type</DialogTitle>
+                <DialogTitle>{t('createTitle')}</DialogTitle>
               </DialogHeader>
               <form action={handleCreate} className="grid gap-3">
                 <div className="flex items-center gap-1.5">
                   <Input
                     name="label"
-                    placeholder="Label (e.g. A, Z1, Storage-1)"
+                    placeholder={t('labelPlaceholder')}
                     required
                     maxLength={50}
                     className="flex-1"
@@ -198,13 +218,12 @@ export function KeyTypesTable({
                         <IconInfoCircle className="h-4 w-4 shrink-0 text-muted-foreground cursor-default" />
                       </TooltipTrigger>
                       <TooltipContent side="right" className="max-w-[180px] text-xs">
-                        Labels can&apos;t be changed later. To edit a key type, use the ⋯ menu on
-                        its row.
+                        {t('labelWarning')}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <Input name="name" placeholder="Name / Function" required minLength={2} />
+                <Input name="name" placeholder={t('namePlaceholder')} required minLength={2} />
                 {createSelectedAreaIds.map((id) => (
                   <input key={id} type="hidden" name="accessAreaIds" value={id} />
                 ))}
@@ -213,7 +232,7 @@ export function KeyTypesTable({
                     options={allAreas.map((a) => ({ label: a.name, value: a.id }))}
                     selectedValues={createSelectedAreaIds}
                     onValueChange={setCreateSelectedAreaIds}
-                    placeholder="Select access areas..."
+                    placeholder={t('accessAreasPlaceholder')}
                   />
                 )}
                 <div className="flex items-center gap-2">
@@ -224,11 +243,11 @@ export function KeyTypesTable({
                     defaultValue={0}
                     className="w-28"
                   />
-                  <span className="text-sm text-muted-foreground">copies</span>
+                  <span className="text-sm text-muted-foreground">{t('copies')}</span>
                 </div>
                 {createError && <p className="text-sm text-destructive">{createError}</p>}
                 <DialogFooter>
-                  <Button type="submit">Create Key Type</Button>
+                  <Button type="submit">{t('createButton')}</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -279,7 +298,7 @@ export function KeyTypesTable({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  <div className="text-muted-foreground">No key types found</div>
+                  <div className="text-muted-foreground">{t('empty')}</div>
                 </TableCell>
               </TableRow>
             )}

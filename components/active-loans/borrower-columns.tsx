@@ -124,7 +124,7 @@ function AffiliationInfoDialog({ borrower }: { borrower: BorrowerWithKeys }) {
         </Button>
       }
     >
-      <div className="space-y-4" onKeyDown={handleKeyDown}>
+      <div className="space-y-4" role="presentation" onKeyDown={handleKeyDown}>
         <div>
           <label htmlFor="purpose" className="text-sm font-medium flex items-center gap-2">
             Purpose Description
@@ -194,36 +194,51 @@ export interface ColumnVisibility {
   returnDate: boolean;
 }
 
-// Utility function to format dates
-const formatDate = (dateString: string) => {
+// Legacy date formatter used as fallback for the static `columns` export
+const legacyFormatDate = (dateString: string) => {
   try {
     const date = new Date(dateString);
-    const day = date.getDate();
-    const monthNames = [
-      'jan',
-      'feb',
-      'mar',
-      'apr',
-      'maj',
-      'jun',
-      'jul',
-      'aug',
-      'sep',
-      'okt',
-      'nov',
-      'dec',
-    ];
-    const month = monthNames[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
+    return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   } catch {
     return dateString;
   }
 };
 
+export type BorrowerColumnLabels = {
+  name: string;
+  affiliation: string;
+  resident: string;
+  external: string;
+  borrowedKeys: string;
+  dateIssued: string;
+  dueDate: string;
+  noDueDate: string;
+  due: string;
+  daysOverdue: (days: number) => string;
+  allIssueDates: string;
+  allDueDates: string;
+};
+
+const defaultLabels: BorrowerColumnLabels = {
+  name: 'Name',
+  affiliation: 'Affiliation',
+  resident: 'Resident',
+  external: 'External',
+  borrowedKeys: 'Borrowed Keys',
+  dateIssued: 'Date Issued',
+  dueDate: 'Due Date',
+  noDueDate: 'No due date',
+  due: 'Due: ',
+  daysOverdue: (days) => `${days} days overdue`,
+  allIssueDates: 'All Issue Dates',
+  allDueDates: 'All Due Dates',
+};
+
 // Function to generate columns based on visibility settings
 export function getVisibleColumns(
   columnVisibility: ColumnVisibility,
+  formatDate: (dateStr: string) => string = legacyFormatDate,
+  labels: BorrowerColumnLabels = defaultLabels,
 ): ColumnDef<BorrowerWithKeys>[] {
   const columns: ColumnDef<BorrowerWithKeys>[] = [];
 
@@ -237,7 +252,7 @@ export function getVisibleColumns(
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Name
+          {labels.name}
           <IconArrowsUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -265,7 +280,7 @@ export function getVisibleColumns(
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
-            Affiliation
+            {labels.affiliation}
             <IconArrowsUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -276,12 +291,12 @@ export function getVisibleColumns(
           <div className="flex items-center gap-1">
             {borrower.isResident ? (
               <Badge variant="secondary" className="text-xs">
-                Resident
+                {labels.resident}
               </Badge>
             ) : (
               <>
                 <Badge variant="outline" className="text-xs">
-                  {borrower.companyName || 'External'}
+                  {borrower.companyName || labels.external}
                 </Badge>
                 <AffiliationInfoDialog borrower={borrower} />
               </>
@@ -297,9 +312,9 @@ export function getVisibleColumns(
         if (aResident && !bResident) return -1;
         if (!aResident && bResident) return 1;
 
-        // Both same type, sort by company name (or "Resident")
-        const aName = aResident ? 'Resident' : rowA.original.companyName || 'External';
-        const bName = bResident ? 'Resident' : rowB.original.companyName || 'External';
+        // Both same type, sort by company name (or resident label)
+        const aName = aResident ? labels.resident : rowA.original.companyName || labels.external;
+        const bName = bResident ? labels.resident : rowB.original.companyName || labels.external;
         return aName.localeCompare(bName);
       },
     });
@@ -309,7 +324,7 @@ export function getVisibleColumns(
   columns.push({
     accessorKey: 'keys',
     id: 'keys',
-    header: () => <div>Borrowed Keys</div>,
+    header: () => <div>{labels.borrowedKeys}</div>,
     cell: ({ row }: CellContext<BorrowerWithKeys, unknown>) => {
       const borrower = row.original;
       return (
@@ -324,9 +339,9 @@ export function getVisibleColumns(
 
             const dueDateText = key.dueDate
               ? !key.dueDate.startsWith('9999')
-                ? `Due: ${formatDate(key.dueDate)}`
-                : 'No due date'
-              : 'No due date';
+                ? `${labels.due}${formatDate(key.dueDate)}`
+                : labels.noDueDate
+              : labels.noDueDate;
 
             return (
               <Tooltip key={index}>
@@ -345,11 +360,12 @@ export function getVisibleColumns(
                     <div className="text-xs opacity-90">{dueDateText}</div>
                     {isOverdue && (
                       <div className="text-xs opacity-75">
-                        {Math.floor(
-                          (new Date().getTime() - new Date(key.dueDate!).getTime()) /
-                            (1000 * 60 * 60 * 24),
-                        )}{' '}
-                        days overdue
+                        {labels.daysOverdue(
+                          Math.floor(
+                            (new Date().getTime() - new Date(key.dueDate!).getTime()) /
+                              (1000 * 60 * 60 * 24),
+                          ),
+                        )}
                       </div>
                     )}
                   </div>
@@ -375,7 +391,7 @@ export function getVisibleColumns(
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
-            Date Issued
+            {labels.dateIssued}
             <IconArrowsUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -419,7 +435,9 @@ export function getVisibleColumns(
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-xs">
                   <div className="space-y-1.5">
-                    <div className="font-medium text-xs mb-2 opacity-90">All Issue Dates</div>
+                    <div className="font-medium text-xs mb-2 opacity-90">
+                      {labels.allIssueDates}
+                    </div>
                     {sortedByIssued.map((key, index) => (
                       <div key={index} className="flex items-center gap-2 text-xs opacity-90">
                         <span className="font-mono">
@@ -451,7 +469,7 @@ export function getVisibleColumns(
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
-            Due Date
+            {labels.dueDate}
             <IconArrowsUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
@@ -492,7 +510,7 @@ export function getVisibleColumns(
         );
 
         if (keysWithDates.length === 0) {
-          return <span className="text-sm text-muted-foreground">No due date</span>;
+          return <span className="text-sm text-muted-foreground">{labels.noDueDate}</span>;
         }
 
         // Sort by date (earliest first = most urgent)
@@ -528,7 +546,7 @@ export function getVisibleColumns(
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-xs">
                   <div className="space-y-1.5">
-                    <div className="font-medium text-xs mb-2 opacity-90">All Due Dates</div>
+                    <div className="font-medium text-xs mb-2 opacity-90">{labels.allDueDates}</div>
                     {sortedKeys.map((key, index) => {
                       const keyIsOverdue = new Date(key.dueDate!) < new Date();
 

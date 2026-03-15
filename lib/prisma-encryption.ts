@@ -28,7 +28,6 @@ type ModelName = keyof typeof ENCRYPTION_FIELDS;
  * Create Prisma Client Extension for encryption
  * Uses Client Extensions API which works better with Next.js 16
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createEncryptionExtension(basePrisma: any) {
   // Check for encryption key - allow graceful fallback for tests/dev
   const hasEncryptionKey = !!process.env.ENCRYPTION_KEY;
@@ -104,7 +103,6 @@ export function createEncryptionExtension(basePrisma: any) {
 /**
  * Encrypt sensitive fields before write
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function encryptFields(data: any, modelName: ModelName, prisma: any): Promise<any> {
   if (!data) return data;
 
@@ -151,7 +149,6 @@ async function encryptFields(data: any, modelName: ModelName, prisma: any): Prom
 /**
  * Decrypt sensitive fields after read
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function decryptFields(result: any, modelName: ModelName, prisma: any): Promise<any> {
   if (!result) return result;
 

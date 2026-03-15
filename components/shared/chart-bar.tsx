@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
+import { useTranslations } from 'next-intl';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -11,31 +12,33 @@ import {
   ChartTooltip,
 } from '@/components/ui/chart';
 
-const chartConfig = {
-  Available: {
-    label: 'Available',
-    color: 'var(--chart-1)',
-  },
-  InUse: {
-    label: 'In Use',
-    color: 'var(--chart-2)',
-  },
-  Lost: {
-    label: 'Lost',
-    color: 'var(--chart-3)',
-  },
-} satisfies ChartConfig;
-
 export default function KeyChart({
   data,
 }: {
   data: { keyType: string; keyFunction: string; Available: number; InUse: number; Lost: number }[];
 }) {
+  const t = useTranslations('charts');
+
+  const chartConfig = {
+    Available: {
+      label: t('available'),
+      color: 'var(--chart-1)',
+    },
+    InUse: {
+      label: t('inUse'),
+      color: 'var(--chart-2)',
+    },
+    Lost: {
+      label: t('lost'),
+      color: 'var(--chart-3)',
+    },
+  } satisfies ChartConfig;
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Status per key type</CardTitle>
-        <CardDescription>Breakdown of key status by type</CardDescription>
+        <CardTitle>{t('barTitle')}</CardTitle>
+        <CardDescription>{t('barDescription')}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[300px] w-full">

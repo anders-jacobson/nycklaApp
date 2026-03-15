@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import type { UserRole } from '@prisma/client';
 import { IconUserPlus, IconX } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
 
 interface Invitation {
   id: string;
@@ -53,6 +54,7 @@ export function TeamInviteSection({
   userRole: UserRole;
   invitations: Invitation[];
 }) {
+  const t = useTranslations('settings');
   const [state, formAction] = useActionState<InviteActionState, FormData>(inviteAction, {
     success: false,
     error: '',
@@ -75,41 +77,39 @@ export function TeamInviteSection({
       {/* Invite Form */}
       <div className="space-y-4">
         <div>
-          <h2 className="text-xl font-semibold">Invite Team Member</h2>
-          <p className="text-sm text-muted-foreground">
-            Send an invitation to join your organization
-          </p>
+          <h2 className="text-xl font-semibold">{t('inviteHeading')}</h2>
+          <p className="text-sm text-muted-foreground">{t('inviteDescription')}</p>
         </div>
 
         <form action={formAction} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">{t('inviteEmailLabel')}</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="colleague@example.com"
+                placeholder={t('inviteEmailPlaceholder')}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role">{t('inviteRoleLabel')}</Label>
               <Select name="role" value={role} onValueChange={(v) => setRole(v as UserRole)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MEMBER">Member</SelectItem>
-                  {canInviteAdmin && <SelectItem value="ADMIN">Admin</SelectItem>}
-                  {canInviteAdmin && <SelectItem value="OWNER">Owner</SelectItem>}
+                  <SelectItem value="MEMBER">{t('inviteRoleMember')}</SelectItem>
+                  {canInviteAdmin && <SelectItem value="ADMIN">{t('inviteRoleAdmin')}</SelectItem>}
+                  {canInviteAdmin && <SelectItem value="OWNER">{t('inviteRoleOwner')}</SelectItem>}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                {role === 'MEMBER' && 'Can manage keys and issue loans'}
-                {role === 'ADMIN' && 'Can manage keys and invite members'}
-                {role === 'OWNER' && 'Full access to organization settings'}
+                {role === 'MEMBER' && t('inviteRoleMemberDesc')}
+                {role === 'ADMIN' && t('inviteRoleAdminDesc')}
+                {role === 'OWNER' && t('inviteRoleOwnerDesc')}
               </p>
             </div>
           </div>
@@ -119,14 +119,12 @@ export function TeamInviteSection({
           )}
 
           {state.success && (
-            <p className="text-sm text-green-600 dark:text-green-400">
-              ✓ Invitation sent successfully!
-            </p>
+            <p className="text-sm text-green-600 dark:text-green-400">{t('inviteSuccess')}</p>
           )}
 
           <Button type="submit" className="gap-1.5">
             <IconUserPlus className="h-4 w-4" />
-            Send Invitation
+            {t('inviteSend')}
           </Button>
         </form>
       </div>
@@ -135,18 +133,18 @@ export function TeamInviteSection({
       {invitations.length > 0 && (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-semibold">Pending Invitations</h3>
-            <p className="text-sm text-muted-foreground">Invitations waiting to be accepted</p>
+            <h3 className="text-lg font-semibold">{t('invitePendingHeading')}</h3>
+            <p className="text-sm text-muted-foreground">{t('invitePendingDescription')}</p>
           </div>
 
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Invited By</TableHead>
-                  <TableHead>Expires</TableHead>
+                  <TableHead>{t('inviteEmailHeader')}</TableHead>
+                  <TableHead>{t('inviteRoleHeader')}</TableHead>
+                  <TableHead>{t('inviteInvitedByHeader')}</TableHead>
+                  <TableHead>{t('inviteExpiresHeader')}</TableHead>
                   <TableHead className="w-[50px]" />
                 </TableRow>
               </TableHeader>
@@ -175,7 +173,7 @@ export function TeamInviteSection({
                               : 'text-muted-foreground text-sm'
                           }
                         >
-                          {daysLeft}d left
+                          {t('inviteDaysLeft', { days: daysLeft })}
                         </span>
                       </TableCell>
                       <TableCell>

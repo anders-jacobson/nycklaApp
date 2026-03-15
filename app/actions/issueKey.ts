@@ -255,8 +255,8 @@ export async function issueKey(formData: FormData): Promise<
     });
 
     // Revalidate pages to show updated data
-    revalidatePath('/active-loans');
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/active-loans');
+    revalidatePath('/[locale]/keys');
 
     return { success: true, data: result };
   } catch (err) {
@@ -364,8 +364,8 @@ export async function returnKey(issueRecordId: string): Promise<ActionResult<und
     });
 
     // Revalidate affected pages
-    revalidatePath('/active-loans');
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/active-loans');
+    revalidatePath('/[locale]/keys');
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to return key.';
@@ -479,8 +479,8 @@ export async function markKeyLost(params: {
       return { replacementCopyId };
     });
 
-    revalidatePath('/active-loans');
-    revalidatePath('/keys');
+    revalidatePath('/[locale]/active-loans');
+    revalidatePath('/[locale]/keys');
     return { success: true, data: result };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to mark key as lost.';

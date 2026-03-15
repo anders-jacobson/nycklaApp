@@ -131,7 +131,6 @@ describe('Role-Based Access Control', () => {
 
   // Helper to mock authenticated user
   const mockAuthUser = (email: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { createClient } = require('@/lib/supabase/server');
     const mockSupabase = {
       auth: {

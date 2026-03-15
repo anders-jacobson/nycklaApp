@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { deleteOrganisation } from '@/app/actions/organisation';
 import { IconAlertTriangle, IconCopy, IconCheck } from '@tabler/icons-react';
 import { toastError, toastSuccess } from '@/components/ui/toast-store';
+import { useTranslations } from 'next-intl';
 
 interface DeleteOrganizationDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function DeleteOrganizationDialog({
   organizationName,
   stats,
 }: DeleteOrganizationDialogProps) {
+  const t = useTranslations('settings');
   const [confirmText, setConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -56,14 +58,14 @@ export function DeleteOrganizationDialog({
 
       // Redirect based on whether user has other orgs
       if (result.data?.needsOrganization) {
-        toastSuccess('Organization deleted successfully');
+        toastSuccess(t('deleteSuccessDeleted'));
         router.push('/no-organization');
       } else {
         const switchedToName = result.data?.switchedToOrgName;
         toastSuccess(
           switchedToName
-            ? `Organization deleted. Switched to "${switchedToName}"`
-            : 'Organization deleted successfully',
+            ? t('deleteSuccessSwitched', { name: switchedToName })
+            : t('deleteSuccessDeleted'),
         );
         // Navigate to active-loans to start fresh with switched org
         router.push('/active-loans');
@@ -85,7 +87,7 @@ export function DeleteOrganizationDialog({
     <ResponsiveDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Delete Organization"
+      title={t('deleteDialogTitle')}
       footer={
         <div className="flex w-full gap-2">
           <Button
@@ -94,7 +96,7 @@ export function DeleteOrganizationDialog({
             disabled={isDeleting}
             className="flex-1"
           >
-            Cancel
+            {t('deleteCancel')}
           </Button>
           <Button
             variant="destructive"
@@ -102,7 +104,7 @@ export function DeleteOrganizationDialog({
             disabled={!isValid || isDeleting}
             className="flex-1"
           >
-            {isDeleting ? 'Deleting...' : 'Delete Organization'}
+            {isDeleting ? t('deleteDeleting') : t('deleteButton')}
           </Button>
         </div>
       }
@@ -111,53 +113,46 @@ export function DeleteOrganizationDialog({
         <div className="flex items-start gap-3 rounded-md border border-destructive/50 bg-destructive/10 p-3">
           <IconAlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
           <div className="space-y-1 text-sm">
-            <div className="font-medium text-destructive">This action is irreversible</div>
+            <div className="font-medium text-destructive">{t('deleteIrreversible')}</div>
             <div className="text-muted-foreground">
-              All data related to <span className="font-semibold">{organizationName}</span> will be
-              permanently deleted.
+              {t('deleteWarning', { name: organizationName })}
             </div>
           </div>
         </div>
 
         <div className="space-y-3">
-          <div className="text-sm font-medium">This will delete:</div>
+          <div className="text-sm font-medium">{t('deleteWillDelete')}</div>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="rounded-md border p-3">
               <div className="text-2xl font-bold">{stats.memberCount}</div>
               <div className="text-muted-foreground">
-                {stats.memberCount === 1 ? 'Member' : 'Members'}
+                {t('deleteStatMembers', { count: stats.memberCount })}
               </div>
             </div>
             <div className="rounded-md border p-3">
               <div className="text-2xl font-bold">{stats.keyTypeCount}</div>
-              <div className="text-muted-foreground">Key Types</div>
+              <div className="text-muted-foreground">{t('deleteStatKeyTypes')}</div>
             </div>
             <div className="rounded-md border p-3">
               <div className="text-2xl font-bold">{stats.keyCount}</div>
-              <div className="text-muted-foreground">Keys</div>
+              <div className="text-muted-foreground">{t('deleteStatKeys')}</div>
             </div>
             <div className="rounded-md border p-3">
               <div className="text-2xl font-bold">{stats.borrowerCount}</div>
-              <div className="text-muted-foreground">Borrowers</div>
+              <div className="text-muted-foreground">{t('deleteStatBorrowers')}</div>
             </div>
           </div>
           {stats.activeLoanCount > 0 && (
             <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
               <div className="text-2xl font-bold text-destructive">{stats.activeLoanCount}</div>
-              <div className="text-sm text-destructive">
-                Active {stats.activeLoanCount === 1 ? 'Loan' : 'Loans'} will be permanently lost
-              </div>
+              <div className="text-sm text-destructive">{t('deleteActiveLoansWarning')}</div>
             </div>
           )}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="confirm-delete" className="text-sm font-medium">
-            Type{' '}
-            <span className="select-all font-mono font-semibold text-foreground">
-              {organizationName}
-            </span>{' '}
-            to confirm
+            {t('deleteTypeToConfirm', { name: organizationName })}
           </Label>
           <div className="flex gap-2">
             <Button
@@ -181,9 +176,7 @@ export function DeleteOrganizationDialog({
               autoComplete="off"
             />
           </div>
-          <div className="text-xs text-muted-foreground">
-            Press Enter to confirm deletion once you&apos;ve typed the name
-          </div>
+          <div className="text-xs text-muted-foreground">{t('deletePressEnter')}</div>
         </div>
       </div>
     </ResponsiveDialog>

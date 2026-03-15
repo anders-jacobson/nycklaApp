@@ -1,9 +1,9 @@
 'use client';
 
 import { IconPlus } from '@tabler/icons-react';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { usePathname, Link } from '@/i18n/navigation';
 import type { ComponentType } from 'react';
+import { useTranslations } from 'next-intl';
 
 import {
   SidebarGroup,
@@ -22,6 +22,7 @@ export function NavMain({
     icon?: ComponentType<{ className?: string }>;
   }[];
 }) {
+  const t = useTranslations('nav');
   const pathname = usePathname();
 
   return (
@@ -30,13 +31,13 @@ export function NavMain({
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
-              tooltip="Issue Key"
+              tooltip={t('issueKey')}
               className="bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear hover:cursor-pointer w-full"
               asChild
             >
               <Link href="/issue-key">
                 <IconPlus />
-                <span>Issue key</span>
+                <span>{t('issueKey')}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

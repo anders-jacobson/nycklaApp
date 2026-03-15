@@ -20,6 +20,7 @@ import { IconDots, IconShieldCheck, IconShield, IconUser } from '@tabler/icons-r
 import { changeUserRole, removeUser, leaveOrganisation } from '@/app/actions/team';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations, useFormatter } from 'next-intl';
 import type { UserRole } from '@prisma/client';
 
 interface TeamMember {
@@ -54,6 +55,8 @@ export function TeamMembersSection({
   members: TeamMember[];
   currentUser: CurrentUser;
 }) {
+  const t = useTranslations('settings');
+  const format = useFormatter();
   const [loading, setLoading] = useState<string | null>(null);
   const router = useRouter();
   const isOwner = currentUser.roleInActiveOrg === 'OWNER';
@@ -68,7 +71,7 @@ export function TeamMembersSection({
   }
 
   async function handleRemove(userId: string, email: string) {
-    if (!confirm(`Remove ${email} from your organization?`)) return;
+    if (!confirm(t('membersConfirmRemove', { email }))) return;
     setLoading(userId);
     const result = await removeUser(userId);
     setLoading(null);
@@ -77,7 +80,7 @@ export function TeamMembersSection({
   }
 
   async function handleLeave() {
-    if (!confirm('Are you sure you want to leave this organization?')) return;
+    if (!confirm(t('membersConfirmLeave'))) return;
     setLoading(currentUser.id);
     const result = await leaveOrganisation();
     setLoading(null);
@@ -97,21 +100,21 @@ export function TeamMembersSection({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Members</h2>
-          <p className="text-sm text-muted-foreground">People in your organization</p>
+          <h2 className="text-xl font-semibold">{t('membersHeading')}</h2>
+          <p className="text-sm text-muted-foreground">{t('membersDescription')}</p>
         </div>
       </div>
 
       {members.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No team members yet.</p>
+        <p className="text-sm text-muted-foreground">{t('membersEmpty')}</p>
       ) : (
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
+                <TableHead>{t('membersEmailHeader')}</TableHead>
+                <TableHead>{t('membersRoleHeader')}</TableHead>
+                <TableHead>{t('membersJoinedHeader')}</TableHead>
                 <TableHead className="w-[50px]" />
               </TableRow>
             </TableHeader>
@@ -128,7 +131,9 @@ export function TeamMembersSection({
                         <p className="font-medium text-sm">
                           {member.email}
                           {isSelf && (
-                            <span className="ml-2 text-xs text-muted-foreground">(You)</span>
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              {t('membersYou')}
+                            </span>
                           )}
                         </p>
                         {member.name && (
@@ -143,9 +148,9 @@ export function TeamMembersSection({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(member.joinedAt).toLocaleDateString('sv-SE', {
-                        month: 'short',
+                      {format.dateTime(new Date(member.joinedAt), {
                         day: 'numeric',
+                        month: 'short',
                         year: 'numeric',
                       })}
                     </TableCell>
@@ -169,7 +174,7 @@ export function TeamMembersSection({
                               disabled={isLastOwner}
                               className="text-destructive"
                             >
-                              {isLastOwner ? 'Cannot leave (last owner)' : 'Leave organization'}
+                              {isLastOwner ? t('membersCannotLeave') : t('membersLeave')}
                             </DropdownMenuItem>
                           ) : isOwner ? (
                             // Menu for OWNER looking at other users
@@ -178,7 +183,7 @@ export function TeamMembersSection({
                                 <DropdownMenuItem
                                   onClick={() => handleRoleChange(member.id, 'OWNER')}
                                 >
-                                  Promote to Owner
+                                  {t('membersPromote')}
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem
@@ -189,20 +194,22 @@ export function TeamMembersSection({
                                   )
                                 }
                               >
-                                Change to {member.role === 'ADMIN' ? 'Member' : 'Admin'}
+                                {t('membersChangeRole', {
+                                  role: member.role === 'ADMIN' ? 'Member' : 'Admin',
+                                })}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleRemove(member.id, member.email)}
                                 disabled={isLastOwner}
                                 className="text-destructive"
                               >
-                                {isLastOwner ? 'Cannot remove (last owner)' : 'Remove from team'}
+                                {isLastOwner ? t('membersCannotRemove') : t('membersRemove')}
                               </DropdownMenuItem>
                             </>
                           ) : (
                             // Non-owner users can only leave
                             <DropdownMenuItem onClick={handleLeave} className="text-destructive">
-                              Leave organization
+                              {t('membersLeave')}
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>

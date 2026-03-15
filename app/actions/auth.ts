@@ -65,18 +65,12 @@ export async function sendOtpCode(
 
     // Supabase global CAPTCHA gives specific error messages
     if (error.message.toLowerCase().includes('captcha')) {
-      return {
-        success: false,
-        error: `Security verification failed: ${error.message}`,
-      };
+      return { success: false, error: 'securityFailed' };
     }
     if (error.message.toLowerCase().includes('rate limit')) {
-      return { success: false, error: 'Too many attempts. Please wait a moment and try again.' };
+      return { success: false, error: 'tooManyAttempts' };
     }
-    return {
-      success: false,
-      error: `Could not send email: ${error.message}`,
-    };
+    return { success: false, error: 'sendFailed' };
   }
 
   return { success: true };
@@ -97,18 +91,15 @@ export async function verifyOtpCode(
 
   if (error) {
     if (error.message.toLowerCase().includes('expired')) {
-      return { success: false, error: 'Code has expired. Request a new code.' };
+      return { success: false, error: 'codeExpired' };
     }
     if (
       error.message.toLowerCase().includes('invalid') ||
       error.message.toLowerCase().includes('token')
     ) {
-      return {
-        success: false,
-        error: 'Invalid code. Please check that you entered the correct digits.',
-      };
+      return { success: false, error: 'invalidCode' };
     }
-    return { success: false, error: 'Verification failed. Please try again.' };
+    return { success: false, error: 'verificationFailed' };
   }
 
   // Session is now set - revalidate and continue to callback

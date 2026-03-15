@@ -89,6 +89,8 @@ export function KeySelector({
             return (
               <div
                 key={keyType.id}
+                role="button"
+                tabIndex={disabled || !hasAvailable ? -1 : 0}
                 className={`border rounded-lg p-4 cursor-pointer transition-all ${
                   isSelected
                     ? 'border-primary bg-primary/5'
@@ -97,6 +99,12 @@ export function KeySelector({
                       : 'border-destructive/30 bg-destructive/5'
                 } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => !disabled && hasAvailable && handleSelectKey(keyType)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (!disabled && hasAvailable) handleSelectKey(keyType);
+                  }
+                }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">

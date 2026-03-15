@@ -39,7 +39,6 @@ export async function GET(req: NextRequest) {
     // Decrypt and filter in memory
     const decryptedBorrowers = await Promise.all(
       borrowers.map(async (b) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const details = await getBorrowerDetails(b as any, entityId);
         return { ...details, matches: details.name.toLowerCase().includes(q) };
       }),
@@ -49,7 +48,6 @@ export async function GET(req: NextRequest) {
     const results = decryptedBorrowers
       .filter((b) => b.matches)
       .slice(0, 10)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .map(({ matches: _m, ...rest }) => rest);
 
     return NextResponse.json({ results });

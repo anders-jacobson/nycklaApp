@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { updateOrganisationName } from '@/app/actions/organisation';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 interface OrganizationOverviewProps {
   organizationName: string;
@@ -13,6 +14,7 @@ interface OrganizationOverviewProps {
 }
 
 export function OrganizationOverview({ organizationName, isOwner }: OrganizationOverviewProps) {
+  const t = useTranslations('settings');
   const [name, setName] = useState(organizationName);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,26 +44,22 @@ export function OrganizationOverview({ organizationName, isOwner }: Organization
   return (
     <form onSubmit={handleSave} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="org-name">Organization name</Label>
+        <Label htmlFor="org-name">{t('orgNameLabel')}</Label>
         <Input
           id="org-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Enter organization name"
+          placeholder={t('orgNamePlaceholder')}
           disabled={!isOwner || loading}
           className="max-w-md"
         />
-        {!isOwner && (
-          <p className="text-xs text-muted-foreground">
-            Only organization owners can edit the name
-          </p>
-        )}
+        {!isOwner && <p className="text-xs text-muted-foreground">{t('orgOwnerOnly')}</p>}
         {error && <p className="text-xs text-destructive">{error}</p>}
       </div>
 
       {isOwner && (
         <Button type="submit" disabled={loading || name.trim() === organizationName}>
-          {loading ? 'Saving...' : 'Save'}
+          {loading ? t('saving') : t('save')}
         </Button>
       )}
     </form>

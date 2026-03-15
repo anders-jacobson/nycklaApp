@@ -120,7 +120,7 @@ export async function inviteUser(
       inviteUrl,
     });
 
-    revalidatePath('/settings/organization');
+    revalidatePath('/[locale]/settings/organization');
 
     return {
       success: true,
@@ -280,7 +280,7 @@ export async function cancelInvitation(invitationId: string): Promise<ActionResu
       where: { id: invitationId },
     });
 
-    revalidatePath('/settings/organization');
+    revalidatePath('/[locale]/settings/organization');
 
     return { success: true };
   } catch (error) {
@@ -325,7 +325,7 @@ export async function changeUserRole(userId: string, newRole: UserRole): Promise
       data: { role: newRole },
     });
 
-    revalidatePath('/settings/organization');
+    revalidatePath('/[locale]/settings/organization');
 
     return { success: true };
   } catch (error) {
@@ -389,7 +389,7 @@ export async function removeUser(userId: string): Promise<ActionResult> {
       where: { id: membership.id },
     });
 
-    revalidatePath('/settings/organization');
+    revalidatePath('/[locale]/settings/organization');
 
     return { success: true };
   } catch (error) {
