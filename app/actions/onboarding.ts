@@ -176,7 +176,7 @@ export async function createOnboardingKeys(): Promise<ActionResult<void>> {
           data: {
             entityId,
             label,
-            function: displayName || label,
+            name: displayName || label,
           },
         });
 

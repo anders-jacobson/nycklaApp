@@ -27,7 +27,7 @@ export async function getKeyStatusSummary(): Promise<
       select: {
         id: true,
         label: true,
-        function: true,
+        name: true,
         keyCopies: {
           select: { status: true },
         },
@@ -41,7 +41,7 @@ export async function getKeyStatusSummary(): Promise<
         else if (copy.status === 'OUT') counts.InUse++;
         else if (copy.status === 'LOST') counts.Lost++;
       });
-      return { keyType: kt.label, keyFunction: kt.function, ...counts };
+      return { keyType: kt.label, keyFunction: kt.name, ...counts };
     });
 
     return { success: true, data };
@@ -158,7 +158,7 @@ export async function getBorrowersWithKeysGrouped(): Promise<ActionResult<unknow
       borrower.borrowedKeys.push({
         keyLabel: record.keyCopy.keyType.label,
         copyNumber: record.keyCopy.copyNumber,
-        keyFunction: record.keyCopy.keyType.function,
+        keyFunction: record.keyCopy.keyType.name,
         borrowedAt: record.issuedDate?.toISOString() ?? '',
         dueDate: record.dueDate?.toISOString() ?? '',
         issueId: record.id,

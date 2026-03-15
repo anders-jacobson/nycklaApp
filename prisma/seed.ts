@@ -319,37 +319,37 @@ async function main() {
   const keyTypes = [
     {
       label: 'C',
-      function: 'Fastighetsskötare',
+      name: 'Fastighetsskötare',
       accessArea: 'Trapphus, Källare, Tvättstuga, Soprum, Cykelrum, Förråd',
       copies: 10,
     },
     {
       label: 'E',
-      function: 'Sophämtning',
+      name: 'Sophämtning',
       accessArea: 'Soprum',
       copies: 5,
     },
     {
       label: 'G',
-      function: 'Husmorsnyckel',
+      name: 'Husmorsnyckel',
       accessArea: 'Källare, Tvättstuga',
       copies: 35,
     },
     {
       label: 'L',
-      function: 'Tvättstuga',
+      name: 'Tvättstuga',
       accessArea: 'Tvättstuga',
       copies: 15,
     },
     {
       label: 'M',
-      function: 'Förråd Gökärtsvägen',
+      name: 'Förråd Gökärtsvägen',
       accessArea: 'Förråd Gök',
       copies: 20,
     },
     {
       label: 'N',
-      function: 'Förråd Pilvägen',
+      name: 'Förråd Pilvägen',
       accessArea: 'Förråd Pil',
       copies: 10,
     },
@@ -360,7 +360,7 @@ async function main() {
     const created = await prisma.keyType.create({
       data: {
         label: keyType.label,
-        function: keyType.function,
+        name: keyType.name,
         entityId: entityId,
       },
     });

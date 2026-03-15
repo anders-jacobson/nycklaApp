@@ -44,7 +44,8 @@ import {
   defaultKeyTypeColumnVisibility,
   ExpandedCopiesRow,
 } from './key-type-columns';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPlus, IconInfoCircle } from '@tabler/icons-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DataTablePagination } from '@/components/shared/data-table-pagination';
 
 type KeyTypesTableProps = {
@@ -52,7 +53,7 @@ type KeyTypesTableProps = {
   allAreas: { id: string; name: string }[];
   updateAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   deleteAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
-  createAction: (formData: FormData) => void | Promise<void>;
+  createAction: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   addCopyAction: (formData: FormData) => void | Promise<void>;
   markLostAction: (formData: FormData) => void | Promise<void>;
   markFoundAction: (formData: FormData) => void | Promise<void>;
@@ -73,16 +74,24 @@ export function KeyTypesTable({
   const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
   const [createOpen, setCreateOpen] = React.useState(false);
   const [createSelectedAreaIds, setCreateSelectedAreaIds] = React.useState<string[]>([]);
+  const [createError, setCreateError] = React.useState('');
   const [, startCreateTransition] = useTransition();
 
   const handleCreateOpenChange = (open: boolean) => {
     setCreateOpen(open);
-    if (!open) setCreateSelectedAreaIds([]);
+    if (!open) {
+      setCreateSelectedAreaIds([]);
+      setCreateError('');
+    }
   };
 
   const handleCreate = (formData: FormData) => {
     startCreateTransition(async () => {
-      await createAction(formData);
+      const result = await createAction(formData);
+      if (!result.success && result.error) {
+        setCreateError(result.error);
+        return;
+      }
       setCreateOpen(false);
     });
   };
@@ -175,7 +184,26 @@ export function KeyTypesTable({
                 <DialogTitle>Create Key Type</DialogTitle>
               </DialogHeader>
               <form action={handleCreate} className="grid gap-3">
-                <Input name="label" placeholder="Label (e.g. A)" required maxLength={2} />
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    name="label"
+                    placeholder="Label (e.g. A, Z1, Storage-1)"
+                    required
+                    maxLength={50}
+                    className="flex-1"
+                  />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <IconInfoCircle className="h-4 w-4 shrink-0 text-muted-foreground cursor-default" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-[180px] text-xs">
+                        Labels can&apos;t be changed later. To edit a key type, use the ⋯ menu on
+                        its row.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Input name="name" placeholder="Name / Function" required minLength={2} />
                 {createSelectedAreaIds.map((id) => (
                   <input key={id} type="hidden" name="accessAreaIds" value={id} />
@@ -198,6 +226,7 @@ export function KeyTypesTable({
                   />
                   <span className="text-sm text-muted-foreground">copies</span>
                 </div>
+                {createError && <p className="text-sm text-destructive">{createError}</p>}
                 <DialogFooter>
                   <Button type="submit">Create Key Type</Button>
                 </DialogFooter>

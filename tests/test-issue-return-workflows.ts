@@ -75,7 +75,7 @@ async function testIssueSingleKeyNewBorrower() {
     }
 
     console.log(`📝 Using key: ${availableKey.keyType.label}-${availableKey.copyNumber}`);
-    console.log(`   Function: ${availableKey.keyType.function}`);
+    console.log(`   Name: ${availableKey.keyType.name}`);
 
     // Create new borrower
     const borrower = await createBorrowerWithAffiliation(
@@ -166,7 +166,7 @@ async function testIssueMultipleKeysNewBorrower() {
 
     console.log(`📝 Using ${availableKeys.length} keys:`);
     availableKeys.forEach((key) => {
-      console.log(`   - ${key.keyType.label}-${key.copyNumber} (${key.keyType.function})`);
+      console.log(`   - ${key.keyType.label}-${key.copyNumber} (${key.keyType.name})`);
     });
 
     // Create new borrower
